@@ -1,10 +1,11 @@
-import { Landmark, Lock } from "lucide-react";
+import { ArrowDownToLine, Landmark, Lock } from "lucide-react";
 import type { Metadata } from "next";
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { deposits as depositsTable } from "@/db/schema";
 import { DepositForm } from "@/components/app/deposit-form";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { EmptyState } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
@@ -28,7 +29,7 @@ export default async function DepositPage() {
 
   return (
     <div>
-      <PageHeader title="Deposit" subtitle="Add money by bank transfer" back="/app/wallet" />
+      <InnerPageHeader title="Deposit" subtitle="Add money by bank transfer" icon={<ArrowDownToLine />} />
       <Section>
         {!enabled ? (
           <EmptyState icon={<Landmark className="size-8 text-primary" />} title="Deposits are paused" description="We are doing some maintenance. Please try again later." />

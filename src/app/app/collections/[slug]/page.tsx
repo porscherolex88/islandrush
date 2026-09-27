@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Token } from "@/components/app/art";
 import { BookItem, CollectionProgress, collectionNoun, UnlockNote } from "@/components/app/collection";
-import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Panel, Section } from "@/components/app/mobile-header";
 import { RewardChip } from "@/components/app/reward-reveal";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/time";
@@ -21,14 +22,12 @@ export default async function CollectionDetailPage({ params }: PageProps<"/app/c
 
   return (
     <div>
-      <PageHeader title={collection.name} subtitle={collection.description} back="/app/collections" />
+      <InnerPageHeader title={collection.name} subtitle={`${owned} / ${items.length} collected`} />
       <Section>
         <Panel className="space-y-3 rounded-3xl">
           <div className="flex items-center gap-3">
             <Token icon={collection.icon} rarity="LEGENDARY" size="lg" />
-            <p className="font-heading text-3xl font-extrabold tabular">
-              {owned} <span className="text-lg text-muted-foreground">/ {items.length} found</span>
-            </p>
+            <p className="text-sm text-muted-foreground">{collection.description}</p>
           </div>
           <CollectionProgress owned={owned} total={items.length} />
           <UnlockNote unlocks={unlocks} total={items.length} noun={collectionNoun(collection.name)} />

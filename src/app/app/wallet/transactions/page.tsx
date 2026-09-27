@@ -1,7 +1,8 @@
 import { ReceiptText } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { TransactionList } from "@/components/app/transaction-list";
 import { EmptyState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
@@ -32,8 +33,8 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/app
 
   return (
     <div>
-      <PageHeader title="Transactions" back="/app/wallet" />
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2" role="tablist" aria-label="Filter by account">
+      <InnerPageHeader title="Transactions" icon={<ReceiptText />} />
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3 pb-2" role="tablist" aria-label="Filter by account">
         {FILTERS.map((f) => (
           <Link
             key={f.key}

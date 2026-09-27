@@ -1,7 +1,8 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, LifeBuoy } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Panel, Section } from "@/components/app/mobile-header";
 import { NewTicketForm } from "@/components/app/support-forms";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
@@ -15,7 +16,7 @@ export default async function SupportPage() {
   const tickets = await userTickets(user.id);
   return (
     <div>
-      <PageHeader title="Support" subtitle="We usually reply within a few hours" back="/app/account" />
+      <InnerPageHeader title="Support" subtitle="We usually reply within a few hours" icon={<LifeBuoy />} />
       {tickets.length > 0 && (
         <Section title="Your tickets">
           <ul className="divide-y rounded-2xl border bg-card">

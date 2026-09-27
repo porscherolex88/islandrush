@@ -1,7 +1,9 @@
 import { Gift, History, Wrench } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { ART } from "@/components/app/art";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { CreditsChip, Section } from "@/components/app/mobile-header";
 import { MysteryBoxGrid, type CollectionLookup } from "@/components/app/mystery-box";
 import { EmptyState } from "@/components/shared/states";
 import { requireUser } from "@/lib/auth/session";
@@ -34,13 +36,17 @@ export default async function MysteryBoxPage() {
 
   return (
     <div>
-      <PageHeader
+      <InnerPageHeader
         title="Mystery Box"
-        back="/app/play"
+        subtitle={enabled && views.length > 0 ? "Choose 1 of 9" : undefined}
+        art={ART.crate}
         action={
-          <Link href="/app/play/mystery-box/history" className="grid size-11 place-items-center rounded-full hover:bg-muted" aria-label="Box history">
-            <History className="size-5" />
-          </Link>
+          <>
+            <Link href="/app/play/mystery-box/history" className="grid size-11 place-items-center rounded-full hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none" aria-label="Mystery Box History">
+              <History className="size-5" aria-hidden />
+            </Link>
+            <CreditsChip credits={balances.CREDITS} />
+          </>
         }
       />
       <Section>

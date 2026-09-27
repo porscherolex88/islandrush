@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { TicketReplyForm } from "@/components/app/support-forms";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
@@ -8,7 +9,7 @@ import { formatDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { ticketThread } from "@/server/services/support";
 
-export const metadata: Metadata = { title: "Support ticket" };
+export const metadata: Metadata = { title: "Support Ticket" };
 
 export default async function TicketPage({ params }: PageProps<"/app/account/support/[id]">) {
   const { id } = await params;
@@ -20,7 +21,7 @@ export default async function TicketPage({ params }: PageProps<"/app/account/sup
 
   return (
     <div>
-      <PageHeader title={`#${ticket.number}`} subtitle={ticket.subject} back="/app/account/support" action={<StatusBadge status={ticket.status} className="mt-2" />} />
+      <InnerPageHeader title={ticket.subject} subtitle={`Ticket #${ticket.number}`} action={<StatusBadge status={ticket.status} className="mr-2" />} />
       <Section>
         <ol className="space-y-3">
           {messages.map((m) => (

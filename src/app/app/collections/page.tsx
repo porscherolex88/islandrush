@@ -1,7 +1,8 @@
 import { BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 import { CollectionCard, InventoryItem } from "@/components/app/collection";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { EmptyState } from "@/components/shared/states";
 import { requireUser } from "@/lib/auth/session";
 import { getCollectionsOverview } from "@/server/queries/collections";
@@ -15,7 +16,7 @@ export default async function CollectionsPage() {
 
   return (
     <div>
-      <PageHeader title="Collections" subtitle="Your collection book. Find every piece to earn completion rewards." back="/app/play" />
+      <InnerPageHeader title="Collections" subtitle="Your collection book" icon={<BookOpen />} />
       <Section>
         {collections.length === 0 ? (
           <EmptyState icon={<BookOpen className="size-10 text-primary" />} title="Your collection book is empty" description="Collections appear here as new adventures open." />

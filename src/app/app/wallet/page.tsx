@@ -2,7 +2,8 @@ import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, Banknote, Clock, Coins, H
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { DepositLevelCard } from "@/components/app/progression";
 import { TransactionList } from "@/components/app/transaction-list";
 import { EmptyState } from "@/components/shared/states";
@@ -50,11 +51,11 @@ export default async function WalletPage() {
 
   return (
     <div>
-      <PageHeader
+      <InnerPageHeader
         title="Wallet"
-        back="/app"
+        icon={<Wallet />}
         action={
-          <Link href="/app/wallet/transactions" className="flex h-11 items-center gap-1 text-sm font-semibold text-primary">
+          <Link href="/app/wallet/transactions" className="flex h-11 items-center gap-1 rounded-full px-2 text-sm font-semibold text-primary hover:bg-brand-soft focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             <History className="size-4" aria-hidden /> History
           </Link>
         }

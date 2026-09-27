@@ -1,7 +1,8 @@
-import { Package } from "lucide-react";
+import { History, Package } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { RewardChip } from "@/components/app/reward-reveal";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/states";
@@ -11,7 +12,7 @@ import { formatDateTime } from "@/lib/time";
 import { playHistory } from "@/server/services/mystery-box";
 import type { RewardResult } from "@/server/services/rewards";
 
-export const metadata: Metadata = { title: "Box history" };
+export const metadata: Metadata = { title: "Mystery Box History" };
 
 const PAGE = 20;
 
@@ -24,7 +25,7 @@ export default async function BoxHistoryPage({ searchParams }: PageProps<"/app/p
 
   return (
     <div>
-      <PageHeader title="Box history" back="/app/play/mystery-box" />
+      <InnerPageHeader title="Mystery Box History" icon={<History />} />
       <Section>
         {rows.length === 0 ? (
           <EmptyState

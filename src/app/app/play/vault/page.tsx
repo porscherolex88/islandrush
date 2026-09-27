@@ -1,7 +1,9 @@
 import { KeyRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { ART } from "@/components/app/art";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { VaultCard, type VaultView } from "@/components/app/vault-card";
 import { EmptyState } from "@/components/shared/states";
 import { requireUser } from "@/lib/auth/session";
@@ -33,7 +35,7 @@ export default async function VaultPage() {
 
   return (
     <div>
-      <PageHeader title="Vault" subtitle="Gather keys, seal fragments and treasures to open it" back="/app/play" />
+      <InnerPageHeader title="Vault" art={ART.vault} />
       <Section>
         {!enabled ? (
           <EmptyState icon={<KeyRound className="size-10 text-primary" />} title="The Vault is closed for maintenance" description="Your keys and fragments are safe in your inventory." />

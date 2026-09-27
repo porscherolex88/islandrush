@@ -1,7 +1,9 @@
 import { Map as MapIcon } from "lucide-react";
 import type { Metadata } from "next";
+import { ART } from "@/components/app/art";
 import { MapCanvas, type AreaViewModel } from "@/components/app/map";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { CreditsChip, Section } from "@/components/app/mobile-header";
 import { EmptyState } from "@/components/shared/states";
 import { Progress } from "@/components/ui/progress";
 import { requireUser } from "@/lib/auth/session";
@@ -28,7 +30,7 @@ export default async function MapPage() {
   if (!enabled || !state) {
     return (
       <div>
-        <PageHeader title="Mystery Map" back="/app/play" />
+        <InnerPageHeader title="Mystery Map" art={ART.island} />
         <Section>
           <EmptyState icon={<MapIcon className="size-10 text-primary" />} title={enabled ? "The map is being drawn" : "The map is taking a short break"} description="Check back soon to start exploring." />
         </Section>
@@ -56,7 +58,7 @@ export default async function MapPage() {
 
   return (
     <div>
-      <PageHeader title={state.map.name} subtitle={state.map.description} back="/app/play" />
+      <InnerPageHeader title="Mystery Map" subtitle={state.map.name} art={ART.island} action={<CreditsChip credits={balances.CREDITS} />} />
       <Section>
         <div className="mb-3 flex items-center gap-3">
           <Progress value={(state.discovered / Math.max(1, state.totalTiles)) * 100} className="h-2.5" indicatorClassName="bg-amber-500" aria-label="Map progress" />

@@ -6,8 +6,6 @@ import { requireUser } from "@/lib/auth/session";
 import { isAdminRole } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/time";
 import { getConfig } from "@/server/services/config";
-import { getBalances } from "@/server/services/ledger";
-import { unreadCount } from "@/server/services/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +13,7 @@ export const metadata: Metadata = { title: { default: "Home", template: "%s | Lo
 
 export default async function UserAppLayout({ children }: LayoutProps<"/app">) {
   const user = await requireUser();
-  const [balances, unread, maintenance] = await Promise.all([getBalances(user.id), unreadCount(user.id), getConfig("maintenance")]);
+  const maintenance = await getConfig("maintenance");
 
   if (maintenance.enabled && !isAdminRole(user.role)) {
     return (
@@ -51,7 +49,7 @@ export default async function UserAppLayout({ children }: LayoutProps<"/app">) {
   }
 
   return (
-    <AppShell credits={balances.CREDITS} withdrawable={balances.WITHDRAWABLE} unread={unread} banner={banner}>
+    <AppShell banner={banner}>
       {children}
     </AppShell>
   );

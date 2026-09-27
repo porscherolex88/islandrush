@@ -1,15 +1,17 @@
+import { Bell } from "lucide-react";
 import type { Metadata } from "next";
 import { NotificationPrefsForm } from "@/components/app/account-forms";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { requireUser } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "Notification settings" };
+export const metadata: Metadata = { title: "Notification Settings" };
 
 export default async function NotificationSettingsPage() {
   const user = await requireUser();
   return (
     <div>
-      <PageHeader title="Notification settings" back="/app/account" />
+      <InnerPageHeader title="Notification Settings" icon={<Bell />} />
       <Section>
         <NotificationPrefsForm prefs={user.notificationPrefs} />
       </Section>

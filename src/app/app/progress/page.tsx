@@ -4,8 +4,8 @@ import Link from "next/link";
 import { db } from "@/db";
 import { xpRules } from "@/db/schema";
 import { Token } from "@/components/app/art";
-import { PageHeader, Section } from "@/components/app/mobile-header";
-import { XPProgress } from "@/components/app/progression";
+import { Section } from "@/components/app/mobile-header";
+import { ProgressHeader } from "@/components/app/root-page-header";
 import { Progress } from "@/components/ui/progress";
 import { requireUser } from "@/lib/auth/session";
 import { relativeTime } from "@/lib/time";
@@ -53,10 +53,15 @@ export default async function ProgressPage() {
 
   return (
     <div>
-      <PageHeader title="Progress" subtitle="Your level, achievements and collections" />
-      <Section>
-        <XPProgress level={p.xp.level} title={p.xp.current?.title ?? "Explorer"} total={p.xp.total} pct={p.xp.pct} toNext={p.xp.toNext} nextTitle={p.xp.next?.title ?? null} />
-      </Section>
+      <ProgressHeader
+        userId={user.id}
+        level={p.xp.level}
+        title={p.xp.current?.title ?? "Explorer"}
+        xp={p.xp.total}
+        pct={p.xp.pct}
+        toNext={p.xp.toNext}
+        nextTitle={p.xp.next?.title ?? null}
+      />
 
       <Section
         title={

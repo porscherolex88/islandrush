@@ -3,36 +3,6 @@ import { Progress } from "@/components/ui/progress";
 import { formatMYR, toMinor } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
-export function XPProgress({ level, title, total, pct, toNext, nextTitle }: { level: number; title: string; total: number; pct: number; toNext: number; nextTitle: string | null }) {
-  return (
-    <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_80%_0%,oklch(0.45_0.08_205),oklch(0.26_0.05_225)_70%)] p-5 text-white shadow-lift">
-      <div className="flex items-center gap-4">
-        <div className="relative grid size-16 shrink-0 place-items-center rounded-2xl bg-[linear-gradient(180deg,oklch(0.86_0.15_85),oklch(0.72_0.16_65))] font-heading text-3xl font-extrabold text-amber-950 shadow-lift">
-          {level}
-          <span className="absolute -bottom-2 rounded-full bg-white px-2 text-[10px] font-bold tracking-wide text-amber-800 uppercase shadow">Level</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-heading text-2xl leading-tight font-extrabold">
-            Level {level} - {title}
-          </p>
-          <p className="text-sm font-semibold text-white/80 tabular">{total.toLocaleString("en-MY")} XP</p>
-        </div>
-      </div>
-      <Progress value={pct} className="mt-5 h-3 bg-white/15" indicatorClassName="bg-[linear-gradient(90deg,#fde68a,#f59e0b)]" aria-label="Progress to next level" />
-      <p className="mt-2 text-sm text-white/85">
-        {nextTitle ? (
-          <>
-            <strong className="text-white">{toNext.toLocaleString("en-MY")} XP</strong> to {nextTitle}
-          </>
-        ) : (
-          "Maximum level reached"
-        )}
-      </p>
-      <p className="mt-2 text-xs text-white/60">XP (experience points) comes from playing, missions and your streak. It shows how far you have explored.</p>
-    </div>
-  );
-}
-
 type Level = { id: string; name: string; sortOrder: number; threshold: string; color: string; benefits: string[]; canWithdraw: boolean; withdrawalMaxDaily: string | null };
 
 /**

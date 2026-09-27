@@ -2,7 +2,8 @@ import { BookOpen, ChevronRight, History } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArtCard, ArtChip, ART } from "@/components/app/art";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { Section } from "@/components/app/mobile-header";
+import { PlayHeader } from "@/components/app/root-page-header";
 import { requireUser } from "@/lib/auth/session";
 import { formatCredits } from "@/lib/money";
 import { getAllFlags } from "@/server/services/config";
@@ -29,7 +30,7 @@ export default async function PlayPage() {
 
   return (
     <div>
-      <PageHeader title="Play" subtitle="Explore, discover, collect and unlock" />
+      <PlayHeader userId={user.id} />
       <Section className="space-y-3">
         <ArtCard
           href="/app/play/mystery-box"
@@ -67,7 +68,7 @@ export default async function PlayPage() {
         <div className="grid grid-cols-2 gap-2">
           {[
             { href: "/app/collections", icon: BookOpen, title: "Collections", text: "Your collection book" },
-            { href: "/app/play/mystery-box/history", icon: History, title: "Box history", text: "Every box you've opened" },
+            { href: "/app/play/mystery-box/history", icon: History, title: "Mystery Box History", text: "Every box you've opened" },
           ].map(({ href, icon: Icon, title, text }) => (
             <Link key={href} href={href} className="flex min-h-24 flex-col justify-between rounded-2xl border bg-card p-4 shadow-card hover:bg-surface">
               <span className="flex items-center justify-between">

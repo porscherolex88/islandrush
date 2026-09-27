@@ -1,12 +1,14 @@
+import { HeartHandshake } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PlayLimitsForm } from "@/components/app/account-forms";
-import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Panel, Section } from "@/components/app/mobile-header";
 import { requireUser } from "@/lib/auth/session";
 import { formatCredits } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Responsible play" };
+export const metadata: Metadata = { title: "Responsible Play" };
 
 export default async function ResponsiblePlayPage() {
   const user = await requireUser();
@@ -14,7 +16,7 @@ export default async function ResponsiblePlayPage() {
   const onBreak = Boolean(until && until > new Date());
   return (
     <div>
-      <PageHeader title="Responsible play" subtitle="Tools to keep LootBox fun" back="/app/account" />
+      <InnerPageHeader title="Responsible Play" subtitle="Tools to keep LootBox fun" icon={<HeartHandshake />} />
       <Section>
         <Panel className="space-y-1 bg-brand-soft/60">
           <p className="text-sm font-semibold">Your current settings</p>

@@ -1,7 +1,8 @@
 import { ChevronRight, HandCoins, UserRound, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { Fragment } from "react";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { ReferralCard } from "@/components/app/referral-card";
 import { EmptyState } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { isFeatureEnabled } from "@/server/services/config";
 import { getReferralSummary } from "@/server/services/referrals";
 
-export const metadata: Metadata = { title: "Invite friends" };
+export const metadata: Metadata = { title: "Referrals" };
 
 export default async function ReferralsPage() {
   const user = await requireUser();
@@ -30,7 +31,7 @@ export default async function ReferralsPage() {
 
   return (
     <div>
-      <PageHeader title="Invite friends" subtitle="Share LootBox and earn when friends deposit" back="/app/account" />
+      <InnerPageHeader title="Referrals" subtitle="Invite friends, earn rewards" icon={<Users />} />
       <Section>
         {active ? (
           <ReferralCard code={s.code} link={link} />

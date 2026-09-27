@@ -5,9 +5,10 @@ import Link from "next/link";
 import { ART } from "@/components/app/art";
 import { CheckInButton, MissionBonusButton, MysteryEventCard, SpinWheel } from "@/components/app/daily-actions";
 import { MissionCard, StreakCard, TomorrowTeaser } from "@/components/app/daily-cards";
-import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
+import { Panel, Section } from "@/components/app/mobile-header";
+import { DailyHeader } from "@/components/app/root-page-header";
 import { requireUser } from "@/lib/auth/session";
-import { getConfig } from "@/server/services/config";
+import { getConfig, getTimezone } from "@/server/services/config";
 import { getDailyPlan, getDailyState } from "@/server/services/daily";
 import { poolOdds } from "@/server/services/mystery-box";
 
@@ -16,14 +17,20 @@ export const metadata: Metadata = { title: "Daily" };
 export default async function DailyPage() {
   const user = await requireUser();
   const state = await getDailyState(user.id);
-  const [plan, defaults] = await Promise.all([getDailyPlan(state.day), getConfig("daily_defaults")]);
+  const [plan, defaults, tz] = await Promise.all([getDailyPlan(state.day), getConfig("daily_defaults"), getTimezone()]);
   const boosted = Boolean(defaults.streakSpinPoolId && state.streak.current >= defaults.streakSpinMinDays);
   const spinPool = boosted ? defaults.streakSpinPoolId : plan.spinPoolId;
   const odds = spinPool ? await poolOdds(spinPool) : [];
+  const today = [
+    state.loginClaimed,
+    ...(state.spinAvailable ? [Boolean(state.spin)] : []),
+    ...(state.missions.length ? [state.missionsDone >= state.missions.length] : []),
+    ...(state.event ? [Boolean(state.eventClaim)] : []),
+  ];
 
   return (
     <div>
-      <PageHeader title="Daily" subtitle="Check in, spin, finish missions, find the mystery, explore." />
+      <DailyHeader userId={user.id} timeZone={tz} streak={state.streak.current} done={today.filter(Boolean).length} total={today.length} />
 
       <Section>
         <StreakCard

@@ -1,7 +1,8 @@
-import { AlertCircle, Landmark } from "lucide-react";
+import { AlertCircle, ArrowUpFromLine, Landmark } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Panel, Section } from "@/components/app/mobile-header";
 import { CancelWithdrawalButton, WithdrawForm } from "@/components/app/withdraw-form";
 import { maskAccount } from "@/lib/format";
 import { EmptyState } from "@/components/shared/states";
@@ -29,7 +30,7 @@ export default async function WithdrawPage() {
 
   return (
     <div>
-      <PageHeader title="Withdraw" subtitle="Send your Withdrawable balance to your bank" back="/app/wallet" />
+      <InnerPageHeader title="Withdraw" subtitle="To your bank account" icon={<ArrowUpFromLine />} />
       <Section>
         <Panel className="bg-success-soft/60">
           <p className="text-sm text-muted-foreground">Withdrawable balance</p>

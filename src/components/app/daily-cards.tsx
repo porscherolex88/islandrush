@@ -58,12 +58,19 @@ export function StreakCard({
           <Flame className="size-8" aria-hidden />
         </div>
         <div className="flex-1">
-          <p className="font-heading text-3xl leading-none font-extrabold tabular">
-            {current} <span className="text-lg font-bold">day{current === 1 ? "" : "s"}</span>
-          </p>
-          <p className="mt-1 text-sm font-semibold text-orange-800">
-            {nextMilestone ? `${toNext} day${toNext === 1 ? "" : "s"} to your next reward` : "Every streak reward collected"}
-          </p>
+          {nextMilestone ? (
+            <>
+              <p className="font-heading text-3xl leading-none font-extrabold tabular">
+                {toNext} <span className="text-lg font-bold">day{toNext === 1 ? "" : "s"} to go</span>
+              </p>
+              <p className="mt-1 text-sm font-semibold text-orange-800">until your next streak reward</p>
+            </>
+          ) : (
+            <>
+              <p className="font-heading text-2xl leading-none font-extrabold">All rewards collected</p>
+              <p className="mt-1 text-sm font-semibold text-orange-800 tabular">{current}-day streak and counting</p>
+            </>
+          )}
         </div>
       </div>
 

@@ -1,7 +1,8 @@
 import { Bell } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Section } from "@/components/app/mobile-header";
 import { MarkAllReadButton, NotificationList } from "@/components/app/notification-list";
 import { EmptyState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/ap
 
   return (
     <div>
-      <PageHeader title="Notifications" back="/app" action={items.some((i) => !i.readAt) ? <MarkAllReadButton /> : undefined} />
+      <InnerPageHeader title="Notifications" icon={<Bell />} action={items.some((i) => !i.readAt) ? <MarkAllReadButton /> : undefined} />
       <Section>
         {items.length === 0 ? <EmptyState icon={<Bell className="size-8 text-primary" />} title="No notifications yet" description="Rewards, wallet updates and news will show up here." /> : <NotificationList items={items} />}
         {(page > 1 || rows.length > PAGE) && (

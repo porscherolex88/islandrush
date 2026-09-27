@@ -1,11 +1,12 @@
-import { ShieldCheck } from "lucide-react";
+import { KeyRound, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { PasswordForm, SessionList, type SessionView } from "@/components/app/account-forms";
-import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { Panel, Section } from "@/components/app/mobile-header";
 import { getAuth } from "@/lib/auth/server";
 import { getAuthSession, requireUser } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "Password and sessions" };
+export const metadata: Metadata = { title: "Security" };
 
 type RawSession = { id: string; token: string; userAgent?: string | null; ipAddress?: string | null; createdAt: string | Date };
 
@@ -26,7 +27,7 @@ export default async function SecurityPage() {
 
   return (
     <div>
-      <PageHeader title="Password and sessions" back="/app/account" />
+      <InnerPageHeader title="Security" subtitle="Password and signed-in devices" icon={<KeyRound />} />
       <Section title="Change password">
         <Panel>
           <PasswordForm />

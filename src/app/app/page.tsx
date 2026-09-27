@@ -1,25 +1,23 @@
-import { CalendarCheck, ChevronRight, Coins, Flame, KeyRound, Map as MapIcon, Target, Users, Wallet } from "lucide-react";
+import { CalendarCheck, ChevronRight, KeyRound, Map as MapIcon, Target, Users } from "lucide-react";
 import Link from "next/link";
 import { ArtCard, ArtChip, ART, StatRow } from "@/components/app/art";
 import { CheckInCard } from "@/components/app/daily-actions";
 import { TomorrowTeaser } from "@/components/app/daily-cards";
 import { Section } from "@/components/app/mobile-header";
+import { HomeHeader } from "@/components/app/root-page-header";
 import { requireUser } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
 import { greeting } from "@/lib/time";
 import { activeBanners } from "@/server/queries/banners";
 import { settleDueRewards } from "@/server/services/cash-rewards";
 import { getTimezone } from "@/server/services/config";
 import { getDailyState } from "@/server/services/daily";
-import { getBalances } from "@/server/services/ledger";
 import { getMapState } from "@/server/services/map";
 import { getVaultStates } from "@/server/services/vault";
 
 export default async function HomePage({ searchParams }: PageProps<"/app">) {
   const user = await requireUser();
   await settleDueRewards({ userId: user.id, limit: 50 });
-  const [balances, daily, map, vaults, tz, banners, sp] = await Promise.all([
-    getBalances(user.id),
+  const [daily, map, vaults, tz, banners, sp] = await Promise.all([
     getDailyState(user.id),
     getMapState(user.id),
     getVaultStates(user.id),
@@ -35,20 +33,14 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
 
   return (
     <div className="space-y-1 pb-2">
-      <div className="px-4 pt-2">
-        {sp.welcome && (
-          <div className="mb-3 rounded-2xl bg-brand-soft p-3 text-sm text-primary">
+      <HomeHeader userId={user.id} name={user.name} greeting={greeting(new Date(), tz)} streak={daily.streak.current} />
+      {sp.welcome && (
+        <div className="px-4">
+          <div className="rounded-2xl bg-brand-soft p-3 text-sm text-primary">
             <strong>Welcome to LootBox, {firstName}!</strong> Start with your free daily check-in and spin below.
           </div>
-        )}
-        <h1 className="text-2xl font-bold">
-          {greeting(new Date(), tz)}, {firstName} <span aria-hidden>👋</span>
-        </h1>
-        <Link href="/app/daily" className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-orange-100 px-3.5 text-sm font-bold text-orange-700">
-          <Flame className="size-4" aria-hidden />
-          {daily.streak.current} Day Streak
-        </Link>
-      </div>
+        </div>
+      )}
 
       <Section>
         {showMystery && daily.event ? (
@@ -79,43 +71,6 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
           />
         ) : (
           <ArtCard href="/app/play/vault" art={ART.vault} eyebrow="Your next goal" title={vault?.name ?? "The Vault"} body={vault?.unlocked ? "You opened it. Well done, explorer." : "Gather keys and seal fragments to open it."} cta="View Vault" tall priority />
-        )}
-      </Section>
-
-      <Section title="Your rewards" action={<Link href="/app/wallet" className="flex h-11 items-center text-sm font-semibold text-primary">Wallet</Link>}>
-        <div className="grid grid-cols-2 gap-2">
-          <Link href="/app/wallet/withdraw" className="rounded-2xl border bg-card p-4 shadow-card hover:bg-surface">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-              <Wallet className="size-4 text-success" aria-hidden /> Withdrawable
-            </p>
-            <p className="mt-1 font-heading text-2xl font-extrabold tabular">{formatMYR(balances.WITHDRAWABLE)}</p>
-            <p className="text-xs text-muted-foreground">Money you can withdraw now</p>
-          </Link>
-          <Link href="/app/wallet/convert" className="rounded-2xl border bg-card p-4 shadow-card hover:bg-surface">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-              <Coins className="size-4 text-gold" aria-hidden /> Credits
-            </p>
-            <p className="mt-1 font-heading text-2xl font-extrabold tabular">{formatCredits(balances.CREDITS)}</p>
-            <p className="text-xs text-muted-foreground">Game credits used to play</p>
-          </Link>
-        </div>
-        {(balances.CASH > 0n || balances.PENDING_REWARDS > 0n) && (
-          <Link href="/app/wallet" className="mt-2 flex min-h-11 items-center justify-between rounded-xl bg-surface px-3 text-xs text-muted-foreground">
-            <span>
-              {balances.CASH > 0n && (
-                <>
-                  Cash <strong className="text-foreground tabular">{formatMYR(balances.CASH)}</strong> ready to convert
-                </>
-              )}
-              {balances.CASH > 0n && balances.PENDING_REWARDS > 0n && " · "}
-              {balances.PENDING_REWARDS > 0n && (
-                <>
-                  <strong className="text-foreground tabular">{formatMYR(balances.PENDING_REWARDS)}</strong> under review
-                </>
-              )}
-            </span>
-            <ChevronRight className="size-4" aria-hidden />
-          </Link>
         )}
       </Section>
 
