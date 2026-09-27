@@ -1,3 +1,4 @@
+import { Repeat } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ConvertForm } from "@/components/app/convert-form";
@@ -20,12 +21,12 @@ export default async function ConvertPage() {
       <Section>
         {b.CASH === 0n ? (
           <EmptyState
-            icon="🔁"
-            title="No Cash to convert yet"
-            description="Make a deposit first. Once it's approved you can convert it to Credits here."
+            icon={<Repeat className="size-8 text-primary" />}
+            title="You have no Cash to convert"
+            description="Deposit money first. Once it is approved it becomes Cash, and you can turn it into Credits here."
             action={
-              <Button asChild>
-                <Link href="/app/wallet/deposit">Deposit</Link>
+              <Button asChild size="lg">
+                <Link href="/app/wallet/deposit">Make a deposit</Link>
               </Button>
             }
           />

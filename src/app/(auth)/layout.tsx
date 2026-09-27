@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Logo } from "@/components/shared/logo";
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
@@ -9,16 +10,12 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           <div className="w-full max-w-sm">{children}</div>
         </main>
       </div>
-      <aside className="relative hidden overflow-hidden bg-[linear-gradient(160deg,oklch(0.46_0.22_285),oklch(0.32_0.16_295))] p-12 text-white lg:flex lg:flex-col lg:justify-end">
-        <div aria-hidden className="absolute top-16 right-16 grid grid-cols-3 gap-3 opacity-90">
-          {["🎁", "🗺️", "🏛️", "🪙", "🔑", "🏺", "💎", "🧭", "✨"].map((e, i) => (
-            <span key={i} className="grid size-20 place-items-center rounded-2xl bg-white/10 text-4xl backdrop-blur" style={{ transform: `rotate(${(i % 3) * 4 - 4}deg)` }}>
-              {e}
-            </span>
-          ))}
-        </div>
-        <p className="font-heading text-4xl leading-tight font-bold">Every day on Lost Island brings something new.</p>
-        <p className="mt-3 max-w-md text-white/75">Open Mystery Boxes, explore the map, complete collections and unlock the Ancient Vault.</p>
+      <aside className="relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-end">
+        <Image src="/illustrations/island-map.webp" alt="" fill priority sizes="50vw" className="object-cover" />
+        <div aria-hidden className="art-scrim-b absolute inset-0" />
+        <p className="relative text-sm font-bold tracking-widest text-amber-200 uppercase">Explore · Discover · Collect · Unlock</p>
+        <p className="relative mt-2 font-heading text-4xl leading-tight font-bold">Every day on Lost Island brings something new.</p>
+        <p className="relative mt-3 max-w-md text-white/85">Explore the island map, discover hidden treasures, complete your collection book and unlock the Ancient Vault.</p>
       </aside>
     </div>
   );

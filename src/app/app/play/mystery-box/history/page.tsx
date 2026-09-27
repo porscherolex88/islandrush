@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, Section } from "@/components/app/mobile-header";
@@ -27,7 +28,7 @@ export default async function BoxHistoryPage({ searchParams }: PageProps<"/app/p
       <Section>
         {rows.length === 0 ? (
           <EmptyState
-            icon="📦"
+            icon={<Package className="size-8 text-primary" />}
             title="No boxes opened yet"
             description="Your Mystery Box results will appear here."
             action={

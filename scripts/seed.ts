@@ -188,9 +188,9 @@ async function main() {
       .values({ slug: "ancient-vault", name: "Ancient Vault", icon: "🏛️", mapId: map.id, rewardPoolId: vaultReward.id, description: "The island's greatest secret. Gather keys, seal fragments and the Temple Treasures to break it open." })
       .returning();
     await db.insert(s.requirements).values([
-      { ownerType: "VAULT", ownerId: vault.id, type: "ITEM", itemId: itemIds["vault-key"], quantity: 3, consume: true, label: "Keys", sortOrder: 0 },
-      { ownerType: "VAULT", ownerId: vault.id, type: "ITEM", itemId: itemIds["seal-fragment"], quantity: 8, consume: true, label: "Fragments", sortOrder: 1 },
-      { ownerType: "VAULT", ownerId: vault.id, type: "COLLECTION_COMPLETE", collectionId: treasures.id, quantity: 1, label: "Collection: Temple Treasures", sortOrder: 2 },
+      { ownerType: "VAULT", ownerId: vault.id, type: "ITEM", itemId: itemIds["vault-key"], quantity: 3, consume: true, label: "Vault Keys", sortOrder: 0 },
+      { ownerType: "VAULT", ownerId: vault.id, type: "ITEM", itemId: itemIds["seal-fragment"], quantity: 8, consume: true, label: "Seal Fragments", sortOrder: 1 },
+      { ownerType: "VAULT", ownerId: vault.id, type: "COLLECTION_COMPLETE", collectionId: treasures.id, quantity: 1, label: "Temple Treasures", sortOrder: 2 },
     ]);
 
     /* Daily ---------------------------------------------------------------- */
@@ -319,7 +319,7 @@ async function main() {
       { level: 3, rewardKind: "FIXED", value: "5.00" },
     ]);
     await db.insert(s.paymentAccounts).values([
-      { bankName: "Maybank", accountName: "LootBox Rewards Sdn Bhd", accountNumber: "5140 1234 5678", instructions: "Use your LootBox referral code as the transfer reference.", sortOrder: 0 },
+      { bankName: "Maybank", accountName: "LootBox Rewards Sdn Bhd", accountNumber: "5140 1234 5678", instructions: "Use the transfer reference shown on this page so we can match your deposit.", sortOrder: 0 },
       { bankName: "CIMB Bank", accountName: "LootBox Rewards Sdn Bhd", accountNumber: "8009 876 543", instructions: "DuitNow transfers are usually reviewed within 30 minutes.", sortOrder: 1 },
     ]);
     for (const role of ["SUPPORT", "FINANCE", "GAME_ADMIN"] as const) {
@@ -423,8 +423,8 @@ async function main() {
 
     await db.transaction(async (tx) => {
       await createCashReward(tx, { userId: demo.id, amount: "150.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-1", description: "Welcome treasure", pendingHours: 0 });
-      await createCashReward(tx, { userId: demo.id, amount: "1100.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-2", description: "Vault reward (demo)", pendingHours: 0 });
-      await createCashReward(tx, { userId: demo.id, amount: "45.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-3", description: "Pending reward (demo)", pendingHours: 24 });
+      await createCashReward(tx, { userId: demo.id, amount: "1100.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-2", description: "Vault reward", pendingHours: 0 });
+      await createCashReward(tx, { userId: demo.id, amount: "45.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-3", description: "Treasure reward", pendingHours: 24 });
     });
     await settleDueRewards({ userId: demo.id });
 

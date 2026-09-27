@@ -1,3 +1,4 @@
+import { ArrowDownToLine, ArrowUpFromLine, BadgeCheck, Banknote, Dices, Gift, Landmark, type LucideIcon, Repeat, Undo2, Users, Wrench } from "lucide-react";
 import { formatCredits, formatMYR } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -11,21 +12,29 @@ const ACCOUNT_LABEL: Record<string, string> = {
   WITHDRAWAL_PENDING: "Withdrawal in progress",
 };
 
-const TYPE_ICON: Record<string, string> = {
-  DEPOSIT: "⬇️",
-  DEPOSIT_REVERSAL: "↩️",
-  CONVERSION: "🔁",
-  GAME_SPEND: "🎲",
-  GAME_REWARD_CREDITS: "🎁",
-  CASH_REWARD: "💵",
-  REFERRAL_REWARD: "🤝",
-  SETTLEMENT: "✅",
-  REWARD_REVERSAL: "↩️",
-  WITHDRAWAL_REQUEST: "⬆️",
-  WITHDRAWAL_COMPLETE: "🏦",
-  WITHDRAWAL_RETURN: "↩️",
-  ADJUSTMENT: "🛠️",
+const TYPE: Record<string, { icon: LucideIcon; label: string; tone: string }> = {
+  DEPOSIT: { icon: ArrowDownToLine, label: "Deposit approved", tone: "bg-success-soft text-success" },
+  DEPOSIT_REVERSAL: { icon: Undo2, label: "Deposit reversed", tone: "bg-surface text-muted-foreground" },
+  CONVERSION: { icon: Repeat, label: "Cash converted to Credits", tone: "bg-gold-soft text-gold-foreground" },
+  GAME_SPEND: { icon: Dices, label: "Played a game", tone: "bg-brand-soft text-primary" },
+  GAME_REWARD_CREDITS: { icon: Gift, label: "Credits reward", tone: "bg-gold-soft text-gold-foreground" },
+  CASH_REWARD: { icon: Banknote, label: "Cash reward", tone: "bg-success-soft text-success" },
+  REFERRAL_REWARD: { icon: Users, label: "Invite reward", tone: "bg-success-soft text-success" },
+  SETTLEMENT: { icon: BadgeCheck, label: "Reward now withdrawable", tone: "bg-success-soft text-success" },
+  REWARD_REVERSAL: { icon: Undo2, label: "Reward reversed", tone: "bg-surface text-muted-foreground" },
+  WITHDRAWAL_REQUEST: { icon: ArrowUpFromLine, label: "Withdrawal requested", tone: "bg-brand-soft text-primary" },
+  WITHDRAWAL_COMPLETE: { icon: Landmark, label: "Withdrawal paid to bank", tone: "bg-success-soft text-success" },
+  WITHDRAWAL_RETURN: { icon: Undo2, label: "Withdrawal returned", tone: "bg-surface text-muted-foreground" },
+  ADJUSTMENT: { icon: Wrench, label: "Balance adjustment", tone: "bg-surface text-muted-foreground" },
 };
+
+const HIDE_DETAIL = new Set(["DEPOSIT", "SETTLEMENT", "CONVERSION"]);
+
+function detail(type: string, description: string, label: string) {
+  if (HIDE_DETAIL.has(type)) return null;
+  const clean = description.replace(/\s*\((?:[A-Z]+(?:_[A-Z]+)*|[a-z]+(?:_[a-z]+)+|demo)\)$/, "").trim();
+  return clean && clean !== label ? clean : null;
+}
 
 function amountText(currency: "MYR" | "CREDITS", amount: string) {
   return currency === "MYR" ? formatMYR(amount, { sign: true }) : `${formatCredits(amount, { sign: true })} Credits`;
@@ -34,25 +43,31 @@ function amountText(currency: "MYR" | "CREDITS", amount: string) {
 export function TransactionList({ rows }: { rows: ActivityRow[] }) {
   return (
     <ul className="divide-y rounded-2xl border bg-card">
-      {rows.map((r) => (
-        <li key={r.id} className="flex gap-3 p-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface text-lg" aria-hidden>
-            {TYPE_ICON[r.type] ?? "•"}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">{r.description}</p>
-            <p className="text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</p>
-          </div>
-          <div className="shrink-0 text-right">
-            {r.entries.map((e, i) => (
-              <p key={i} className={cn("text-sm font-semibold tabular", e.amount.startsWith("-") ? "text-foreground" : "text-success")}>
-                {amountText(e.currency, e.amount)}
-                <span className="block text-[10px] font-medium text-muted-foreground">{ACCOUNT_LABEL[e.account] ?? e.account}</span>
-              </p>
-            ))}
-          </div>
-        </li>
-      ))}
+      {rows.map((r) => {
+        const t = TYPE[r.type] ?? { icon: Banknote, label: r.description, tone: "bg-surface text-muted-foreground" };
+        const Icon = t.icon;
+        const sub = detail(r.type, r.description, t.label);
+        return (
+          <li key={r.id} className="flex gap-3 p-3.5">
+            <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl", t.tone)} aria-hidden>
+              <Icon className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">{t.label}</p>
+              {sub && <p className="truncate text-xs text-muted-foreground">{sub}</p>}
+              <p className="text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              {r.entries.map((e, i) => (
+                <p key={i} className={cn("text-sm font-semibold tabular", e.amount.startsWith("-") ? "text-foreground" : "text-success")}>
+                  {amountText(e.currency, e.amount)}
+                  <span className="block text-[11px] font-medium text-muted-foreground">{ACCOUNT_LABEL[e.account] ?? e.account}</span>
+                </p>
+              ))}
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }

@@ -21,18 +21,22 @@ export function ReferralCard({ code, link }: { code: string; link: string }) {
     }
   }
   return (
-    <div className="overflow-hidden rounded-3xl bg-[linear-gradient(135deg,oklch(0.5_0.2_285),oklch(0.42_0.2_300))] p-5 text-white shadow-lift">
-      <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Your referral code</p>
-      <div className="mt-1 flex items-center justify-between gap-2">
-        <p className="font-mono text-3xl font-bold tracking-[0.2em]">{code}</p>
-        <CopyButton value={code} className="bg-white/15 text-white hover:bg-white/25" />
+    <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.3_0.07_222)_75%)] p-5 text-white shadow-lift">
+      <div aria-hidden className="absolute -top-14 -right-12 size-44 rounded-full bg-amber-300/15" />
+      <p className="relative font-heading text-2xl leading-tight font-extrabold">Invite friends, explore together</p>
+      <p className="relative mt-1 text-sm text-white/80">Share your link. When friends join and deposit, you earn a reward.</p>
+      <div className="relative mt-4 flex items-center gap-2 rounded-2xl bg-white/10 p-2 pl-3">
+        <span className="min-w-0 flex-1 truncate text-sm text-white/85">{link}</span>
+        <CopyButton value={link} label="Copy link" className="h-11 bg-white/15 px-3 text-sm text-white hover:bg-white/25" />
       </div>
-      <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/10 p-2 pl-3">
-        <span className="min-w-0 flex-1 truncate text-xs text-white/80">{link}</span>
-        <CopyButton value={link} label="Copy link" className="bg-white/15 text-white hover:bg-white/25" />
+      <div className="relative mt-2 flex items-center justify-between gap-2 px-1">
+        <p className="text-sm text-white/75">
+          Your code: <span className="font-mono text-base font-bold tracking-[0.15em] text-white">{code}</span>
+        </p>
+        <CopyButton value={code} className="h-11 px-3 text-sm text-white hover:bg-white/15" />
       </div>
-      <Button onClick={share} size="xl" variant="gold" className="mt-4 w-full">
-        <Share2 /> Invite friends
+      <Button onClick={share} size="xl" variant="gold" className="relative mt-3 w-full">
+        <Share2 /> Share invite
       </Button>
     </div>
   );

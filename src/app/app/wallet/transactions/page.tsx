@@ -1,3 +1,4 @@
+import { ReceiptText } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, Section } from "@/components/app/mobile-header";
@@ -46,7 +47,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/app
         ))}
       </div>
       <Section>
-        {rows.length ? <TransactionList rows={rows} /> : <EmptyState icon="🧾" title="Nothing here yet" description="Transactions for this account will appear here." />}
+        {rows.length ? <TransactionList rows={rows} /> : <EmptyState icon={<ReceiptText className="size-8 text-primary" />} title="Nothing here yet" description="Transactions for this account will appear here." />}
         {(page > 1 || hasMore) && (
           <div className="mt-3 flex justify-between">
             {page > 1 ? (

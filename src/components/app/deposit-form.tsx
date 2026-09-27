@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Upload } from "lucide-react";
+import { CheckCircle2, Landmark, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export function DepositForm({
   max,
   proofRequired,
   defaultName,
+  reference,
 }: {
   accounts: PaymentAccount[];
   methods: string[];
@@ -31,6 +32,7 @@ export function DepositForm({
   max: string;
   proofRequired: boolean;
   defaultName: string;
+  reference: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const keyRef = useRef<string>(newKey());
@@ -54,15 +56,15 @@ export function DepositForm({
 
   if (done) {
     return (
-      <div className="space-y-3 rounded-2xl border bg-success-soft/60 p-5 text-center">
-        <p className="text-4xl" aria-hidden>
-          ✅
-        </p>
-        <p className="font-heading text-lg font-bold">Deposit submitted</p>
+      <div className="space-y-3 rounded-3xl border bg-success-soft/60 p-6 text-center">
+        <span className="mx-auto grid size-16 place-items-center rounded-full bg-success text-white shadow-lift">
+          <CheckCircle2 className="size-8" aria-hidden />
+        </span>
+        <p className="font-heading text-xl font-bold">Deposit submitted</p>
         <p className="text-sm text-muted-foreground">
-          We&apos;re checking your {formatMYR(done.amount)} transfer. You&apos;ll get a notification as soon as it&apos;s added to your Cash wallet, usually within a few hours.
+          We are checking your {formatMYR(done.amount)} transfer. We will notify you as soon as it is added to your Cash, usually within a few hours.
         </p>
-        <Button variant="outline" onClick={() => setDone(null)}>
+        <Button variant="outline" size="lg" onClick={() => setDone(null)}>
           Make another deposit
         </Button>
       </div>
@@ -79,13 +81,16 @@ export function DepositForm({
         fd.set("idempotencyKey", keyRef.current);
         fd.set("method", method);
         fd.set("paymentAccountId", accountId);
+        fd.set("reference", reference);
         run(fd);
       }}
     >
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-bold">1. Transfer to LootBox</legend>
+      <section className="space-y-3" aria-labelledby="transfer-to">
+        <p id="transfer-to" className="font-heading text-lg font-bold">
+          Step 1: Transfer to
+        </p>
         {accounts.length > 1 && (
-          <div className="flex gap-2" role="radiogroup" aria-label="Payment account">
+          <div className="flex gap-2" role="radiogroup" aria-label="Bank to transfer to">
             {accounts.map((a) => (
               <button
                 key={a.id}
@@ -93,7 +98,7 @@ export function DepositForm({
                 role="radio"
                 aria-checked={a.id === accountId}
                 onClick={() => setAccountId(a.id)}
-                className={cn("flex-1 rounded-xl border px-3 py-2 text-sm font-semibold", a.id === accountId ? "border-primary bg-brand-soft text-primary" : "bg-card")}
+                className={cn("h-12 flex-1 rounded-xl border px-3 text-sm font-semibold", a.id === accountId ? "border-primary bg-brand-soft text-primary" : "bg-card")}
               >
                 {a.bankName}
               </button>
@@ -101,37 +106,45 @@ export function DepositForm({
           </div>
         )}
         {account ? (
-          <div className="space-y-2 rounded-2xl border bg-surface p-4 text-sm">
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Bank</span>
-              <span className="font-semibold">{account.bankName}</span>
-            </div>
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Account name</span>
-              <span className="text-right font-semibold">{account.accountName}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">Account number</span>
-              <span className="flex items-center gap-1 font-mono font-semibold">
-                {account.accountNumber}
-                <CopyButton value={account.accountNumber} />
+          <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.3_0.07_222)_75%)] p-5 text-white shadow-lift">
+            <div className="flex items-center gap-3">
+              <span className="grid size-11 place-items-center rounded-xl bg-white/15">
+                <Landmark className="size-5" aria-hidden />
               </span>
+              <div>
+                <p className="font-heading text-lg font-bold">{account.bankName}</p>
+                <p className="text-sm text-white/80">{account.accountName}</p>
+              </div>
             </div>
-            {account.instructions && <p className="border-t pt-2 text-xs text-muted-foreground">{account.instructions}</p>}
+            <div className="mt-4 rounded-2xl bg-white/10 p-3">
+              <p className="text-xs font-semibold text-white/70">Account number</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="min-w-0 font-mono text-xl font-bold whitespace-nowrap">{account.accountNumber}</p>
+                <CopyButton value={account.accountNumber} className="h-11 shrink-0 bg-white/15 px-3 text-sm text-white hover:bg-white/25" />
+              </div>
+            </div>
+            <div className="mt-2 rounded-2xl border-2 border-dashed border-amber-300/70 bg-amber-300/10 p-3">
+              <p className="text-xs font-semibold text-amber-200">Reference (add this to your transfer)</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="min-w-0 font-mono text-xl font-bold whitespace-nowrap text-amber-100">{reference}</p>
+                <CopyButton value={reference} className="h-11 shrink-0 bg-amber-300/20 px-3 text-sm text-amber-100 hover:bg-amber-300/30" />
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-white/80">{account.instructions || "Use this reference so we can match your transfer to your account quickly."}</p>
           </div>
         ) : (
           <p className="rounded-xl bg-muted p-3 text-sm">Deposit details are being updated. Please check back shortly or contact support.</p>
         )}
-      </fieldset>
+      </section>
 
-      <fieldset className="space-y-4" disabled={!account || pending}>
-        <legend className="text-sm font-bold">2. Tell us about your transfer</legend>
+      <fieldset className="space-y-4 rounded-3xl border bg-card p-4" disabled={!account || pending}>
+        <legend className="px-1 font-heading text-lg font-bold">Step 2: After you transfer</legend>
         <div className="grid gap-1.5">
-          <Label htmlFor="amount">Amount (RM)</Label>
+          <Label htmlFor="amount">Amount you sent (RM)</Label>
           <Input id="amount" name="amount" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} required className="h-12 text-lg font-semibold" />
           <div className="flex gap-2">
             {QUICK.map((q) => (
-              <button key={q} type="button" onClick={() => setAmount(q)} className="flex-1 rounded-lg border bg-card py-1.5 text-xs font-semibold hover:bg-muted">
+              <button key={q} type="button" onClick={() => setAmount(q)} className="h-11 flex-1 rounded-xl border bg-surface text-sm font-semibold hover:bg-muted">
                 RM{q}
               </button>
             ))}
@@ -142,7 +155,7 @@ export function DepositForm({
         </div>
         {methods.length > 1 && (
           <div className="grid gap-1.5">
-            <Label>Method</Label>
+            <Label>How did you pay?</Label>
             <div className="flex gap-2" role="radiogroup" aria-label="Deposit method">
               {methods.map((m) => (
                 <button
@@ -151,7 +164,7 @@ export function DepositForm({
                   role="radio"
                   aria-checked={m === method}
                   onClick={() => setMethod(m)}
-                  className={cn("flex-1 rounded-xl border px-3 py-2 text-sm font-semibold", m === method ? "border-primary bg-brand-soft text-primary" : "bg-card")}
+                  className={cn("h-12 flex-1 rounded-xl border px-3 text-sm font-semibold", m === method ? "border-primary bg-brand-soft text-primary" : "bg-card")}
                 >
                   {METHOD_LABEL[m] ?? m}
                 </button>
@@ -160,16 +173,12 @@ export function DepositForm({
           </div>
         )}
         <div className="grid gap-1.5">
-          <Label htmlFor="reference">Transfer reference</Label>
-          <Input id="reference" name="reference" placeholder="e.g. MBB20260927123456" required maxLength={80} className="h-11" />
+          <Label htmlFor="payerName">Name on your bank account</Label>
+          <Input id="payerName" name="payerName" defaultValue={defaultName} required maxLength={120} className="h-12" />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="payerName">Sender account name</Label>
-          <Input id="payerName" name="payerName" defaultValue={defaultName} required maxLength={120} className="h-11" />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="proof">Proof of transfer {proofRequired ? "" : "(optional)"}</Label>
-          <label htmlFor="proof" className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed bg-card p-3 text-sm hover:bg-surface">
+          <Label htmlFor="proof">Receipt or screenshot {proofRequired ? "" : "(optional)"}</Label>
+          <label htmlFor="proof" className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-dashed bg-surface p-3 text-sm hover:bg-muted">
             <Upload className="size-5 text-muted-foreground" aria-hidden />
             <span className="flex-1 truncate">{fileName ?? "Upload a screenshot or PDF (max 3MB)"}</span>
           </label>
@@ -191,9 +200,9 @@ export function DepositForm({
 
       <Button size="xl" className="w-full" type="submit" disabled={!account || pending}>
         {pending && <Loader2 className="animate-spin" />}
-        Submit deposit
+        I have transferred, submit
       </Button>
-      <p className="text-center text-xs text-muted-foreground">Deposits are reviewed manually. Only transfer from an account in your own name.</p>
+      <p className="text-center text-sm text-muted-foreground">Our team checks every deposit. Only transfer from a bank account in your own name.</p>
     </form>
   );
 }

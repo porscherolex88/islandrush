@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -39,12 +39,14 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border bg-card p-4">
+      <div className="rounded-2xl border bg-card p-4 shadow-card">
         <div className="flex items-center justify-between">
-          <Label htmlFor="cash">You convert</Label>
-          <span className="text-xs text-muted-foreground tabular">Cash: {formatMYR(cash)}</span>
+          <Label htmlFor="cash" className="text-base font-semibold">
+            How much Cash?
+          </Label>
+          <span className="text-sm text-muted-foreground tabular">Available: {formatMYR(cash)}</span>
         </div>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-2 rounded-xl bg-surface px-3">
           <span className="font-heading text-2xl font-bold text-muted-foreground">RM</span>
           <Input
             id="cash"
@@ -52,46 +54,66 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-            className="h-12 border-0 px-0 font-heading text-3xl font-bold shadow-none focus-visible:ring-0"
+            className="h-14 border-0 bg-transparent px-0 font-heading text-3xl font-bold shadow-none focus-visible:ring-0"
             aria-invalid={over}
           />
         </div>
-        <div className="mt-2 flex gap-2">
+        <div className="mt-3 flex gap-2">
           {[25n, 50n, 100n].map((p) => (
-            <button key={p.toString()} type="button" onClick={() => pctOf(p)} className="flex-1 rounded-lg border bg-surface py-1.5 text-xs font-semibold hover:bg-muted" disabled={cashMinor === 0n}>
-              {p === 100n ? "Max" : `${p}%`}
+            <button key={p.toString()} type="button" onClick={() => pctOf(p)} className="h-12 flex-1 rounded-xl border bg-card text-sm font-semibold hover:bg-muted" disabled={cashMinor === 0n}>
+              {p === 100n ? "All" : `${p}%`}
             </button>
           ))}
         </div>
-        {over && <p className="mt-2 text-xs font-medium text-destructive">That is more than your Cash balance.</p>}
+        {over && <p className="mt-2 text-sm font-medium text-destructive">That is more than your Cash balance.</p>}
       </div>
-      <div className="-my-2 flex justify-center">
-        <span className="grid size-9 place-items-center rounded-full border bg-background shadow-card">
-          <ArrowDown className="size-4" aria-hidden />
-        </span>
+
+      <div className="rounded-2xl border-2 border-gold/40 bg-gold-soft/60 p-4" aria-live="polite">
+        <p className="text-sm font-bold text-gold-foreground">Summary</p>
+        {minor > 0n ? (
+          <dl className="mt-2 space-y-2 text-sm">
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">You are converting</dt>
+              <dd className="font-semibold tabular">{formatMYR(minor)} Cash</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">You will receive</dt>
+              <dd className="font-heading text-xl font-extrabold tabular">{formatCredits(credits)} Credits</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">Rate</dt>
+              <dd className="tabular">
+                {formatMYR(rateCash)} = {formatCredits(rateCredits)} Credits
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">Cash left after</dt>
+              <dd className="tabular">{formatMYR(over ? 0n : cashMinor - minor)}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Enter an amount to see how many Credits you will get. Rate: {formatMYR(rateCash)} = {formatCredits(rateCredits)} Credits.
+          </p>
+        )}
       </div>
-      <div className="rounded-2xl bg-gold-soft p-4">
-        <p className="text-sm font-medium text-gold-foreground">You receive</p>
-        <p className="font-heading text-3xl font-bold tabular" aria-live="polite">
-          {formatCredits(credits)} <span className="text-lg">Credits</span>
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Rate: {formatMYR(rateCash)} = {formatCredits(rateCredits)} Credits
-        </p>
-      </div>
+
       <ConfirmDialog
         trigger={
-          <Button size="xl" className="w-full" disabled={!valid || pending}>
+          <Button size="xl" variant="gold" className="w-full" disabled={!valid || pending}>
             {pending && <Loader2 className="animate-spin" />}
-            Convert
+            {valid ? `Convert ${formatMYR(minor)} → ${formatCredits(credits)} Credits` : "Convert"}
           </Button>
         }
         title="Convert Cash to Credits?"
-        description={`${formatMYR(minor)} from your Cash wallet will become ${formatCredits(credits)} Credits. Credits are used for games and can't be converted back to Cash.`}
-        confirmLabel="Convert now"
+        description={`${formatMYR(minor)} from your Cash will become ${formatCredits(credits)} Credits. Credits are used to play and cannot be converted back to Cash.`}
+        confirmLabel="Yes, convert"
         onConfirm={() => run({ cashAmount: toDecimal(minor), idempotencyKey: keyRef.current })}
       />
-      <p className="text-center text-xs text-muted-foreground">Credits are for play only. Cash rewards you win go to Pending Rewards, then Withdrawable.</p>
+      <p className="flex gap-2 rounded-xl bg-surface p-3 text-sm text-muted-foreground">
+        <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+        Credits cannot be converted back to Cash. Cash rewards you win go to Pending, then Withdrawable.
+      </p>
     </div>
   );
 }

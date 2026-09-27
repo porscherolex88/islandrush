@@ -1,3 +1,4 @@
+import { Wrench } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppShell } from "@/components/app/app-shell";
@@ -20,9 +21,7 @@ export default async function UserAppLayout({ children }: LayoutProps<"/app">) {
     return (
       <div className="grid min-h-dvh place-items-center bg-surface p-6 text-center">
         <div className="max-w-sm space-y-3">
-          <div className="text-5xl" aria-hidden>
-            🛠️
-          </div>
+          <Wrench className="mx-auto size-12 text-primary" aria-hidden />
           <h1 className="text-2xl font-bold">Back shortly</h1>
           <p className="text-muted-foreground">{maintenance.message}</p>
           <p className="text-sm text-muted-foreground">Your balances and progress are safe.</p>
@@ -52,7 +51,7 @@ export default async function UserAppLayout({ children }: LayoutProps<"/app">) {
   }
 
   return (
-    <AppShell credits={balances.CREDITS} unread={unread} banner={banner}>
+    <AppShell credits={balances.CREDITS} withdrawable={balances.WITHDRAWABLE} unread={unread} banner={banner}>
       {children}
     </AppShell>
   );

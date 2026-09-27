@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -67,13 +68,12 @@ export function CtaBand({ title = "Your island is waiting", description = "Creat
   return (
     <section className="py-14 sm:py-20">
       <Container>
-        <div className="relative overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,oklch(0.5_0.22_285),oklch(0.36_0.17_295))] px-6 py-12 text-center text-white sm:px-12">
-          <div aria-hidden className="pointer-events-none absolute -top-10 -right-6 text-[9rem] opacity-15">
-            🎁
-          </div>
-          <h2 className="text-3xl font-bold sm:text-4xl">{title}</h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/80">{description}</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className="relative overflow-hidden rounded-[2rem] px-6 py-12 text-center text-white sm:px-12">
+          <Image src="/illustrations/island-map.webp" alt="" fill sizes="(min-width: 1024px) 1100px, 100vw" className="object-cover" />
+          <div aria-hidden className="absolute inset-0 bg-[oklch(0.25_0.06_222/0.78)]" />
+          <h2 className="relative text-3xl font-bold sm:text-4xl">{title}</h2>
+          <p className="relative mx-auto mt-3 max-w-xl text-white/85">{description}</p>
+          <div className="relative mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="xl" variant="gold">
               <Link href="/register">Get started free</Link>
             </Button>

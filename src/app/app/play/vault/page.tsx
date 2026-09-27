@@ -1,3 +1,4 @@
+import { KeyRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, Section } from "@/components/app/mobile-header";
@@ -26,18 +27,18 @@ export default async function VaultPage() {
       ready: v.ready,
       progress: v.progress,
       requirements: v.requirements.map((r) => ({ id: r.id, label: r.label, icon: r.icon, current: r.current, required: r.required, met: r.met, consume: r.consume })),
-      prizes: v.rewardPoolId ? (await poolOdds(v.rewardPoolId)).map((o) => ({ id: o.id, label: o.label, icon: o.icon })) : [],
+      prizes: v.rewardPoolId ? (await poolOdds(v.rewardPoolId)).map((o) => ({ id: o.id, label: o.label, icon: o.icon, rarity: o.rarity })) : [],
     })),
   );
 
   return (
     <div>
-      <PageHeader title="Vault" subtitle="Gather keys, seals and relics from the map and boxes" back="/app/play" />
+      <PageHeader title="Vault" subtitle="Gather keys, seal fragments and treasures to open it" back="/app/play" />
       <Section>
         {!enabled ? (
-          <EmptyState icon="🏛️" title="The Vault is closed for maintenance" description="Your keys and fragments are safe in your inventory." />
+          <EmptyState icon={<KeyRound className="size-10 text-primary" />} title="The Vault is closed for maintenance" description="Your keys and fragments are safe in your inventory." />
         ) : views.length === 0 ? (
-          <EmptyState icon="🏛️" title="No Vaults yet" description="A Vault will appear here soon." />
+          <EmptyState icon={<KeyRound className="size-10 text-primary" />} title="No Vaults yet" description="A Vault will appear here soon." />
         ) : (
           <div className="space-y-4">
             {views.map((v) => (
@@ -46,7 +47,7 @@ export default async function VaultPage() {
           </div>
         )}
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Find Vault Keys in Mystery Boxes and Seal Fragments on the{" "}
+          Find Vault Keys in the Mystery Box and Seal Fragments on the{" "}
           <Link href="/app/play/map" className="font-semibold text-primary underline">
             Mystery Map
           </Link>

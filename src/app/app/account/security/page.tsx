@@ -33,7 +33,9 @@ export default async function SecurityPage() {
         </Panel>
       </Section>
       <Section title="Signed-in devices">
-        {sessions.length ? <SessionList sessions={sessions} /> : <p className="text-sm text-muted-foreground">No active sessions found.</p>}
+        <div id="sessions" className="scroll-mt-20">
+          {sessions.length ? <SessionList sessions={sessions} /> : <p className="text-sm text-muted-foreground">No active sessions found.</p>}
+        </div>
       </Section>
       <Section>
         <p className="flex gap-2 rounded-xl bg-surface p-3 text-xs text-muted-foreground">

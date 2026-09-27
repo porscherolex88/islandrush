@@ -1,5 +1,6 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Landmark } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
 import { CancelWithdrawalButton, WithdrawForm } from "@/components/app/withdraw-form";
 import { maskAccount } from "@/lib/format";
@@ -33,15 +34,18 @@ export default async function WithdrawPage() {
         <Panel className="bg-success-soft/60">
           <p className="text-sm text-muted-foreground">Withdrawable balance</p>
           <p className="font-heading text-3xl font-bold tabular">{formatMYR(elig.available)}</p>
+          <Link href="/app/wallet#deposit-level" className="mt-1 inline-flex h-11 items-center text-sm font-semibold text-primary">
+            Your daily limit depends on your Deposit Level
+          </Link>
         </Panel>
       </Section>
       <Section>
         {!enabled ? (
-          <EmptyState icon="🏦" title="Withdrawals are paused" description="We're doing some maintenance. Your balance is safe." />
+          <EmptyState icon={<Landmark className="size-8 text-primary" />} title="Withdrawals are paused" description="We are doing some maintenance. Your balance is safe." />
         ) : !elig.eligible ? (
           <div className="space-y-2 rounded-2xl border border-warning/40 bg-warning-soft p-4">
             <p className="flex items-center gap-2 font-semibold">
-              <AlertCircle className="size-4 text-warning" aria-hidden /> You can&apos;t withdraw yet
+              <AlertCircle className="size-4 text-warning" aria-hidden /> You cannot withdraw yet
             </p>
             <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
               {elig.reasons.map((r) => (
@@ -51,7 +55,7 @@ export default async function WithdrawPage() {
           </div>
         ) : (
           <>
-            {elig.requiresReview && <p className="mb-3 rounded-xl bg-brand-soft p-3 text-xs text-primary">This withdrawal will get an extra security review before payout.</p>}
+            {elig.requiresReview && <p className="mb-3 rounded-xl bg-brand-soft p-3 text-sm text-primary">This withdrawal will get an extra security review before payout.</p>}
             <WithdrawForm
               accounts={accounts.map((a) => ({ id: a.id, bankName: a.bankName, accountName: a.accountName, accountNumber: a.accountNumber, isDefault: a.isDefault }))}
               available={toDecimal(elig.available)}

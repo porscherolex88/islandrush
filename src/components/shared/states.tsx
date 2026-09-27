@@ -1,9 +1,9 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Compass, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function EmptyState({
-  icon = "🧭",
+  icon = <Compass className="size-8 text-primary" />,
   title,
   description,
   action,
@@ -17,7 +17,7 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("flex flex-col items-center gap-2 rounded-2xl border border-dashed bg-surface/60 px-6 py-10 text-center", className)}>
-      <div className="text-4xl" aria-hidden>
+      <div className="grid size-16 place-items-center rounded-full bg-card text-4xl shadow-card" aria-hidden>
         {icon}
       </div>
       <p className="font-heading text-base font-semibold">{title}</p>

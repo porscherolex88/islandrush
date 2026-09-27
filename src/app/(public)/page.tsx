@@ -1,26 +1,24 @@
 import { BadgeCheck, CalendarCheck, Gift, Lock, ShieldCheck, Sparkles, Users, Wallet } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Container, CtaBand, FeatureCard, SectionBlock, Steps } from "@/components/public/marketing";
 import { Button } from "@/components/ui/button";
 
 const GAMES = [
   {
-    emoji: "🎁",
+    art: "/illustrations/box-hub.webp",
     title: "Mystery Box",
-    body: "Nine boxes, one choice. Pick a box and reveal Credits, collection items, fragments, keys or Cash rewards.",
-    tone: "from-violet-500 to-fuchsia-500",
+    body: "Nine treasure crates, one choice. Pick a crate and discover Credits, collection items, fragments, keys or Cash rewards.",
   },
   {
-    emoji: "🗺️",
+    art: "/illustrations/island-map.webp",
     title: "Mystery Map",
-    body: "Explore Lost Island tile by tile. Unlock new areas and discover Special Areas hidden behind ancient requirements.",
-    tone: "from-emerald-500 to-teal-500",
+    body: "Explore Lost Island spot by spot. Unlock new regions and find the Temple hidden behind ancient requirements.",
   },
   {
-    emoji: "🏛️",
+    art: "/illustrations/vault-door.webp",
     title: "The Vault",
     body: "Gather keys, seal fragments and relics to open vaults filled with the island's rarest rewards.",
-    tone: "from-amber-500 to-orange-500",
   },
 ];
 
@@ -31,13 +29,13 @@ export default function LandingPage() {
         <Container className="grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-2">
           <div>
             <p className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-sm font-semibold text-primary">
-              <Sparkles className="size-4" aria-hidden /> Something new every day
+              <Sparkles className="size-4" aria-hidden /> A reward adventure on Lost Island
             </p>
             <h1 className="mt-5 text-5xl leading-[1.05] font-bold tracking-tight sm:text-6xl">
-              Open. Explore. <span className="text-primary">Unlock.</span>
+              Explore. Discover. Collect. <span className="text-primary">Unlock.</span>
             </h1>
             <p className="mt-5 max-w-lg text-lg text-muted-foreground">
-              LootBox is a rewards adventure on Lost Island. Open Mystery Boxes, explore the map, complete collections and unlock the Ancient Vault.
+              Explore the island map, discover hidden treasures, fill your collection book and unlock the Ancient Vault. Something new every day.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="xl">
@@ -50,24 +48,17 @@ export default function LandingPage() {
             <p className="mt-4 text-sm text-muted-foreground">Free daily spin and check-in. 18+ only.</p>
           </div>
           <div className="relative mx-auto w-full max-w-sm">
-            <div className="rounded-[2.5rem] border-8 border-foreground/90 bg-background p-4 shadow-lift">
-              <div className="rounded-3xl bg-[linear-gradient(135deg,oklch(0.5_0.22_285),oklch(0.38_0.17_295))] p-4 text-white">
-                <p className="text-xs text-white/70">Good morning, explorer</p>
-                <p className="font-heading text-xl font-bold">Day 7 streak 🔥</p>
-                <div className="mt-3 h-2 rounded-full bg-white/20">
-                  <div className="h-2 w-2/3 rounded-full bg-gold" />
+            <div className="relative aspect-[3/4] overflow-hidden rounded-[2.5rem] border-8 border-foreground/90 shadow-lift">
+              <Image src="/illustrations/island-map.webp" alt="Illustrated map of Lost Island" fill priority sizes="384px" className="object-cover" />
+              <div aria-hidden className="art-scrim-b absolute inset-0" />
+              <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/90 p-3 backdrop-blur">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Lost Island Relics</span>
+                  <span className="text-sm font-bold text-gold-foreground">6 / 10</span>
                 </div>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {["🎁", "❔", "🎁", "❔", "✨", "❔", "🎁", "❔", "🎁"].map((e, i) => (
-                  <div key={i} className="grid aspect-square place-items-center rounded-2xl bg-brand-soft text-2xl">
-                    {e}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex items-center justify-between rounded-2xl bg-gold-soft p-3">
-                <span className="text-sm font-semibold">Ancient Map Fragment</span>
-                <span className="text-sm font-bold text-gold-foreground">3 / 5</span>
+                <div className="mt-2 h-2 rounded-full bg-muted">
+                  <div className="h-2 w-3/5 rounded-full bg-amber-500" />
+                </div>
               </div>
             </div>
           </div>
@@ -78,8 +69,8 @@ export default function LandingPage() {
         <div className="grid gap-5 md:grid-cols-3">
           {GAMES.map((g) => (
             <div key={g.title} className="overflow-hidden rounded-3xl border bg-card shadow-card">
-              <div className={`grid h-36 place-items-center bg-gradient-to-br ${g.tone} text-6xl`}>
-                <span aria-hidden>{g.emoji}</span>
+              <div className="relative h-44">
+                <Image src={g.art} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold">{g.title}</h3>

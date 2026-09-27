@@ -1,9 +1,11 @@
+import { Compass } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { CheckInCard, MissionBonusButton, MysteryEventCard, SpinWheel } from "@/components/app/daily-actions";
+import { ART } from "@/components/app/art";
+import { CheckInButton, MissionBonusButton, MysteryEventCard, SpinWheel } from "@/components/app/daily-actions";
 import { MissionCard, StreakCard, TomorrowTeaser } from "@/components/app/daily-cards";
 import { PageHeader, Panel, Section } from "@/components/app/mobile-header";
-import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
 import { getConfig } from "@/server/services/config";
 import { getDailyPlan, getDailyState } from "@/server/services/daily";
@@ -21,28 +23,35 @@ export default async function DailyPage() {
 
   return (
     <div>
-      <PageHeader title="Daily" subtitle="Fresh rewards every day. Resets at midnight." back="/app" />
+      <PageHeader title="Daily" subtitle="Check in, spin, finish missions, find the mystery, explore." />
 
       <Section>
-        <StreakCard current={state.streak.current} longest={state.streak.longest} milestones={state.milestones} nextMilestone={state.nextMilestone} />
+        <StreakCard
+          current={state.streak.current}
+          longest={state.streak.longest}
+          milestones={state.milestones}
+          nextMilestone={state.nextMilestone}
+          action={<CheckInButton claimed={state.loginClaimed} streak={state.streak.current} />}
+        />
       </Section>
 
-      <Section>
-        <CheckInCard claimed={state.loginClaimed} streak={state.streak.current} />
-      </Section>
-
-      <Section title="Daily Spin" className="scroll-mt-16" >
+      <Section title="Daily Spin" className="scroll-mt-16">
         <div id="spin" />
-        <Panel>
+        <Panel className="rounded-3xl">
           <SpinWheel entries={odds} spun={state.spin} available={state.spinAvailable} boosted={boosted} />
-          {!boosted && defaults.streakSpinPoolId && (
-            <p className="mt-3 text-center text-xs text-muted-foreground">Reach a {defaults.streakSpinMinDays}-day streak to unlock the boosted Streak Spin.</p>
-          )}
+          {!boosted && defaults.streakSpinPoolId && <p className="mt-2 text-center text-xs text-muted-foreground">Reach a {defaults.streakSpinMinDays}-day streak to unlock the boosted Streak Spin.</p>}
         </Panel>
       </Section>
 
-      <Section title={`Daily Missions · ${state.missionsDone}/${state.missions.length}`}>
-        <div id="missions" className="space-y-2">
+      <Section
+        title="Today's Missions"
+        action={
+          <span className="rounded-full bg-brand-soft px-3 py-1 text-sm font-bold text-primary tabular">
+            {state.missionsDone} / {state.missions.length} completed
+          </span>
+        }
+      >
+        <div id="missions" className="scroll-mt-16 space-y-2">
           {state.missions.map((m) => (
             <MissionCard key={m.id} mission={m} />
           ))}
@@ -50,27 +59,26 @@ export default async function DailyPage() {
         </div>
       </Section>
 
-      <Section title="Daily Mystery Event">
-        <div id="event">
+      <Section title="Today's Mystery">
+        <div id="event" className="scroll-mt-16">
           <MysteryEventCard event={state.event} claim={state.eventClaim} />
         </div>
       </Section>
 
-      <Section title="Daily Discoveries">
-        <Panel className="flex items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-2xl bg-emerald-50 text-3xl" aria-hidden>
-            🧭
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold">
-              {state.freeDiscoveriesLeft} of {state.freeDiscoveries} free discoveries left
-            </p>
-            <p className="text-xs text-muted-foreground">Uncover Mystery Map tiles without spending Credits.</p>
-          </div>
-          <Button asChild size="lg" variant="secondary">
-            <Link href="/app/play/map">Explore</Link>
-          </Button>
-        </Panel>
+      <Section title="Free Discoveries">
+        <Link href="/app/play/map" className="group relative isolate flex min-h-28 items-center gap-4 overflow-hidden rounded-3xl p-4 text-white shadow-card">
+          <Image src={ART.island} alt="" fill sizes="(max-width: 430px) 100vw, 430px" className="-z-10 object-cover object-[center_75%]" />
+          <span aria-hidden className="art-scrim absolute inset-0 -z-10" />
+          <span className="flex-1">
+            <span className="block font-heading text-3xl font-extrabold tabular">
+              {state.freeDiscoveriesLeft} / {state.freeDiscoveries}
+            </span>
+            <span className="text-sm text-white/85">free map discoveries remaining today</span>
+          </span>
+          <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-bold text-foreground">
+            <Compass className="size-4" aria-hidden /> Explore
+          </span>
+        </Link>
       </Section>
 
       <Section>

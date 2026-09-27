@@ -1,4 +1,8 @@
+import { Landmark, Lock } from "lucide-react";
 import type { Metadata } from "next";
+import { count, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { deposits as depositsTable } from "@/db/schema";
 import { DepositForm } from "@/components/app/deposit-form";
 import { PageHeader, Section } from "@/components/app/mobile-header";
 import { EmptyState } from "@/components/shared/states";
@@ -13,16 +17,23 @@ export const metadata: Metadata = { title: "Deposit" };
 
 export default async function DepositPage() {
   const user = await requireUser();
-  const [accounts, cfg, deposits, enabled] = await Promise.all([listPaymentAccounts(), getConfig("deposit"), userDeposits(user.id, 10), isFeatureEnabled("deposits")]);
+  const [accounts, cfg, deposits, enabled, [{ n }]] = await Promise.all([
+    listPaymentAccounts(),
+    getConfig("deposit"),
+    userDeposits(user.id, 10),
+    isFeatureEnabled("deposits"),
+    db.select({ n: count() }).from(depositsTable).where(eq(depositsTable.userId, user.id)),
+  ]);
+  const reference = `LB-${user.referralCode}-${String(n + 1).padStart(3, "0")}`;
 
   return (
     <div>
-      <PageHeader title="Deposit" subtitle="Add cash to your LootBox wallet by bank transfer" back="/app/wallet" />
+      <PageHeader title="Deposit" subtitle="Add money by bank transfer" back="/app/wallet" />
       <Section>
         {!enabled ? (
-          <EmptyState icon="🏦" title="Deposits are paused" description="We're doing some maintenance. Please try again later." />
+          <EmptyState icon={<Landmark className="size-8 text-primary" />} title="Deposits are paused" description="We are doing some maintenance. Please try again later." />
         ) : user.status !== "ACTIVE" ? (
-          <EmptyState icon="🔒" title="Deposits unavailable" description="Your account is suspended. Please contact support." />
+          <EmptyState icon={<Lock className="size-8 text-primary" />} title="Deposits unavailable" description="Your account is suspended. Please contact support." />
         ) : (
           <DepositForm
             accounts={accounts.map((a) => ({ id: a.id, bankName: a.bankName, accountName: a.accountName, accountNumber: a.accountNumber, instructions: a.instructions }))}
@@ -31,6 +42,7 @@ export default async function DepositPage() {
             max={cfg.max}
             proofRequired={cfg.proofRequired}
             defaultName={user.name}
+            reference={reference}
           />
         )}
       </Section>
@@ -38,7 +50,7 @@ export default async function DepositPage() {
         <Section title="Your deposits">
           <ul className="divide-y rounded-2xl border bg-card">
             {deposits.map((d) => (
-              <li key={d.id} className="flex items-center justify-between gap-3 p-3 text-sm">
+              <li key={d.id} className="flex items-center justify-between gap-3 p-3.5 text-sm">
                 <div className="min-w-0">
                   <p className="font-semibold tabular">{formatMYR(d.amount)}</p>
                   <p className="truncate text-xs text-muted-foreground">

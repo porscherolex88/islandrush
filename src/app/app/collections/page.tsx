@@ -1,3 +1,4 @@
+import { BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 import { CollectionCard, InventoryItem } from "@/components/app/collection";
 import { PageHeader, Section } from "@/components/app/mobile-header";
@@ -14,14 +15,14 @@ export default async function CollectionsPage() {
 
   return (
     <div>
-      <PageHeader title="Collections" subtitle="Complete sets to earn completion rewards" back="/app/progress" />
+      <PageHeader title="Collections" subtitle="Your collection book. Find every piece to earn completion rewards." back="/app/play" />
       <Section>
         {collections.length === 0 ? (
-          <EmptyState icon="🏺" title="No collections yet" />
+          <EmptyState icon={<BookOpen className="size-10 text-primary" />} title="Your collection book is empty" description="Collections appear here as new adventures open." />
         ) : (
           <div className="space-y-3">
             {collections.map((c) => (
-              <CollectionCard key={c.id} {...c} completed={Boolean(c.completedAt)} />
+              <CollectionCard key={c.id} slug={c.slug} name={c.name} description={c.description} icon={c.icon} owned={c.owned} total={c.total} completed={Boolean(c.completedAt)} items={c.items} unlocks={c.unlocks} />
             ))}
           </div>
         )}
@@ -39,7 +40,7 @@ export default async function CollectionsPage() {
         )}
       </Section>
 
-      <Section title="Special Items and Keys">
+      <Section title="Keys and special items">
         {specials.length === 0 ? (
           <p className="text-sm text-muted-foreground">No special items yet.</p>
         ) : (
@@ -49,7 +50,7 @@ export default async function CollectionsPage() {
             ))}
             {ownedSpecials.length > 0 && ownedSpecials.length < specials.length && (
               <details className="rounded-2xl border bg-card">
-                <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Still to find ({specials.length - ownedSpecials.length})</summary>
+                <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold">Still to find ({specials.length - ownedSpecials.length})</summary>
                 <div className="space-y-2 p-3 pt-0">
                   {specials
                     .filter((i) => !ownedSpecials.includes(i))
