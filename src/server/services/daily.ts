@@ -8,7 +8,6 @@ import {
   missionBonusClaims,
   missionDefinitions,
   missionProgress,
-  profiles,
   streakMilestoneClaims,
   streakMilestones,
   tileDiscoveries,
@@ -276,7 +275,7 @@ export async function getDailyState(userId: string) {
   const day = await today();
   const plan = await getDailyPlan(day);
   const tomorrow = await getDailyPlan(addDays(day, 1));
-  const [[login], [spin], progress, [bonus], [eventClaim], [streak], milestones, usedFree, [profile]] = await Promise.all([
+  const [[login], [spin], progress, [bonus], [eventClaim], [streak], milestones, usedFree] = await Promise.all([
     db.select().from(dailyLogins).where(and(eq(dailyLogins.userId, userId), eq(dailyLogins.day, day))).limit(1),
     db.select().from(dailySpins).where(and(eq(dailySpins.userId, userId), eq(dailySpins.day, day))).limit(1),
     db.select().from(missionProgress).where(and(eq(missionProgress.userId, userId), eq(missionProgress.day, day))),
@@ -285,9 +284,7 @@ export async function getDailyState(userId: string) {
     db.select().from(userStreaks).where(eq(userStreaks.userId, userId)).limit(1),
     db.select().from(streakMilestones).where(eq(streakMilestones.active, true)).orderBy(asc(streakMilestones.days)),
     freeDiscoveriesUsed(db, userId, day),
-    db.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, userId)).limit(1),
   ]);
-  void profile;
   const { streakGraceDays } = await getConfig("daily_defaults");
   const gap = streak?.lastClaimDay ? daysBetween(streak.lastClaimDay, day) : Infinity;
   const streakAlive = gap <= 1 + streakGraceDays;

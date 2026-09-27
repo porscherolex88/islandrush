@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { mysteryBoxes, mysteryBoxPlays, rewardPoolEntries } from "@/db/schema";
+import { items, mysteryBoxes, mysteryBoxPlays, rewardPoolEntries } from "@/db/schema";
 import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
 import { checkAchievements } from "./achievements";
 import { getConfig } from "./config";
@@ -162,14 +162,28 @@ export async function listBoxes() {
 
 /** Published odds for transparency: each entry's share of the total active weight. */
 export async function boxOdds(poolId: string) {
-  const entries = await db
-    .select()
+  const rows = await db
+    .select({ e: rewardPoolEntries, itemIcon: items.icon, itemRarity: items.rarity })
     .from(rewardPoolEntries)
+    .leftJoin(items, eq(items.id, rewardPoolEntries.itemId))
     .where(and(eq(rewardPoolEntries.poolId, poolId), eq(rewardPoolEntries.active, true)))
     .orderBy(rewardPoolEntries.sortOrder);
-  const total = entries.reduce((s, e) => s + e.weight, 0) || 1;
-  return entries.map((e) => ({ id: e.id, label: e.label, rarity: e.rarity, type: e.rewardType, pct: (e.weight / total) * 100 }));
+  const available = rows.filter(({ e }) => e.weight > 0 && (e.maxAwards === null || e.awardedCount < e.maxAwards));
+  const total = available.reduce((s, { e }) => s + e.weight, 0) || 1;
+  return available.map(({ e, itemIcon, itemRarity }) => ({
+    id: e.id,
+    label: e.label,
+    rarity: itemRarity ?? e.rarity,
+    type: e.rewardType,
+    icon: itemIcon ?? e.reveal?.icon ?? TYPE_ICON[e.rewardType],
+    pct: (e.weight / total) * 100,
+  }));
 }
+
+export const poolOdds = boxOdds;
+export type PoolOdds = Awaited<ReturnType<typeof boxOdds>>;
+
+const TYPE_ICON: Record<string, string> = { CREDITS: "🪙", CASH: "💵", XP: "⭐", ITEM: "🎁", AREA_UNLOCK: "🗺️" };
 
 export async function playHistory(userId: string, limit = 30, offset = 0) {
   return db
