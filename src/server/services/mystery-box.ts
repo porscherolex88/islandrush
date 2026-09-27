@@ -1,0 +1,191 @@
+import { randomUUID } from "node:crypto";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { mysteryBoxes, mysteryBoxPlays, rewardPoolEntries } from "@/db/schema";
+import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
+import { checkAchievements } from "./achievements";
+import { getConfig } from "./config";
+import { today, trackMission } from "./daily";
+import { assertWithinSpendLimit, lockPlayer } from "./guards";
+import { getBalances, postTransaction } from "./ledger";
+import { grantReward, pickPoolEntry, type RewardResult } from "./rewards";
+import { awardXp } from "./xp";
+
+export type BoxPlayResult = {
+  playId: string;
+  boxId: string;
+  selectedIndex: number;
+  creditsSpent: number;
+  reward: RewardResult;
+  xp: number;
+  creditsBalance: string;
+  replayed: boolean;
+};
+
+async function existingPlay(userId: string, idempotencyKey: string): Promise<BoxPlayResult | null> {
+  const [play] = await db
+    .select()
+    .from(mysteryBoxPlays)
+    .where(and(eq(mysteryBoxPlays.userId, userId), eq(mysteryBoxPlays.idempotencyKey, idempotencyKey)))
+    .limit(1);
+  if (!play) return null;
+  const balances = await getBalances(userId);
+  return {
+    playId: play.id,
+    boxId: play.boxId,
+    selectedIndex: play.selectedIndex,
+    creditsSpent: play.creditsSpent,
+    reward: play.reward as RewardResult,
+    xp: play.xpAwarded,
+    creditsBalance: balances.CREDITS.toString(),
+    replayed: true,
+  };
+}
+
+/**
+ * Opens a Mystery Box. The client only chooses which of the nine boxes to open;
+ * the reward is determined here on the server after Credits are atomically deducted.
+ */
+export async function playMysteryBox(
+  userId: string,
+  input: { boxId: string; selectedIndex: number; idempotencyKey: string },
+): Promise<BoxPlayResult> {
+  if (!Number.isInteger(input.selectedIndex) || input.selectedIndex < 0 || input.selectedIndex > 8) {
+    throw new AppError("Choose one of the nine boxes", "INVALID_SELECTION");
+  }
+  if (!input.idempotencyKey || input.idempotencyKey.length > 100) throw new AppError("Invalid request", "INVALID_KEY");
+
+  const prior = await existingPlay(userId, input.idempotencyKey);
+  if (prior) return prior;
+
+  try {
+    return await db.transaction(async (tx) => {
+      const profile = await lockPlayer(tx, userId);
+      const [box] = await tx.select().from(mysteryBoxes).where(eq(mysteryBoxes.id, input.boxId)).limit(1);
+      if (!box || box.status !== "PUBLISHED") throw new NotFoundError("This Mystery Box is not available");
+
+      const day = await today(tx);
+      const limits = await getConfig("limits", tx);
+      const [{ todayCount }] = await tx
+        .select({ todayCount: sql<number>`count(*)::int` })
+        .from(mysteryBoxPlays)
+        .where(and(eq(mysteryBoxPlays.userId, userId), eq(mysteryBoxPlays.appDay, day)));
+      if (limits.maxBoxOpensPerDay && todayCount >= limits.maxBoxOpensPerDay) {
+        throw new AppError("You've reached today's Mystery Box limit", "DAILY_LIMIT");
+      }
+      if (box.dailyLimitPerUser) {
+        const [{ n }] = await tx
+          .select({ n: sql<number>`count(*)::int` })
+          .from(mysteryBoxPlays)
+          .where(and(eq(mysteryBoxPlays.userId, userId), eq(mysteryBoxPlays.boxId, box.id), eq(mysteryBoxPlays.appDay, day)));
+        if (n >= box.dailyLimitPerUser) throw new AppError(`You can open ${box.name} ${box.dailyLimitPerUser} times per day`, "BOX_DAILY_LIMIT");
+      }
+      if (box.totalLimit) {
+        const [{ n }] = await tx
+          .select({ n: sql<number>`count(*)::int` })
+          .from(mysteryBoxPlays)
+          .where(eq(mysteryBoxPlays.boxId, box.id));
+        if (n >= box.totalLimit) throw new AppError("This Mystery Box has sold out", "BOX_SOLD_OUT");
+      }
+
+      const price = BigInt(box.priceCredits);
+      await assertWithinSpendLimit(tx, profile, price);
+
+      const playId = randomUUID();
+      const spend = await postTransaction(tx, {
+        type: "GAME_SPEND",
+        userId,
+        idempotencyKey: `box-spend:${userId}:${input.idempotencyKey}`,
+        description: `Mystery Box: ${box.name}`,
+        sourceType: "mystery_box_play",
+        sourceId: playId,
+        metadata: { boxId: box.id, selectedIndex: input.selectedIndex },
+        entries: [
+          { userId, account: "CREDITS", amount: -price },
+          { account: "SYS_GAME_REVENUE", currency: "CREDITS", amount: price },
+        ],
+      });
+
+      const entry = await pickPoolEntry(tx, box.rewardPoolId);
+      const reward = await grantReward(tx, userId, entry, {
+        sourceType: "mystery_box_play",
+        sourceId: playId,
+        key: `box:${userId}:${input.idempotencyKey}`,
+      });
+
+      await tx.insert(mysteryBoxPlays).values({
+        id: playId,
+        userId,
+        boxId: box.id,
+        selectedIndex: input.selectedIndex,
+        creditsSpent: box.priceCredits,
+        poolEntryId: entry.id,
+        reward,
+        idempotencyKey: input.idempotencyKey,
+        ledgerTransactionId: spend.transactionId,
+        appDay: day,
+      });
+
+      const xp = await awardXp(tx, userId, "BOX_OPEN", {
+        key: `xp:box:${playId}`,
+        sourceId: playId,
+        amount: box.xpReward ?? undefined,
+      });
+      if (xp) await tx.update(mysteryBoxPlays).set({ xpAwarded: xp }).where(eq(mysteryBoxPlays.id, playId));
+      await trackMission(tx, userId, "OPEN_BOX");
+      await checkAchievements(tx, userId, "BOXES_OPENED");
+
+      const balances = await getBalances(userId, tx);
+      return {
+        playId,
+        boxId: box.id,
+        selectedIndex: input.selectedIndex,
+        creditsSpent: box.priceCredits,
+        reward,
+        xp,
+        creditsBalance: balances.CREDITS.toString(),
+        replayed: false,
+      };
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      const replay = await existingPlay(userId, input.idempotencyKey);
+      if (replay) return replay;
+    }
+    throw err;
+  }
+}
+
+export async function listBoxes() {
+  return db.select().from(mysteryBoxes).where(eq(mysteryBoxes.status, "PUBLISHED")).orderBy(mysteryBoxes.sortOrder);
+}
+
+/** Published odds for transparency: each entry's share of the total active weight. */
+export async function boxOdds(poolId: string) {
+  const entries = await db
+    .select()
+    .from(rewardPoolEntries)
+    .where(and(eq(rewardPoolEntries.poolId, poolId), eq(rewardPoolEntries.active, true)))
+    .orderBy(rewardPoolEntries.sortOrder);
+  const total = entries.reduce((s, e) => s + e.weight, 0) || 1;
+  return entries.map((e) => ({ id: e.id, label: e.label, rarity: e.rarity, type: e.rewardType, pct: (e.weight / total) * 100 }));
+}
+
+export async function playHistory(userId: string, limit = 30, offset = 0) {
+  return db
+    .select({
+      id: mysteryBoxPlays.id,
+      createdAt: mysteryBoxPlays.createdAt,
+      creditsSpent: mysteryBoxPlays.creditsSpent,
+      reward: mysteryBoxPlays.reward,
+      selectedIndex: mysteryBoxPlays.selectedIndex,
+      xp: mysteryBoxPlays.xpAwarded,
+      boxName: mysteryBoxes.name,
+    })
+    .from(mysteryBoxPlays)
+    .innerJoin(mysteryBoxes, eq(mysteryBoxes.id, mysteryBoxPlays.boxId))
+    .where(eq(mysteryBoxPlays.userId, userId))
+    .orderBy(desc(mysteryBoxPlays.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
