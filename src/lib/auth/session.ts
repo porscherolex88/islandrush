@@ -1,6 +1,9 @@
 import "server-only";
+import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { db } from "@/db";
+import { profiles } from "@/db/schema";
 import { AppError, ForbiddenError, toActionError, type ActionResult } from "@/lib/errors";
 import { isAdminRole, type Permission, type Role } from "@/lib/permissions";
 import { permissionsForRole } from "@/server/services/permissions";
@@ -10,7 +13,8 @@ import { getAuth } from "./server";
 
 export type AuthSession = { user: { id: string; email: string; name: string }; session: { id: string; createdAt: Date | string } };
 
-export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
+/** The real Neon Auth session from cookies, ignoring demo auto-login. */
+export const getRealAuthSession = cache(async (): Promise<AuthSession | null> => {
   try {
     const { data } = await getAuth().getSession();
     if (!data?.user) return null;
@@ -18,6 +22,22 @@ export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
   } catch {
     return null;
   }
+});
+
+/**
+ * Temporary testing mode: when DEMO_AUTO_LOGIN_EMAIL is set, visitors without a session
+ * are treated as that account. Unset the variable to require sign-in again.
+ */
+const getDemoAutoLoginSession = cache(async (): Promise<AuthSession | null> => {
+  const email = process.env.DEMO_AUTO_LOGIN_EMAIL?.trim().toLowerCase();
+  if (!email) return null;
+  const [row] = await db.select({ id: profiles.id, email: profiles.email, name: profiles.name }).from(profiles).where(eq(profiles.email, email)).limit(1);
+  if (!row) return null;
+  return { user: { id: row.id, email: row.email, name: row.name }, session: { id: "demo-auto-login", createdAt: new Date() } };
+});
+
+export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
+  return (await getRealAuthSession()) ?? (await getDemoAutoLoginSession().catch(() => null));
 });
 
 /** Returns the signed-in user's LootBox profile, creating it on first sight. */

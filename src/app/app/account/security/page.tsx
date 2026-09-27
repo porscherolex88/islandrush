@@ -11,7 +11,7 @@ type RawSession = { id: string; token: string; userAgent?: string | null; ipAddr
 
 export default async function SecurityPage() {
   await requireUser();
-  const [current, list] = await Promise.all([getAuthSession(), getAuth().listSessions()]);
+  const [current, list] = await Promise.all([getAuthSession(), getAuth().listSessions().catch(() => ({ data: [] }))]);
   const raw = (Array.isArray(list.data) ? list.data : []) as RawSession[];
   const sessions: SessionView[] = raw
     .map((s) => ({

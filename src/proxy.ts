@@ -18,7 +18,7 @@ export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
   const isProtected = pathname.startsWith("/app") || pathname.startsWith("/admin");
 
-  if (isProtected && !hasSessionCookie(req)) {
+  if (isProtected && !hasSessionCookie(req) && !process.env.DEMO_AUTO_LOGIN_EMAIL) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname)}`;
