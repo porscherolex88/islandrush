@@ -52,7 +52,7 @@ export default async function EconomyPage({ searchParams }: PageProps<"/admin/ec
   ]);
   const perUser = supply.users ? Number(supply.credits) / supply.users : 0;
   const rmPerCredit = Number(conversion.cash) / conversion.credits;
-  const SOURCE_LABEL: Record<string, string> = { mystery_box: "Mystery Box", map_tile: "Map discoveries", tile: "Map discoveries", daily_event: "Mystery events" };
+  const SOURCE_LABEL: Record<string, string> = { mystery_box_play: "Mystery Box", tile_discovery: "Map discoveries", daily_event: "Mystery events" };
 
   return (
     <AdminPage
