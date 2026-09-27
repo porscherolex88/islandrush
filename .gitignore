@@ -40,3 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .agents/
+
+# local scratch and generated agent files
+/.tmp/
+/AGENTS.md
+/CLAUDE.md

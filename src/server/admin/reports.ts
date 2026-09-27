@@ -29,7 +29,8 @@ export const REPORT_GROUPS: { key: ReportGroup; label: string }[] = [
 ];
 
 const day = (col: SQL) => sql`(${col} at time zone 'Asia/Kuala_Lumpur')::date`;
-const days = (r: Range) => sql`generate_series(${r.from}::date, ${r.to}::date, interval '1 day')::date`;
+/** One row per app-day in range, exposed as column `d`. Use as `from ${days(r)}`. */
+const days = (r: Range) => sql`(select gs::date as d from generate_series(${r.from}::date, ${r.to}::date, interval '1 day') gs) days`;
 const statusIs = (col: SQL, status: string | undefined, allowed: readonly string[]) => (status && allowed.includes(status) ? sql`and ${col}::text = ${status}` : sql``);
 
 const DEPOSIT_STATUSES = ["PENDING", "APPROVED", "REJECTED", "REVERSED"] as const;
@@ -128,7 +129,7 @@ export const REPORTS: ReportDef[] = [
         coalesce((select sum(amount) from cash_rewards where ${day(sql`created_at`)} <= d
           and not (status = 'SETTLED' and ${day(sql`settled_at`)} <= d)
           and not (status = 'REVERSED' and ${day(sql`updated_at`)} <= d)), 0) as outstanding
-      from ${days(r)} d order by d`,
+      from ${days(r)} order by d`,
   },
   {
     key: "credit-activity",
@@ -149,7 +150,7 @@ export const REPORTS: ReportDef[] = [
         coalesce((select sum(cash_amount) from conversions where ${day(sql`created_at`)} = d), 0) as cash,
         coalesce((select -sum(e.amount) from ledger_entries e join ledger_transactions t on t.id = e.transaction_id where t.type = 'GAME_SPEND' and e.user_id is not null and ${day(sql`e.created_at`)} = d), 0) as spent,
         coalesce((select sum(e.amount) from ledger_entries e join ledger_transactions t on t.id = e.transaction_id where t.type = 'GAME_REWARD_CREDITS' and e.user_id is not null and ${day(sql`e.created_at`)} = d), 0) as rewarded
-      from ${days(r)} d order by d`,
+      from ${days(r)} order by d`,
   },
   /* ---------------------------------- Users --------------------------------- */
   {
@@ -169,7 +170,7 @@ export const REPORTS: ReportDef[] = [
       select d as day, count(p.id)::int as signups, count(p.referred_by_id)::int as referred,
         count(p.id) filter (where p.total_deposits > 0)::int as depositors,
         coalesce(100.0 * count(p.id) filter (where p.total_deposits > 0) / nullif(count(p.id), 0), 0)::float as conversion
-      from ${days(r)} d left join profiles p on ${day(sql`p.created_at`)} = d and p.role = 'USER'
+      from ${days(r)} left join profiles p on ${day(sql`p.created_at`)} = d and p.role = 'USER'
       group by d order by d`,
   },
   {
@@ -191,7 +192,7 @@ export const REPORTS: ReportDef[] = [
         (select count(*)::int from mystery_box_plays where app_day = d) as boxes,
         (select count(*)::int from tile_discoveries where app_day = d) as tiles,
         (select count(*)::int from login_events where success and ${day(sql`created_at`)} = d) as logins
-      from ${days(r)} d order by d`,
+      from ${days(r)} order by d`,
   },
   {
     key: "verification",
@@ -326,7 +327,7 @@ export const REPORTS: ReportDef[] = [
         (select count(*)::int from mission_bonus_claims where day = d) as bonuses,
         (select count(*)::int from daily_event_claims where day = d) as events,
         (select coalesce(sum(credits_spent), 0) from daily_event_claims where day = d) as event_spent
-      from ${days(r)} d order by d`,
+      from ${days(r)} order by d`,
   },
   /* ------------------------------- Collections ------------------------------ */
   {
@@ -489,7 +490,7 @@ export const REPORTS: ReportDef[] = [
         (select count(*)::int from daily_logins l join profiles p on p.id = l.user_id where l.day = d and ${day(sql`p.created_at`)} = d) as new,
         (select count(*)::int from daily_logins l join profiles p on p.id = l.user_id where l.day = d and ${day(sql`p.created_at`)} < d) as returning,
         (select count(distinct user_id)::int from daily_logins l where l.day between d - 6 and d) as wau
-      from ${days(r)} d order by d`,
+      from ${days(r)} order by d`,
   },
   {
     key: "returning",
@@ -547,7 +548,7 @@ export const REPORTS: ReportDef[] = [
         (select count(distinct user_id)::int from mission_progress where day = d) as players,
         (select count(*)::int from mission_progress where day = d and completed_at is not null) as completed,
         (select count(*)::int from mission_bonus_claims where day = d) as bonuses
-      from ${days(r)} d order by d`,
+      from ${days(r)} order by d`,
   },
   {
     key: "engagement",
@@ -568,7 +569,7 @@ export const REPORTS: ReportDef[] = [
         (select count(distinct user_id)::int from tile_discoveries where app_day = d) as map_players,
         (select count(distinct user_id)::int from daily_spins where day = d) as spin_players,
         (select count(distinct user_id)::int from daily_event_claims where day = d) as event_players
-      from ${days(r)} d order by d`,
+      from ${days(r)} order by d`,
   },
 ];
 
