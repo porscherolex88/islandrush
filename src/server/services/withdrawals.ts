@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, notInArray, sql } from "drizzle-orm";
 import { db, type DbOrTx } from "@/db";
 import { cashRewards, depositLevels, profiles, withdrawalAccounts, withdrawals } from "@/db/schema";
-import { AppError, ForbiddenError, isUniqueViolation, NotFoundError } from "@/lib/errors";
+import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
 import { formatMYR, minBig, toDecimal, toMinor } from "@/lib/money";
 import { audit } from "./audit";
 import { getConfig } from "./config";

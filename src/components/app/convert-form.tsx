@@ -63,7 +63,7 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
             </button>
           ))}
         </div>
-        {over && <p className="mt-2 text-xs font-medium text-destructive">That's more than your Cash balance.</p>}
+        {over && <p className="mt-2 text-xs font-medium text-destructive">That is more than your Cash balance.</p>}
       </div>
       <div className="-my-2 flex justify-center">
         <span className="grid size-9 place-items-center rounded-full border bg-background shadow-card">
