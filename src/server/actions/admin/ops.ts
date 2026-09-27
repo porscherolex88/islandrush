@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
@@ -163,6 +163,21 @@ export async function setRolePermissionsAction(role: string, permissions: string
     await reauth();
     if (!ROLES.includes(role as Role)) throw new AppError("Unknown role");
     await setRolePermissions(actor, role as Role, permissions.filter((p): p is Permission => ALL_PERMISSIONS.includes(p as Permission)), reasonSchema.parse(reason ?? ""));
+    return null;
+  });
+}
+
+export async function revokeSessionAction(sessionId: string, reason: string | null) {
+  return adminAction("admins.manage", async ({ actor }) => {
+    await reauth();
+    const why = reasonSchema.parse(reason ?? "");
+    await db.transaction(async (tx) => {
+      const found = await tx.execute(sql`delete from neon_auth.session where id = ${sessionId} returning "userId" as user_id, "ipAddress" as ip, "createdAt" as created_at`);
+      const row = found.rows[0] as { user_id: string; ip: string | null; created_at: string } | undefined;
+      if (!row) throw new AppError("Session not found or already ended");
+      await audit(tx, { actorId: actor.id, actorRole: actor.role, action: "session.revoke", entityType: "session", entityId: sessionId, before: row, after: null, reason: why });
+    });
+    revalidatePath("/admin/admins/sessions");
     return null;
   });
 }
