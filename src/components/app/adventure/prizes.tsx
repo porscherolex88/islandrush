@@ -1,11 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, Clock, Gift, Loader2, Lock, Puzzle, ShieldCheck, X } from "lucide-react";
+import { Banknote, CheckCircle2, Clock, Coins, Gift, Loader2, Lock, Puzzle, ShieldCheck, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { createElement, useRef, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { newKey, useAction } from "@/hooks/use-action";
 import { cn } from "@/lib/utils";
 import { claimPrizeAction, spinPrizeWheelAction } from "@/server/actions/games";
-import type { PuzzleView, WheelResult } from "@/server/services/adventure";
+import type { PrizeView, PuzzleView, WheelResult } from "@/server/services/adventure";
 import { PrizeWheel } from "./prize-wheel";
 
 const CLAIM_LABEL: Record<string, { label: string; tone: string; text: string }> = {
@@ -39,12 +39,37 @@ function PieceGrid({ have, required }: { have: number; required: number }) {
   );
 }
 
-function PrizeImage({ src, className }: { src: string | null; className?: string }) {
+const PRIZE_LOOK = {
+  CREDITS: { icon: Coins, tone: "bg-[linear-gradient(135deg,oklch(0.95_0.06_85),oklch(0.88_0.1_75))] text-amber-700" },
+  CASH: { icon: Banknote, tone: "bg-[linear-gradient(135deg,oklch(0.95_0.05_160),oklch(0.87_0.09_160))] text-emerald-700" },
+  PHYSICAL: { icon: Gift, tone: "bg-[linear-gradient(135deg,oklch(0.95_0.04_300),oklch(0.86_0.08_300))] text-violet-700" },
+} as const;
+
+function PrizeImage({ src, kind, className }: { src: string | null; kind: PrizeView["kind"]; className?: string }) {
   if (src) return <Image src={src} alt="" width={96} height={96} unoptimized={/^https?:/.test(src)} className={cn("rounded-2xl object-cover", className)} />;
+  const look = PRIZE_LOOK[kind];
   return (
-    <span className={cn("grid place-items-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.95_0.06_85),oklch(0.88_0.1_75))] text-amber-700", className)} aria-hidden>
-      <Gift className="size-1/2" />
+    <span className={cn("grid place-items-center rounded-2xl", look.tone, className)} aria-hidden>
+      {createElement(look.icon, { className: "size-1/2" })}
     </span>
+  );
+}
+
+/** A later level's prize, kept compact so the current puzzle stays the focus. */
+export function UpcomingPrize({ puzzle }: { puzzle: PuzzleView }) {
+  const p = puzzle;
+  return (
+    <li className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-2.5">
+      <PrizeImage src={p.prize.image} kind={p.prize.kind} className="size-11 shrink-0 [&_svg]:size-5" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-bold text-primary">Level {p.level}</p>
+        <p className="truncate text-sm font-semibold">{p.prize.name}</p>
+      </div>
+      <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground tabular">
+        <Puzzle className="size-3.5" aria-hidden />
+        {p.piecesHave}/{p.piecesRequired}
+      </span>
+    </li>
   );
 }
 
@@ -79,7 +104,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
   return (
     <article className={cn("overflow-hidden rounded-3xl border bg-card", p.complete && !p.attempt && "ring-2 ring-amber-300")}>
       <div className="flex gap-3 p-4">
-        <PrizeImage src={p.prize.image} className="size-20 shrink-0" />
+        <PrizeImage src={p.prize.image} kind={p.prize.kind} className="size-20 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-primary">Level {p.level} prize</p>
           <h3 className="font-heading text-lg leading-tight font-extrabold">{p.prize.name}</h3>

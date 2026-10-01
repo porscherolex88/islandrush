@@ -102,7 +102,7 @@ export function AdventureMap({ map, enabled, nextMap }: { map: AdventureMapView;
     router.refresh();
   }
 
-  const lastDone = [...cps].reverse().find((c) => c.state === "completed");
+  const readyCp = map.state === "exploring" ? (cps.find((c) => c.state === "available") ?? null) : null;
   const start = { x: cps[0]?.posX ?? 50, y: 100 };
   const points = [start, ...cps.map((c) => ({ x: c.posX, y: c.posY }))];
   const donePoints = [start, ...cps.filter((c) => c.state === "completed").map((c) => ({ x: c.posX, y: c.posY }))];
@@ -145,6 +145,7 @@ export function AdventureMap({ map, enabled, nextMap }: { map: AdventureMapView;
                       !done && !available && "border-white/60 bg-slate-900/70 text-white/80 backdrop-blur-sm",
                     )}
                   >
+                    {available && <span aria-hidden className="absolute -inset-1 rounded-full bg-amber-300/50 motion-safe:animate-ping" />}
                     {done ? (
                       <Check className="size-6" strokeWidth={3} aria-hidden />
                     ) : c.isFinal ? (
@@ -172,17 +173,6 @@ export function AdventureMap({ map, enabled, nextMap }: { map: AdventureMapView;
               );
             })}
 
-            {lastDone && (
-              <motion.span
-                aria-hidden
-                className="pointer-events-none absolute -translate-x-1/2"
-                style={{ left: `${lastDone.posX}%`, top: `calc(${lastDone.posY}% - 3.25rem)` }}
-                animate={reduce ? undefined : { y: [0, -4, 0] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <MapPin className="size-8 fill-rose-500 text-white drop-shadow-md" strokeWidth={1.75} />
-              </motion.span>
-            )}
           </>
         )}
 
@@ -245,8 +235,16 @@ export function AdventureMap({ map, enabled, nextMap }: { map: AdventureMapView;
             <p className="text-xs text-muted-foreground">Loot collected</p>
           </div>
           <div className="rounded-2xl border bg-card p-3">
-            <p className="font-heading text-xl font-extrabold tabular">{map.state === "completed" ? <Trophy className="mx-auto size-6 text-gold" aria-label="Completed" /> : map.nextLootTarget}</p>
-            <p className="text-xs text-muted-foreground">{map.state === "completed" ? "Completed" : "Next target"}</p>
+            <p className="font-heading text-xl font-extrabold tabular">
+              {map.state === "completed" ? (
+                <Trophy className="mx-auto size-6 text-gold" aria-label="Completed" />
+              ) : readyCp ? (
+                <Check className="mx-auto size-6 text-success" strokeWidth={3} aria-label="Ready" />
+              ) : (
+                map.nextLootTarget
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">{map.state === "completed" ? "Completed" : readyCp ? "Stop ready" : "Next target"}</p>
           </div>
         </div>
       )}
@@ -270,8 +268,17 @@ export function AdventureMap({ map, enabled, nextMap }: { map: AdventureMapView;
         <h2 id="loot-title" className="font-heading text-lg font-bold">
           {map.name} Loot
         </h2>
-        <LootCollection items={map.lootItems} total={map.lootCollected} target={map.state === "completed" ? Math.max(map.lootCollected, map.nextLootTarget) : map.nextLootTarget} />
-        {map.state !== "completed" && map.state !== "locked" && (
+        <LootCollection
+          items={map.lootItems}
+          total={map.lootCollected}
+          target={map.state === "completed" ? Math.max(map.lootCollected, map.nextLootTarget) : map.nextLootTarget}
+          doneLabel={map.state === "completed" ? "Map complete" : readyCp ? `${readyCp.name} ready` : "Ready"}
+        />
+        {readyCp ? (
+          <Button size="pill" variant="gold" className="h-12 w-full text-base" onClick={() => setSelected(readyCp)}>
+            <MapPin className="size-4" aria-hidden /> Discover {readyCp.name}
+          </Button>
+        ) : map.state !== "completed" && map.state !== "locked" && (
           <Link href={`/app/play/mystery-box?level=${map.level}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "w-full")}>
             Find more Loot in Mystery Box {map.level}
           </Link>

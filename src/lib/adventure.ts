@@ -15,6 +15,35 @@ export function roman(level: number) {
   return ROMAN[level - 1] ?? String(level);
 }
 
+const LOOT_EMOJI: Record<string, string> = {
+  shell: "🐚",
+  pearl: "🦪",
+  leaf: "🌿",
+  idol: "🗿",
+  relic: "🏺",
+  scroll: "📜",
+  fragment: "🪨",
+  key: "🗝️",
+  crystal: "🔮",
+  shard: "💎",
+  coin: "🪙",
+  crown: "👑",
+  seal: "🏵️",
+  compass: "🧭",
+  feather: "🪶",
+  banner: "🚩",
+  scale: "🐉",
+  ember: "🔥",
+  map: "🗺️",
+  jewel: "💍",
+  gem: "💎",
+};
+
+/** Emoji for a Loot icon key. Unknown values (e.g. an emoji set by an admin) pass through unchanged. */
+export function lootEmoji(icon: string): string {
+  return LOOT_EMOJI[icon.toLowerCase()] ?? icon;
+}
+
 /** True when every value is a whole number >= 0 and they add up to exactly 100. */
 export function isValidPercentSplit(values: number[]): boolean {
   return values.length > 0 && values.every((v) => Number.isInteger(v) && v >= 0) && values.reduce((s, v) => s + v, 0) === 100;

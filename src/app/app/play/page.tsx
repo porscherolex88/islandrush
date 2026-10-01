@@ -98,7 +98,7 @@ export default async function PlayPage() {
                     <Coins className="size-4 text-gold" aria-hidden /> {formatCredits(box.priceCredits)} Credits
                   </p>
                 </div>
-                <span className={cn(buttonVariants({ variant: "gold", size: "pill" }), "shrink-0")}>{flags.mystery_box === false ? "View" : "Open"}</span>
+                <span className={cn(buttonVariants({ variant: "gold", size: "pill" }), "shrink-0")}>{flags.mystery_box === false || box.completed ? "View" : "Open"}</span>
               </Link>
             )}
           </Section>
@@ -125,7 +125,7 @@ export default async function PlayPage() {
                   {map.lootItems.length > 0 && (
                     <span className="mt-1 flex gap-1">
                       {map.lootItems.map((it) => (
-                        <LootToken key={it.id} icon={it.icon} rarity={it.rarity} collected={it.collected > 0} size="sm" className="size-7 rounded-lg [&_svg]:size-3.5" />
+                        <LootToken key={it.id} icon={it.icon} rarity={it.rarity} collected={it.collected > 0} size="sm" className="size-7 rounded-lg text-sm" />
                       ))}
                     </span>
                   )}

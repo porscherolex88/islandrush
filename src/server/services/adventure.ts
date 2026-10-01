@@ -94,6 +94,8 @@ export type AdventureBoxView = {
   theme: { color: string; accent: string };
   locked: boolean;
   lockReason: string | null;
+  /** Its map is complete, so the box is retired and can no longer be opened. */
+  completed: boolean;
   requiresMapLevel: number | null;
   timesOpened: number;
   lootLevel: number;
@@ -320,6 +322,7 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       theme: b.theme,
       locked,
       lockReason: locked ? `Complete Map ${b.requiresMapLevel}${req ? ` (${req.name})` : ""} to unlock this box` : null,
+      completed: completed.has(b.level as number),
       requiresMapLevel: b.requiresMapLevel,
       timesOpened: opened.get(b.id) ?? 0,
       lootLevel: b.level as number,
@@ -362,7 +365,7 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
   const totalLevels = Math.max(mapViews.length, boxViews.length, 1);
   const unlockedBoxes = boxViews.filter((b) => !b.locked).length;
   const completedMaps = mapViews.filter((m) => m.state === "completed").length;
-  const currentBox = [...boxViews].reverse().find((b) => !b.locked) ?? boxViews[0] ?? null;
+  const currentBox = boxViews.find((b) => !b.locked && !b.completed) ?? boxViews.at(-1) ?? null;
 
   return {
     boxes: boxViews,

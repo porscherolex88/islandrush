@@ -3,6 +3,9 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* Wide screens with a mouse/trackpad only. Touch devices must keep scrolling the
+   document so mobile Safari can collapse its toolbar. */
+@custom-variant desktop (@media (min-width: 48rem) and (hover: hover) and (pointer: fine));
 
 @theme inline {
   --color-background: var(--background);
@@ -132,6 +135,16 @@
   h2,
   h3 {
     @apply font-heading tracking-tight;
+  }
+}
+
+/* iOS Safari zooms into any focused field under 16px. Unlayered so it beats
+   text-sm/text-xs utilities on touch devices; desktop keeps the compact sizes. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 

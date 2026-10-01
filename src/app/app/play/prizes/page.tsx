@@ -1,7 +1,7 @@
 import { Puzzle, Trophy } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { PuzzleCard } from "@/components/app/adventure/prizes";
+import { PuzzleCard, UpcomingPrize } from "@/components/app/adventure/prizes";
 import { ART } from "@/components/app/art";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
 import { Section } from "@/components/app/mobile-header";
@@ -17,6 +17,10 @@ export default async function PrizesPage() {
   const [s, flags] = await Promise.all([getAdventureState(user.id), getAllFlags()]);
   const complete = s.puzzles.filter((p) => p.complete).length;
   const enabled = flags.prize_wheel !== false;
+  const current = s.puzzles.find((p) => !p.complete);
+  const isFeatured = (p: (typeof s.puzzles)[number]) => p.complete || p.piecesHave > 0 || p.id === current?.id;
+  const featured = s.puzzles.filter(isFeatured);
+  const upcoming = s.puzzles.filter((p) => !isFeatured(p));
 
   return (
     <div>
@@ -36,9 +40,19 @@ export default async function PrizesPage() {
           <EmptyState icon={<Trophy className="size-10 text-primary" />} title="Prizes are on their way" description="Prize puzzles will appear here soon." />
         ) : (
           <div className="space-y-4">
-            {s.puzzles.map((p) => (
+            {featured.map((p) => (
               <PuzzleCard key={p.id} puzzle={p} wheel={s.wheel} verified={user.verificationStatus === "VERIFIED"} enabled={enabled} />
             ))}
+            {upcoming.length > 0 && (
+              <div className="space-y-2">
+                <h2 className="font-heading text-lg font-bold">Coming up</h2>
+                <ol className="space-y-2">
+                  {upcoming.map((p) => (
+                    <UpcomingPrize key={p.id} puzzle={p} />
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
         )}
         <p className="mt-4 flex items-start gap-2 text-xs leading-snug text-muted-foreground">

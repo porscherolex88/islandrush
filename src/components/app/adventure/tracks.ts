@@ -2,7 +2,11 @@ import type { AdventureState } from "@/server/services/adventure";
 import type { TrackLevel } from "./level-track";
 
 export function boxTrack(s: AdventureState): TrackLevel[] {
-  return s.boxes.map((b) => ({ level: b.level, state: b.locked ? "locked" : b.id === s.currentBox?.id ? "current" : "open", label: b.locked ? `${b.name}, locked` : b.name }));
+  return s.boxes.map((b) => ({
+    level: b.level,
+    state: b.completed ? "done" : b.locked ? "locked" : b.id === s.currentBox?.id ? "current" : "open",
+    label: b.completed ? `${b.name}, completed` : b.locked ? `${b.name}, locked` : b.name,
+  }));
 }
 
 export function mapTrack(s: AdventureState): TrackLevel[] {

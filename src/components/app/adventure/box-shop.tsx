@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Coins, Loader2, Lock, Map as MapIcon, Sparkles, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Coins, Loader2, Lock, Map as MapIcon, Sparkles, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,12 +33,14 @@ export function BoxShop({
   credits,
   odds,
   enabled,
+  nextHref,
 }: {
   box: AdventureBoxView;
   map: AdventureMapView | null;
   credits: number;
   odds: { rewards: PoolOdds; loot: PoolOdds };
   enabled: boolean;
+  nextHref: string | null;
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -74,6 +76,7 @@ export function BoxShop({
   const lootBefore = phase === "idle" ? knownLoot : lootAtOpen;
   const lootNow = lootBefore + (phase === "revealed" ? lootGained : 0);
   const target = map ? (map.state === "exploring" ? map.nextLootTarget : map.lootRequired) : 0;
+  const readyCp = phase === "idle" && map?.state === "exploring" ? (map.checkpoints.find((c) => c.state === "available") ?? null) : null;
   const mapReadyNow = map && map.state === "collecting" && lootBefore + lootGained >= map.lootRequired;
 
   function confirm() {
@@ -144,13 +147,29 @@ export function BoxShop({
             target={target}
             label={map.state === "collecting" || map.state === "locked" ? `Loot to unlock Map ${map.level}` : map.state === "exploring" ? "Loot for your next checkpoint" : `Map ${map.level} Loot`}
           />
-          <p className="mt-2 text-xs text-muted-foreground">
-            Loot is a milestone. It is never used up, so every piece keeps counting toward this map&apos;s checkpoints.
-          </p>
+          {readyCp ? (
+            <Link href={`/app/play/map?level=${map.level}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "mt-3 w-full")}>
+              <MapIcon className="size-4" aria-hidden /> {readyCp.name} is ready on Map {map.level}
+            </Link>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Loot is a milestone. It is never used up, so every piece keeps counting toward this map&apos;s checkpoints.
+            </p>
+          )}
         </div>
       )}
 
-      {box.locked ? (
+      {box.completed ? (
+        <div className="space-y-3 rounded-2xl border border-success/30 bg-success/10 p-4 text-center">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold">
+            <CheckCircle2 className="size-4 text-success" aria-hidden /> Map {box.level} complete. This box is retired.
+          </p>
+          <p className="text-xs text-muted-foreground">Its Loot can&apos;t move you forward any more, so it can no longer be opened.</p>
+          <Link href={nextHref ?? "/app/play/prizes"} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "w-full")}>
+            {nextHref ? `Continue to Mystery Box ${box.level + 1}` : "View your prizes"} <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </div>
+      ) : box.locked ? (
         <div className="space-y-3 rounded-2xl border border-dashed bg-surface p-4 text-center">
           <p className="text-sm font-semibold">{box.lockReason}</p>
           {box.requiresMapLevel && (

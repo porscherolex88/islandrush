@@ -1,11 +1,12 @@
 import {
   Anchor,
   Castle,
-  Circle,
+  Check,
   Coins,
   Compass,
   Crown,
   Diamond,
+  Egg,
   Feather,
   Flag,
   Flame,
@@ -26,12 +27,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createElement } from "react";
+import { lootEmoji } from "@/lib/adventure";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, LucideIcon> = {
   shell: Shell,
-  pearl: Circle,
+  pearl: Egg,
   leaf: Leaf,
   idol: Sparkles,
   relic: Landmark,
@@ -75,13 +77,13 @@ export function LootIcon({ icon, className }: { icon: string; className?: string
   );
 }
 
-/** A Loot piece in a rarity-coloured medallion. Uncollected pieces show as a silhouette. */
+/** A Loot piece in a rarity-coloured medallion. Uncollected pieces show greyed out. */
 export function LootToken({ icon, rarity, collected = true, size = "md", className }: { icon: string; rarity?: string | null; collected?: boolean; size?: "sm" | "md" | "lg"; className?: string }) {
   const r = rarityOf(rarity);
-  const dims = { sm: "size-9 [&_svg]:size-4.5", md: "size-12 [&_svg]:size-6", lg: "size-16 [&_svg]:size-8" }[size];
+  const dims = { sm: "size-9 text-lg", md: "size-12 text-2xl", lg: "size-16 text-[2rem]" }[size];
   return (
-    <span className={cn("grid shrink-0 place-items-center rounded-2xl ring-2", collected ? cn(r.bg, r.ring, r.text) : "bg-muted text-muted-foreground/50 ring-border", dims, className)} aria-hidden>
-      <LootIcon icon={icon} />
+    <span className={cn("grid shrink-0 place-items-center rounded-2xl ring-2", collected ? cn(r.bg, r.ring) : "bg-muted ring-border", dims, className)} aria-hidden>
+      <span className={cn("leading-none", !collected && "opacity-40 grayscale")}>{lootEmoji(icon)}</span>
     </span>
   );
 }
@@ -89,7 +91,7 @@ export function LootToken({ icon, rarity, collected = true, size = "md", classNa
 export type LootItem = { id: string; name: string; icon: string; rarity: string; description: string; collected: number };
 
 /** The Loot collection for one map level, shown as pieces with counts rather than a bare number. */
-export function LootCollection({ items, total, target, className }: { items: LootItem[]; total: number; target: number; className?: string }) {
+export function LootCollection({ items, total, target, doneLabel, className }: { items: LootItem[]; total: number; target: number; doneLabel?: string; className?: string }) {
   return (
     <div className={cn("space-y-2.5", className)}>
       <div className="grid grid-cols-2 gap-2">
@@ -103,22 +105,42 @@ export function LootCollection({ items, total, target, className }: { items: Loo
           </div>
         ))}
       </div>
-      <LootMeter total={total} target={target} />
+      <LootMeter total={total} target={target} doneLabel={doneLabel} />
     </div>
   );
 }
 
 /** Loot progress toward the next threshold, with the pieces drawn as a row of pips when it fits. */
-export function LootMeter({ total, target, label, className, tone = "light" }: { total: number; target: number; label?: string; className?: string; tone?: "light" | "dark" }) {
+export function LootMeter({
+  total,
+  target,
+  label,
+  doneLabel = "Ready",
+  className,
+  tone = "light",
+}: {
+  total: number;
+  target: number;
+  label?: string;
+  doneLabel?: string;
+  className?: string;
+  tone?: "light" | "dark";
+}) {
   const pct = target > 0 ? Math.min(100, Math.round((total / target) * 100)) : 100;
   const done = total >= target;
   return (
     <div className={className}>
       <div className="flex items-baseline justify-between gap-2 text-sm">
         <span className={cn("font-semibold", tone === "dark" ? "text-white/85" : "text-muted-foreground")}>{label ?? "Loot collected"}</span>
-        <span className={cn("font-heading font-extrabold tabular", done && (tone === "dark" ? "text-emerald-300" : "text-success"))}>
-          {Math.min(total, target)} / {target}
-        </span>
+        {done ? (
+          <span className={cn("flex items-center gap-1 font-heading font-extrabold", tone === "dark" ? "text-emerald-300" : "text-success")}>
+            <Check className="size-4" strokeWidth={3} aria-hidden /> {doneLabel}
+          </span>
+        ) : (
+          <span className="font-heading font-extrabold tabular">
+            {total} / {target}
+          </span>
+        )}
       </div>
       <div
         className={cn("mt-1.5 h-2.5 overflow-hidden rounded-full", tone === "dark" ? "bg-white/15" : "bg-muted")}

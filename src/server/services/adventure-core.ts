@@ -60,10 +60,12 @@ export async function lootCollected(tx: DbOrTx, userId: string, level: number) {
 }
 
 /** Explains why a box level is locked, or returns null when the player may open it. */
-export async function boxLockReason(tx: DbOrTx, userId: string, box: { requiresMapLevel: number | null }): Promise<string | null> {
-  if (box.requiresMapLevel === null) return null;
+export async function boxLockReason(tx: DbOrTx, userId: string, box: { level: number | null; requiresMapLevel: number | null }): Promise<string | null> {
+  if (box.level === null && box.requiresMapLevel === null) return null;
   const done = await completedMapLevels(tx, userId);
-  if (done.has(box.requiresMapLevel)) return null;
+  // A level's box retires once its map is complete: its Loot can no longer move the player forward.
+  if (box.level !== null && done.has(box.level)) return `You've completed Map ${box.level}. Continue your adventure with the next Mystery Box.`;
+  if (box.requiresMapLevel === null || done.has(box.requiresMapLevel)) return null;
   const [map] = await tx.select({ name: maps.name }).from(maps).where(eq(maps.level, box.requiresMapLevel)).limit(1);
   return `Complete Map ${box.requiresMapLevel}${map ? ` (${map.name})` : ""} to unlock this box`;
 }

@@ -241,6 +241,21 @@ describe("maps and checkpoints", () => {
     expect(state.currentLevel).toBe(2);
     expect(state.nextStep.kind).toBe("bigbox");
   });
+
+  it("retires a level's box once its map is completed, without charging", async () => {
+    const u = await makeUser();
+    await giveCredits(u.id, 10_000);
+    for (let i = 0; i < 3; i++) await open(u.id, 1);
+    await unlockMap(u.id, L[1].map.id);
+    for (const cp of L[1].checkpoints) await unlockCheckpoint(u.id, cp.id);
+    const before = (await getBalances(u.id)).CREDITS;
+    await expect(open(u.id, 1)).rejects.toThrow(/completed Map 1/);
+    expect((await getBalances(u.id)).CREDITS).toBe(before);
+    const state = await getAdventureState(u.id);
+    expect(state.boxes.map((b) => b.completed)).toEqual([true, false, false]);
+    expect(state.currentBox?.level).toBe(2);
+    await expect(open(u.id, 2)).resolves.toMatchObject({ level: 2 });
+  });
 });
 
 describe("Big Mystery Box and puzzles", () => {

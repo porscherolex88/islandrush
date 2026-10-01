@@ -21,6 +21,7 @@ export default async function MysteryBoxPage({ searchParams }: PageProps<"/app/p
   const level = levelParam(sp.level, s.currentBox?.level ?? 1, s.boxes.length);
   const box = s.boxes.find((b) => b.level === level) ?? null;
   const map = s.maps.find((m) => m.level === level) ?? null;
+  const next = s.boxes.find((b) => b.level === level + 1) ?? null;
   const odds = box ? await adventureBoxOdds(box.id) : { rewards: [], loot: [] };
 
   return (
@@ -51,7 +52,7 @@ export default async function MysteryBoxPage({ searchParams }: PageProps<"/app/p
             <LevelTrack levels={boxTrack(s)} active={box.level} hrefFor={(l) => `/app/play/mystery-box?level=${l}`} label="Mystery Box levels" />
           </Section>
           <Section>
-            <BoxShop key={box.id} box={box} map={map} credits={Number(balances.CREDITS)} odds={odds} enabled={enabled} />
+            <BoxShop key={box.id} box={box} map={map} credits={Number(balances.CREDITS)} odds={odds} enabled={enabled} nextHref={next ? `/app/play/mystery-box?level=${next.level}` : null} />
           </Section>
         </>
       )}

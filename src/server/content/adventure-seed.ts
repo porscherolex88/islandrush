@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import * as s from "@/db/schema";
-import { roman } from "@/lib/adventure";
+import { lootEmoji, roman } from "@/lib/adventure";
 
 /**
  * Starting content for the 10-level adventure. Every number here is an example that admins
@@ -90,7 +90,7 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
     for (const [j, [name, icon]] of m.items.entries()) {
       const values = {
         name,
-        icon,
+        icon: lootEmoji(icon),
         kind: "LOOT" as const,
         rarity: j === 0 ? ("UNCOMMON" as const) : ("RARE" as const),
         adventureLevel: level,
@@ -108,10 +108,10 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
 
     const base = 2 + Math.floor((level - 1) / 3);
     const lootPool = await pool(`Mystery Box ${r} Loot`, [
-      { label: `${base}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base), weight: 40, rarity: "UNCOMMON", reveal: { icon: m.items[0][1] } },
-      { label: `${base + 1}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base + 1), weight: 32, rarity: "UNCOMMON", reveal: { icon: m.items[0][1] } },
-      { label: `${base + 2}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base + 2), weight: 16, rarity: "UNCOMMON", reveal: { icon: m.items[0][1] } },
-      { label: `${base + 2}× ${m.items[1][0]}`, rewardType: "ITEM", itemId: lootIds[1], amount: String(base + 2), weight: 12, rarity: "RARE", reveal: { icon: m.items[1][1] } },
+      { label: `${base}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base), weight: 40, rarity: "UNCOMMON", reveal: { icon: lootEmoji(m.items[0][1]) } },
+      { label: `${base + 1}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base + 1), weight: 32, rarity: "UNCOMMON", reveal: { icon: lootEmoji(m.items[0][1]) } },
+      { label: `${base + 2}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base + 2), weight: 16, rarity: "UNCOMMON", reveal: { icon: lootEmoji(m.items[0][1]) } },
+      { label: `${base + 2}× ${m.items[1][0]}`, rewardType: "ITEM", itemId: lootIds[1], amount: String(base + 2), weight: 12, rarity: "RARE", reveal: { icon: lootEmoji(m.items[1][1]) } },
     ], `Guaranteed Loot drop for every Mystery Box ${r}.`);
     const rewardPool = await pool(`Mystery Box ${r} Rewards`, [
       credits(Math.round(price * 0.25), 40, "COMMON"),
