@@ -29,6 +29,20 @@
       "when": 1790823827002,
       "tag": "0003_adventure_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790842076631,
+      "tag": "0004_outgoing_mantis",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790842639604,
+      "tag": "0005_cloudy_slapstick",
+      "breakpoints": true
     }
   ]
 }

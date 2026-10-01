@@ -48,7 +48,7 @@ function VaultDoor({ state }: { state: "locked" | "ready" | "opening" | "open" }
           fill
           priority
           sizes="288px"
-          className={cn("rounded-[2rem] object-cover", state === "locked" && "saturate-[.7]", state === "open" && "brightness-110")}
+          className={cn("rounded-2xl object-cover", state === "locked" && "saturate-[.7]", state === "open" && "brightness-110")}
         />
         {state === "locked" && (
           <span className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
@@ -56,7 +56,7 @@ function VaultDoor({ state }: { state: "locked" | "ready" | "opening" | "open" }
           </span>
         )}
         {state === "open" && (
-          <span className="absolute inset-0 grid place-items-center rounded-[2rem] bg-[radial-gradient(circle,rgb(253_230_138/0.75),transparent_65%)]">
+          <span className="absolute inset-0 grid place-items-center rounded-2xl bg-[radial-gradient(circle,rgb(253_230_138/0.75),transparent_65%)]">
             <Sparkles className="size-14 text-white" aria-hidden />
           </span>
         )}
@@ -84,7 +84,7 @@ export function VaultCard({ vault }: { vault: VaultView }) {
   const kept = vault.requirements.filter((r) => !r.consume);
 
   return (
-    <div className="overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_0%,oklch(0.4_0.07_215),oklch(0.22_0.045_228)_75%)] text-white">
+    <div className="overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_0%,oklch(0.4_0.07_215),oklch(0.22_0.045_228)_75%)] text-white">
       <div className="px-4 pt-5 text-center">
         <p className="text-xs font-bold text-amber-200">{vault.unlocked ? "Opened" : state === "ready" ? "Vault ready" : "Locked"}</p>
         <h2 className="mt-1 font-heading text-3xl font-extrabold">{vault.name}</h2>

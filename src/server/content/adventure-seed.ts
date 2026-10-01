@@ -1,40 +1,55 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "@/db";
+import { and, eq, sql } from "drizzle-orm";
+import { db, type Tx } from "@/db";
 import * as s from "@/db/schema";
 import { lootEmoji, roman } from "@/lib/adventure";
+import { defaultTrail, densify, stopsAlong } from "@/lib/adventure-trails";
 
 /**
  * Starting content for the 10-level adventure. Every number here is an example that admins
  * are expected to tune (prices, Loot thresholds, odds, prizes). Safe to run more than once.
  */
+const MAP1_STOPS = ["Driftwood Camp", "Lighthouse Point", "Hidden Lagoon"];
+/** Map 1 is the free starting map, so its Loot thresholds start from zero: three even chests of 9. */
+const MAP1_THRESHOLDS = [9, 18, 27];
+
+/** Higher maps have more routes, so the climb gets longer as the treasure gets richer. */
 const MAPS = [
-  { name: "Lost Shore", loot: 12, color: "#0ea5e9", items: [["Shore Shell", "shell"], ["Tide Pearl", "pearl"]], stops: ["Driftwood Camp", "Tide Caves", "Lighthouse Point", "Shipwreck Cove", "Coral Arch", "Hidden Lagoon"] },
-  { name: "Hidden Jungle", loot: 16, color: "#16a34a", items: [["Jungle Relic", "leaf"], ["Jade Idol", "idol"]], stops: ["Explorer's Camp", "Vine Bridge", "Waterfall Pool", "Parrot Ridge", "Overgrown Shrine", "Heart of the Jungle"] },
-  { name: "Ancient Ruins", loot: 20, color: "#a16207", items: [["Ancient Relic", "relic"], ["Carved Tablet", "scroll"]], stops: ["Broken Gate", "Sunken Courtyard", "Pillar Hall", "Scribe's Library", "Moon Stair", "Ancient Gate"] },
-  { name: "Forgotten Temple", loot: 24, color: "#d97706", items: [["Temple Fragment", "fragment"], ["Ancient Key", "key"]], stops: ["Temple Steps", "Hall of Echoes", "Serpent Corridor", "Fire Altar", "Inner Sanctum", "Temple Vault"] },
-  { name: "Crystal Caverns", loot: 28, color: "#7c3aed", items: [["Cave Crystal", "crystal"], ["Glow Shard", "shard"]], stops: ["Cavern Mouth", "Glowing Tunnel", "Echo Lake", "Crystal Garden", "Deep Chasm", "Crystal Throne"] },
+  { name: "Lost Shore", loot: 12, color: "#0ea5e9", items: [["Shore Shell", "shell"], ["Tide Pearl", "pearl"]], stops: MAP1_STOPS },
+  { name: "Hidden Jungle", loot: 16, color: "#16a34a", items: [["Jungle Relic", "leaf"], ["Jade Idol", "idol"]], stops: ["Explorer's Camp", "Vine Bridge", "Waterfall Pool", "Heart of the Jungle"] },
+  { name: "Ancient Ruins", loot: 20, color: "#a16207", items: [["Ancient Relic", "relic"], ["Carved Tablet", "scroll"]], stops: ["Broken Gate", "Pillar Hall", "Scribe's Library", "Ancient Gate"] },
+  { name: "Forgotten Temple", loot: 24, color: "#d97706", items: [["Temple Fragment", "fragment"], ["Ancient Key", "key"]], stops: ["Temple Steps", "Hall of Echoes", "Serpent Corridor", "Fire Altar", "Temple Vault"] },
+  { name: "Crystal Caverns", loot: 28, color: "#7c3aed", items: [["Cave Crystal", "crystal"], ["Glow Shard", "shard"]], stops: ["Cavern Mouth", "Glowing Tunnel", "Echo Lake", "Crystal Garden", "Crystal Throne"] },
   { name: "Golden Kingdom", loot: 32, color: "#ca8a04", items: [["Golden Coin", "coin"], ["Golden Idol", "crown"]], stops: ["Kingdom Road", "Market Square", "Royal Gardens", "Gilded Bridge", "Throne Hall", "Golden Treasury"] },
   { name: "Lost City", loot: 36, color: "#0f766e", items: [["City Seal", "seal"], ["Explorer's Compass", "compass"]], stops: ["City Outskirts", "Silent Plaza", "Old Aqueduct", "Observatory", "Palace Ruins", "City Heart"] },
-  { name: "Sky Fortress", loot: 40, color: "#2563eb", items: [["Sky Feather", "feather"], ["Cloud Banner", "banner"]], stops: ["Cloud Stair", "Wind Gate", "Floating Garden", "Watchtower", "Storm Bridge", "Fortress Keep"] },
-  { name: "Dragon's Realm", loot: 45, color: "#b91c1c", items: [["Dragon Scale", "scale"], ["Ember Stone", "ember"]], stops: ["Ash Fields", "Ember Pass", "Bone Canyon", "Lava Falls", "Dragon Gate", "Dragon's Hoard"] },
-  { name: "Ultimate Treasure", loot: 50, color: "#be185d", items: [["Treasure Map Piece", "map"], ["Crown Jewel", "jewel"]], stops: ["Final Shore", "Treasure Gate", "Mirror Maze", "Hall of Kings", "Map Room", "Ultimate Treasure"] },
+  { name: "Sky Fortress", loot: 40, color: "#2563eb", items: [["Sky Feather", "feather"], ["Cloud Banner", "banner"]], stops: ["Cloud Stair", "Wind Gate", "Floating Garden", "Watchtower", "Storm Bridge", "Thunder Peak", "Fortress Keep"] },
+  { name: "Dragon's Realm", loot: 45, color: "#b91c1c", items: [["Dragon Scale", "scale"], ["Ember Stone", "ember"]], stops: ["Ash Fields", "Ember Pass", "Bone Canyon", "Lava Falls", "Obsidian Bridge", "Dragon Gate", "Dragon's Hoard"] },
+  { name: "Ultimate Treasure", loot: 50, color: "#be185d", items: [["Treasure Map Piece", "map"], ["Crown Jewel", "jewel"]], stops: ["Final Shore", "Treasure Gate", "Mirror Maze", "Sunken Vault", "Hall of Kings", "Jewel Bridge", "Map Room", "Ultimate Treasure"] },
 ] as const;
 
 const PRICES = [2000, 4000, 6000, 8000, 12000, 18000, 25000, 35000, 50000, 75000];
-const LANDMARKS = ["tent", "compass", "mountain", "landmark", "castle", "treasure"];
-/** Checkpoint positions (percent of the map art) that follow the trail drawn on each level's default illustration. */
-const PATHS: [number, number][][] = [
-  [[55, 90], [66, 72], [73, 52], [62, 35], [47, 22], [36, 8]],
-  [[48, 92], [60, 70], [72, 54], [66, 38], [46, 22], [34, 8]],
-  [[48, 88], [24, 64], [47, 52], [70, 46], [46, 32], [58, 10]],
-  [[51, 92], [49, 71], [24, 52], [49, 42], [74, 30], [49, 13]],
-  [[49, 86], [27, 63], [51, 48], [76, 40], [50, 24], [50, 12]],
-  [[49, 86], [49, 62], [18, 52], [36, 36], [58, 28], [64, 14]],
-  [[50, 92], [40, 67], [64, 52], [30, 32], [80, 30], [67, 17]],
-  [[39, 92], [46, 76], [62, 58], [26, 46], [66, 34], [64, 18]],
-  [[46, 92], [56, 72], [40, 54], [68, 46], [52, 30], [68, 10]],
-  [[50, 94], [47, 80], [52, 60], [66, 40], [38, 30], [66, 16]],
-];
+const LANDMARKS = ["tent", "compass", "mountain", "landmark", "castle"];
+const FINAL_LANDMARK = "treasure";
+
+/** Checkpoint positions (percent of the map art), spaced evenly along the trail painted on each level's default illustration. */
+function stopPositions(level: number, count: number): [number, number][] {
+  return stopsAlong(densify(defaultTrail(level, null)!), count).map((p) => [Math.round(p.x), Math.round(p.y)]);
+}
+
+function stopContent(level: number, k: number) {
+  const m = MAPS[level - 1];
+  const n = m.stops.length;
+  const isFinal = k === n - 1;
+  const [posX, posY] = stopPositions(level, n)[k];
+  return {
+    name: m.stops[k],
+    isFinal,
+    landmark: isFinal ? FINAL_LANDMARK : LANDMARKS[k % LANDMARKS.length],
+    lootRequired: level === 1 ? MAP1_THRESHOLDS[k] : m.loot + Math.ceil((m.loot * 1.25 * (k + 1)) / n),
+    description: isFinal ? "The final checkpoint. Something is hidden here." : `Checkpoint ${k + 1} on the ${m.name} map.`,
+    posX,
+    posY,
+  };
+}
 
 const PRIZES: { name: string; kind: "PHYSICAL" | "CREDITS" | "CASH"; amount?: string; est?: string; stock?: number; description: string }[] = [
   { name: "5,000 Credits Bundle", kind: "CREDITS", amount: "5000", description: "A bundle of Credits added straight to your balance." },
@@ -140,23 +155,7 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
       .insert(s.maps)
       .values({ slug: `map-${level}-${slug}`, name: m.name, description: `Map ${level} of the adventure.`, level, lootRequired: m.loot, color: m.color })
       .returning();
-    await db.insert(s.mapCheckpoints).values(
-      m.stops.map((name, k) => {
-        const isFinal = k === m.stops.length - 1;
-        const [x, y] = PATHS[i][k];
-        return {
-          mapId: map.id,
-          position: k + 1,
-          name,
-          description: isFinal ? "The final checkpoint. Something is hidden here." : `Checkpoint ${k + 1} on the ${m.name} route.`,
-          landmark: LANDMARKS[k],
-          lootRequired: isFinal ? m.loot + Math.ceil(m.loot * 1.25) : m.loot + Math.ceil(m.loot * 0.2 * (k + 1)),
-          isFinal,
-          posX: x,
-          posY: y,
-        };
-      }),
-    );
+    await db.insert(s.mapCheckpoints).values(m.stops.map((_, k) => ({ mapId: map.id, position: k + 1, ...stopContent(level, k) })));
     const odds = level <= 5 ? [40, 40, 20] : [30, 40, 30];
     await db.insert(s.bigMysteryBoxes).values({
       mapId: map.id,
@@ -211,4 +210,84 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
   await db.insert(s.appConfig).values({ key: "adventure_seed_version", value: { version: 1, at: new Date().toISOString() } });
   log("Adventure content seeded.");
   return true;
+}
+
+/** Published checkpoint names per level as an earlier version of this seed created them. */
+const ORIGINAL_STOPS: Record<number, string[]> = {
+  1: ["Driftwood Camp", "Tide Caves", "Lighthouse Point", "Shipwreck Cove", "Coral Arch", "Hidden Lagoon"],
+  2: ["Explorer's Camp", "Vine Bridge", "Waterfall Pool", "Parrot Ridge", "Overgrown Shrine", "Heart of the Jungle"],
+  3: ["Broken Gate", "Sunken Courtyard", "Pillar Hall", "Scribe's Library", "Moon Stair", "Ancient Gate"],
+  4: ["Temple Steps", "Hall of Echoes", "Serpent Corridor", "Fire Altar", "Inner Sanctum", "Temple Vault"],
+  5: ["Cavern Mouth", "Glowing Tunnel", "Echo Lake", "Crystal Garden", "Deep Chasm", "Crystal Throne"],
+  6: ["Kingdom Road", "Market Square", "Royal Gardens", "Gilded Bridge", "Throne Hall", "Golden Treasury"],
+  7: ["City Outskirts", "Silent Plaza", "Old Aqueduct", "Observatory", "Palace Ruins", "City Heart"],
+  8: ["Cloud Stair", "Wind Gate", "Floating Garden", "Watchtower", "Storm Bridge", "Fortress Keep"],
+  9: ["Ash Fields", "Ember Pass", "Bone Canyon", "Lava Falls", "Dragon Gate", "Dragon's Hoard"],
+  10: ["Final Shore", "Treasure Gate", "Mirror Maze", "Hall of Kings", "Map Room", "Ultimate Treasure"],
+};
+
+/**
+ * Re-lays a map's route to the current seed stops, but only if its published checkpoints are still
+ * exactly `expected`. Stops that are kept move to their new spot, new stops are added, and stops that
+ * are no longer used are set to DRAFT (after the live ones) rather than deleted.
+ */
+async function relayRoute(tx: Tx, level: number, expected: readonly string[], log: (msg: string) => void) {
+  const [map] = await tx.select().from(s.maps).where(and(eq(s.maps.level, level), eq(s.maps.status, "PUBLISHED")));
+  if (!map) return;
+  const all = (await tx.select().from(s.mapCheckpoints).where(eq(s.mapCheckpoints.mapId, map.id))).sort((a, b) => a.position - b.position);
+  const live = all.filter((c) => c.status === "PUBLISHED");
+  if (live.map((c) => c.name).join("|") !== expected.join("|")) return log(`Skipping Map ${level}: its checkpoints no longer match the original seed.`);
+
+  const stops = MAPS[level - 1].stops;
+  const now = new Date();
+  await tx.update(s.mapCheckpoints).set({ position: sql`${s.mapCheckpoints.position} + 1000` }).where(eq(s.mapCheckpoints.mapId, map.id));
+  for (const k of stops.keys()) {
+    const content = stopContent(level, k);
+    const existing = live.find((c) => c.name === content.name);
+    if (existing) await tx.update(s.mapCheckpoints).set({ ...content, position: k + 1, updatedAt: now }).where(eq(s.mapCheckpoints.id, existing.id));
+    else await tx.insert(s.mapCheckpoints).values({ ...content, mapId: map.id, position: k + 1 });
+  }
+  const unused = all.filter((c) => !(c.status === "PUBLISHED" && (stops as readonly string[]).includes(c.name)));
+  for (const [j, c] of unused.entries()) {
+    await tx.update(s.mapCheckpoints).set({ status: "DRAFT", position: stops.length + j + 1, updatedAt: now }).where(eq(s.mapCheckpoints.id, c.id));
+  }
+  log(`Map ${level} now has ${stops.length} routes.`);
+}
+
+const UPDATES: { id: string; run: (tx: Tx, log: (msg: string) => void) => Promise<void> }[] = [
+  { id: "map1-three-routes", run: (tx, log) => relayRoute(tx, 1, ORIGINAL_STOPS[1], log) },
+  {
+    id: "tiered-routes",
+    run: async (tx, log) => {
+      for (const level of MAPS.keys()) await relayRoute(tx, level + 1, level === 0 ? MAP1_STOPS : ORIGINAL_STOPS[level + 1], log);
+    },
+  },
+  {
+    id: "stops-below-header",
+    run: async (tx, log) => {
+      for (const [i, m] of MAPS.entries()) await relayRoute(tx, i + 1, m.stops, log);
+    },
+  },
+];
+
+/**
+ * Brings already-seeded adventures in line with the current starting content. Each update runs
+ * once, and only touches maps whose content still matches what the seed created, so admin edits
+ * are never overwritten.
+ */
+export async function updateAdventureContent(log: (msg: string) => void = () => {}) {
+  const key = "adventure_content_updates";
+  for (const update of UPDATES) {
+    const [row] = await db.select().from(s.appConfig).where(eq(s.appConfig.key, key));
+    const applied = ((row?.value as { applied?: string[] } | undefined)?.applied ?? []) as string[];
+    if (applied.includes(update.id)) {
+      log(`Update ${update.id} already applied.`);
+      continue;
+    }
+    await db.transaction(async (tx) => {
+      await update.run(tx, (msg) => log(`${update.id}: ${msg}`));
+      const value = { applied: [...applied, update.id], at: new Date().toISOString() };
+      await tx.insert(s.appConfig).values({ key, value }).onConflictDoUpdate({ target: s.appConfig.key, set: { value } });
+    });
+  }
 }

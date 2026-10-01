@@ -1,6 +1,7 @@
 import { Wrench } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AppDrawer } from "@/components/app/app-drawer";
 import { AppShell } from "@/components/app/app-shell";
 import { requireUser } from "@/lib/auth/session";
 import { isAdminRole } from "@/lib/permissions";
@@ -49,7 +50,7 @@ export default async function UserAppLayout({ children }: LayoutProps<"/app">) {
   }
 
   return (
-    <AppShell banner={banner}>
+    <AppShell banner={banner} drawer={<AppDrawer name={user.name} email={user.email} level={user.xpLevel} joined={user.createdAt} verificationStatus={user.verificationStatus} isAdmin={isAdminRole(user.role)} />}>
       {children}
     </AppShell>
   );

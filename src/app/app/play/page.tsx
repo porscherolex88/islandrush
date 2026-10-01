@@ -59,7 +59,7 @@ export default async function PlayPage() {
           <Section>
             <Link
               href={s.nextStep.href}
-              className="group relative isolate block overflow-hidden rounded-[2rem] bg-ocean-deep p-5 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
+              className="group relative isolate block overflow-hidden rounded-2xl bg-ocean-deep p-5 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
             >
               <Image src={mapArt(map?.level ?? 1, map?.artwork)} alt="" fill priority sizes="(max-width: 430px) 100vw, 430px" className="-z-10 object-cover object-center brightness-75 transition-transform duration-700 group-hover:scale-105" />
               <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.2_0.04_230/0.35),oklch(0.18_0.04_230/0.9))]" />

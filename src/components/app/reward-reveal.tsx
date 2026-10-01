@@ -88,7 +88,7 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, xp, 
           onClick={onClose}
         >
           <motion.div
-            className="relative w-full max-w-sm overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_30%,oklch(0.42_0.08_215),oklch(0.24_0.05_228))] p-6 text-center text-white ring-1 ring-white/10"
+            className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_30%,oklch(0.42_0.08_215),oklch(0.24_0.05_228))] p-6 text-center text-white ring-1 ring-white/10"
             initial={reduce ? { opacity: 0 } : { scale: 0.8, y: 30, opacity: 0 }}
             animate={reduce ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
             exit={reduce ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}
@@ -117,7 +117,7 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, xp, 
             <div className="relative mx-auto my-5 grid size-36 place-items-center">
               {!reduce && top && <Burst color={rarity.hex} />}
               <motion.div
-                className={cn("grid size-32 place-items-center rounded-[2.25rem] bg-white/95 text-7xl ring-4", rarity.ring)}
+                className={cn("grid size-32 place-items-center rounded-2xl bg-white/95 text-7xl ring-4", rarity.ring)}
                 initial={reduce ? false : { rotate: -14, scale: 0.3 }}
                 animate={reduce ? undefined : { rotate: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 240, damping: 13, delay: 0.05 }}

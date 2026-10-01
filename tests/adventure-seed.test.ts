@@ -15,8 +15,17 @@ describe("adventure seed content", () => {
     expect(state.maps).toHaveLength(10);
     expect(state.puzzles).toHaveLength(10);
     expect(state.boxes.filter((b) => !b.locked).map((b) => b.level)).toEqual([1]);
-    expect(state.maps[0].state).toBe("collecting");
-    expect(state.maps[0].checkpoints).toHaveLength(6);
+    expect(state.maps[0].state).toBe("exploring");
+    expect(state.maps[0].checkpoints.map((c) => [c.name, c.lootRequired])).toEqual([
+      ["Driftwood Camp", 9],
+      ["Lighthouse Point", 18],
+      ["Hidden Lagoon", 27],
+    ]);
+    expect(state.maps.map((m) => m.checkpoints.length)).toEqual([3, 4, 4, 5, 5, 6, 6, 7, 7, 8]);
+    for (const m of state.maps) {
+      const ys = m.checkpoints.map((c) => c.posY);
+      expect(ys).toEqual([...ys].sort((a, b) => b - a));
+    }
     expect(state.wheel).toEqual({ active: true, prizeUnlockPct: 90, alternativePct: 10 });
   });
 });

@@ -5,10 +5,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResourceEditor } from "@/components/admin/resource-editor";
 import { AdminCard, AdminPage, DataTable, StatGrid, StatsCard } from "@/components/admin/ui";
+import { mapArt } from "@/components/app/art";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { bigMysteryBoxes, mapAreas, mapCheckpoints, maps, userCheckpoints, vaults } from "@/db/schema";
+import { defaultTrail, densify, toPoints } from "@/lib/adventure-trails";
 import { requireAdmin } from "@/lib/auth/session";
 import { formatCredits } from "@/lib/money";
 import { one, rows } from "@/server/admin/queries";
@@ -138,6 +140,7 @@ async function AdventureMapAdmin({ map, back }: { map: typeof maps.$inferSelect;
   ]);
   const ordered = [...cps].sort((x, y) => Number(x.isFinal) - Number(y.isFinal) || x.position - y.position);
   const reached = new Map(cpCounts.map((c) => [c.checkpointId, Number(c.n)]));
+  const previewLine = densify(defaultTrail(map.level, map.artwork) ?? [{ x: ordered[0]?.posX ?? 50, y: 100 }, ...ordered.map((c) => ({ x: c.posX, y: c.posY }))]);
   return (
     <AdminPage title={`Map ${map.level}: ${map.name}`} description={`Unlocks at ${map.lootRequired} Loot. ${map.description}`} actions={<StatusBadge status={map.status} />}>
       <StatGrid cols={4}>
@@ -147,9 +150,9 @@ async function AdventureMapAdmin({ map, back }: { map: typeof maps.$inferSelect;
         <StatsCard label="Big Box odds (1/2/3)" value={bb ? `${bb.pieces1Pct}/${bb.pieces2Pct}/${bb.pieces3Pct}%` : "Missing"} tone={bb ? "default" : "warning"} href={bb ? `/admin/manage/bigBoxes/${bb.id}?back=${b}` : `/admin/manage/bigBoxes/new?mapId=${map.id}&back=${b}`} />
       </StatGrid>
       <AdminCard title="Layout preview" description="Checkpoint positions as players see them (X and Y from 0 to 100).">
-        <div className="relative mx-auto aspect-[3/4] w-full max-w-72 overflow-hidden rounded-xl border" style={{ background: `color-mix(in oklab, ${map.color} 16%, transparent)` }}>
+        <div className="relative mx-auto aspect-[9/16] w-full max-w-60 overflow-hidden rounded-xl border bg-cover bg-center" style={map.level === null && !map.artwork ? { background: `color-mix(in oklab, ${map.color} 16%, transparent)` } : { backgroundImage: `url(${mapArt(map.level ?? 1, map.artwork)})` }}>
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden>
-            <polyline points={["50,96", ...ordered.map((c) => `${c.posX},${c.posY}`)].join(" ")} fill="none" stroke={map.color} strokeWidth="1.2" strokeDasharray="3 2" vectorEffect="non-scaling-stroke" />
+            <polyline points={toPoints(previewLine)} fill="none" stroke="white" strokeWidth="2" strokeDasharray="3 2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
           </svg>
           {ordered.map((c) => (
             <Link

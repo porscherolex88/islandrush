@@ -8,7 +8,7 @@ import { notify } from "./notifications";
 import { grantPool, type RewardResult } from "./rewards";
 import { awardXp } from "./xp";
 
-type Ctx = { sourceType: string; sourceId?: string; reason: string };
+type Ctx = { sourceType: string; sourceId?: string; reason: string; skipMission?: boolean };
 
 /** Adds items to a user's inventory, auto-assembling fragments and completing collections where configured. */
 export async function grantItem(tx: Tx, userId: string, itemId: string, qty: number, ctx: Ctx, depth = 0) {
@@ -44,7 +44,7 @@ export async function grantItem(tx: Tx, userId: string, itemId: string, qty: num
     sourceId: ctx.sourceId,
   });
 
-  await trackMission(tx, userId, "COLLECT_ITEM", qty);
+  if (!ctx.skipMission) await trackMission(tx, userId, "COLLECT_ITEM", qty);
 
   const firstTime = !before || before.totalAcquired === 0;
   if (firstTime) await checkAchievements(tx, userId, "ITEMS_COLLECTED");
@@ -73,6 +73,19 @@ export async function consumeItem(tx: Tx, userId: string, itemId: string, qty: n
     .returning();
   if (!row) throw new AppError("You don't have enough of a required item", "ITEM_INSUFFICIENT");
   await tx.insert(inventoryEvents).values({ userId, itemId, delta: -qty, reason: ctx.reason, sourceType: ctx.sourceType, sourceId: ctx.sourceId });
+}
+
+/** Puts back items that left the inventory temporarily (e.g. market escrow) without counting them as newly acquired. */
+export async function returnItem(tx: Tx, userId: string, itemId: string, qty: number, ctx: Ctx) {
+  if (qty <= 0) return;
+  await tx
+    .insert(inventory)
+    .values({ userId, itemId, quantity: qty, totalAcquired: 0 })
+    .onConflictDoUpdate({
+      target: [inventory.userId, inventory.itemId],
+      set: { quantity: sql`${inventory.quantity} + ${qty}`, updatedAt: new Date() },
+    });
+  await tx.insert(inventoryEvents).values({ userId, itemId, delta: qty, reason: ctx.reason, sourceType: ctx.sourceType, sourceId: ctx.sourceId });
 }
 
 export async function itemQuantity(tx: DbOrTx, userId: string, itemId: string): Promise<number> {

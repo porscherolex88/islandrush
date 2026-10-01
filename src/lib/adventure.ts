@@ -90,6 +90,39 @@ export function checkpointStates(
   return out;
 }
 
+export type RouteChestState = "locked" | "filling" | "full" | "opened";
+
+export type RouteChest = {
+  /** Map Loot total where this route starts (the previous checkpoint's threshold, or the map unlock). */
+  from: number;
+  /** Loot pieces this route's chest holds. */
+  need: number;
+  /** Pieces collected toward this chest so far, capped at `need`. */
+  have: number;
+  state: RouteChestState;
+};
+
+/**
+ * Each route (the trail leading up to a checkpoint) has a chest that holds the Loot
+ * between the previous threshold and this checkpoint's threshold. Filling it opens the
+ * way up to that checkpoint. Expects checkpoints already in route order.
+ */
+export function routeChests(
+  checkpoints: { lootRequired: number; state: CheckpointState; isNext: boolean }[],
+  mapLootRequired: number,
+  lootCollected: number,
+): RouteChest[] {
+  let from = mapLootRequired;
+  return checkpoints.map((cp) => {
+    const need = Math.max(0, cp.lootRequired - from);
+    const have = Math.max(0, Math.min(need, lootCollected - from));
+    const state: RouteChestState = cp.state === "completed" ? "opened" : cp.isNext ? (have >= need ? "full" : "filling") : "locked";
+    const out = { from, need, have, state };
+    from = Math.max(from, cp.lootRequired);
+    return out;
+  });
+}
+
 export function pct(n: number, d: number) {
   return d <= 0 ? 0 : Math.max(0, Math.min(100, Math.round((n / d) * 100)));
 }

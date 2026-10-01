@@ -73,7 +73,7 @@ export function CtaBand({ title = "Your island is waiting", description = "Creat
   return (
     <section className="py-14 sm:py-20">
       <Container>
-        <div className="relative overflow-hidden rounded-[2rem] px-6 py-12 text-center text-white sm:px-12">
+        <div className="relative overflow-hidden rounded-2xl px-6 py-12 text-center text-white sm:px-12">
           <Image src="/illustrations/island-map.webp" alt="" fill sizes="(min-width: 1024px) 1100px, 100vw" className="object-cover" />
           <div aria-hidden className="absolute inset-0 bg-[oklch(0.25_0.06_222/0.78)]" />
           <h2 className="relative text-3xl font-bold sm:text-4xl">{title}</h2>

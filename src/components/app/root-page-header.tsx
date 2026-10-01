@@ -1,6 +1,31 @@
-import { Bell, CalendarCheck, Check, ChevronRight, Coins, Compass, Flame, Map as MapIcon, Pencil, Sparkles, Star, Sun, Trophy, Wallet } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Bell,
+  CalendarCheck,
+  Check,
+  ChevronRight,
+  Clock,
+  Coins,
+  Flame,
+  History,
+  Landmark,
+  Map as MapIcon,
+  Pencil,
+  Repeat,
+  Sparkles,
+  Star,
+  Store,
+  Sun,
+  Trophy,
+  Wallet,
+} from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { headerPillButton } from "@/components/app/header-buttons";
+import { InnerPageHeader } from "@/components/app/inner-page-header";
+import { CreditsChip } from "@/components/app/mobile-header";
+import { DrawerTrigger } from "@/components/app/side-drawer";
 import { ScrollFadeHeader } from "@/components/shared/scroll-fade-header";
 import { Progress } from "@/components/ui/progress";
 import type { FiatDisplay } from "@/lib/fiat-display.shared";
@@ -12,7 +37,7 @@ import { getHeaderData } from "@/server/queries/header";
  * Headers for the five bottom-nav destinations. Each one is a compact sticky bar that
  * names the section with its own identity, followed by a hero that scrolls away.
  * The bars share a frame (StickyBar) but never the same content: there is no global
- * logo, balance or notification bar. Inner pages use InnerPageHeader.
+ * logo, balance or notification bar. Inner pages use InnerPageHeader (AccountHeader wraps it).
  */
 
 const focusRing = "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -37,7 +62,7 @@ export function initialsOf(name: string) {
   );
 }
 
-function UserAvatar({ name, className }: { name: string; className?: string }) {
+export function UserAvatar({ name, className }: { name: string; className?: string }) {
   return (
     <span
       className={cn(
@@ -133,18 +158,18 @@ export async function HomeHeader({
   return (
     <>
       <StickyBar right={<NotificationBell unread={unread} />}>
-        <Link href="/app/account" className={cn("rounded-full", focusRing)} aria-label="Open Account">
+        <DrawerTrigger className={cn("shrink-0 rounded-full", focusRing)}>
           <UserAvatar name={name} className="size-10 text-sm ring-[3px]" />
-        </Link>
-        <h1 className="min-w-0 leading-tight">
-          <span className="block text-xs font-semibold text-muted-foreground">{greeting},</span>{" "}
-          <span className="block truncate font-heading text-lg font-extrabold" title={name}>
+        </DrawerTrigger>
+        <h1 className="min-w-0 leading-none">
+          <span className="block text-xs leading-none font-semibold text-muted-foreground">{greeting},</span>{" "}
+          <span className="block truncate pb-0.5 font-heading text-lg leading-none font-extrabold" title={name}>
             {firstName}
           </span>
         </h1>
       </StickyBar>
 
-      <header className="px-4 pt-1 pb-2 md:px-5">
+      <header className="px-4 pt-1 md:px-5">
         <div className="flex flex-wrap items-center gap-2">
           <StreakChip days={streak} href="/app/daily" />
           <Link
@@ -168,23 +193,19 @@ export async function HomeHeader({
           className={cn("group mt-3 block overflow-hidden rounded-2xl border bg-card transition-colors hover:bg-surface", focusRing)}
           aria-label={`Open Wallet: ${formatCash(balances.WITHDRAWABLE, { currency: fiat })} withdrawable, ${formatCredits(balances.CREDITS)} Credits`}
         >
-          <span className="flex items-stretch">
-            <span className="grid min-w-0 flex-1 grid-cols-2 divide-x">
-              <span className="min-w-0 px-4 py-2.5">
-                <span className="block truncate font-heading text-xl font-extrabold tabular">{shortCash(balances.WITHDRAWABLE, fiat)}</span>
-                <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                  <Wallet className="size-3.5 text-success" aria-hidden /> Withdrawable
-                </span>
-              </span>
-              <span className="min-w-0 px-4 py-2.5">
-                <span className="block truncate font-heading text-xl font-extrabold tabular">{formatCredits(balances.CREDITS)}</span>
-                <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                  <Coins className="size-3.5 text-gold" aria-hidden /> Credits
-                </span>
+          <span className="grid grid-cols-2 divide-x">
+            <span className="min-w-0 px-4 py-3">
+              <span className="block truncate font-heading text-xl font-extrabold tabular">{shortCash(balances.WITHDRAWABLE, fiat)}</span>
+              <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                <Wallet className="size-3.5 text-success" aria-hidden /> Withdrawable
               </span>
             </span>
-            <span className="grid w-10 shrink-0 place-items-center text-muted-foreground transition-transform group-hover:translate-x-0.5">
-              <ChevronRight className="size-5" aria-hidden />
+            <span className="relative min-w-0 py-3 pr-9 pl-4">
+              <span className="block truncate font-heading text-xl font-extrabold tabular">{formatCredits(balances.CREDITS)}</span>
+              <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                <Coins className="size-3.5 text-gold" aria-hidden /> Credits
+              </span>
+              <ChevronRight className="absolute top-1/2 right-2.5 size-5 -translate-y-1/2 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
             </span>
           </span>
           {extras && (
@@ -211,14 +232,14 @@ export async function HomeHeader({
 /* ---------------------------------------------------------------- Play */
 
 /**
- * Play: an expedition. The bar carries a compass and the player's adventure level, which
- * opens the current map. The adventure hero sits in the page itself. No balances: Credits
- * appear inside each game, next to the action.
+ * Play is an inner page reached from Home. The header keeps the adventure level chip,
+ * which opens the current map.
  */
 export function PlayHeader({ level, totalLevels, href }: { level: number; totalLevels: number; href: string }) {
   return (
-    <StickyBar
-      right={
+    <InnerPageHeader
+      title="Explore"
+      action={
         <Link
           href={href}
           className={cn("inline-flex h-9 items-center gap-1.5 rounded-full bg-brand-soft px-3 text-sm font-bold whitespace-nowrap text-primary transition-colors hover:bg-sky-100", hitArea, focusRing)}
@@ -228,11 +249,20 @@ export function PlayHeader({ level, totalLevels, href }: { level: number; totalL
           Level <span className="tabular">{level}/{totalLevels}</span>
         </Link>
       }
-    >
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground" aria-hidden>
-        <Compass className="size-5" />
+    />
+  );
+}
+
+/* ---------------------------------------------------------------- Market */
+
+/** Market: a trading post. The bar carries the Credits balance, since every trade is priced in Credits. */
+export function MarketHeader({ credits }: { credits: bigint }) {
+  return (
+    <StickyBar right={<CreditsChip credits={credits} />}>
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gold text-white" aria-hidden>
+        <Store className="size-5" />
       </span>
-      <BarTitle className="text-primary">Explore</BarTitle>
+      <BarTitle>Market</BarTitle>
     </StickyBar>
   );
 }
@@ -372,11 +402,118 @@ export function ProgressHeader({
   );
 }
 
+/* ---------------------------------------------------------------- Wallet */
+
+const WALLET_ACTIONS = [
+  { href: "/app/wallet/deposit", label: "Deposit", icon: ArrowDownToLine, tone: "bg-primary text-primary-foreground hover:bg-primary/90" },
+  { href: "/app/wallet/convert", label: "Convert", icon: Repeat, tone: "bg-gold-soft text-gold-foreground hover:bg-amber-100" },
+  { href: "/app/wallet/withdraw", label: "Withdraw", icon: ArrowUpFromLine, tone: "bg-success-soft text-success hover:bg-emerald-100" },
+  { href: "/app/account/withdrawal-accounts", label: "Bank", icon: Landmark, tone: "border bg-card text-foreground hover:bg-surface" },
+] as const;
+
+/**
+ * Wallet: the player's money. The bar names it with a history action; below it, a balance
+ * card led by what can be withdrawn, then the four money actions as large tiles.
+ */
+export function WalletHeader({
+  withdrawable,
+  cash,
+  credits,
+  rate,
+  pending,
+  outgoing,
+}: {
+  withdrawable: string;
+  cash: string;
+  credits: string;
+  rate: string;
+  pending: string | null;
+  outgoing: string | null;
+}) {
+  return (
+    <>
+      <StickyBar
+        tint="oklch(0.95 0.03 205)"
+        right={
+          <Link
+            href="/app/wallet/transactions"
+            className={cn("inline-flex h-10 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-semibold transition-colors hover:bg-surface", focusRing)}
+          >
+            <History className="size-4" aria-hidden /> History
+          </Link>
+        }
+      >
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground" aria-hidden>
+          <Wallet className="size-5" />
+        </span>
+        <BarTitle>Wallet</BarTitle>
+      </StickyBar>
+
+      <header className={cn("relative isolate bg-[linear-gradient(180deg,oklch(0.95_0.03_205),transparent_85%)] px-4 pb-3 md:px-5", bleedUnderBar, "pt-[calc(66px+env(safe-area-inset-top)+0.25rem)]")}>
+        <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.33_0.07_222)_75%)] p-5 text-white shadow-[0_12px_30px_-14px_oklch(0.33_0.07_222/0.7)]">
+          <span aria-hidden className="absolute -top-16 -right-10 size-44 rounded-full bg-white/10" />
+          <span aria-hidden className="absolute -bottom-20 -left-12 size-40 rounded-full bg-white/5" />
+
+          <p className="relative flex items-center gap-1.5 text-sm font-semibold text-white/80">
+            <Landmark className="size-4" aria-hidden /> Withdrawable
+          </p>
+          <p className="relative mt-0.5 truncate font-heading text-4xl font-extrabold tabular">{withdrawable}</p>
+          <p className="relative text-sm text-white/75">Ready to send to your bank</p>
+
+          <dl className="relative mt-4 grid grid-cols-2 divide-x divide-white/15 rounded-2xl bg-white/10">
+            <div className="min-w-0 px-3.5 py-2.5">
+              <dt className="flex items-center gap-1 text-xs font-semibold text-white/75">
+                <Wallet className="size-3.5" aria-hidden /> Cash
+              </dt>
+              <dd className="truncate font-heading text-lg font-bold tabular">{cash}</dd>
+            </div>
+            <div className="min-w-0 px-3.5 py-2.5">
+              <dt className="flex items-center gap-1 text-xs font-semibold text-white/75">
+                <Coins className="size-3.5 text-amber-300" aria-hidden /> Credits
+              </dt>
+              <dd className="truncate font-heading text-lg font-bold tabular">{credits}</dd>
+            </div>
+          </dl>
+          <p className="relative mt-2 text-xs text-white/70">{rate}</p>
+
+          {(pending || outgoing) && (
+            <div className="relative mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-white/85">
+              {pending && (
+                <p className="flex items-center gap-1.5">
+                  <Clock className="size-3.5" aria-hidden />
+                  <strong className="tabular">{pending}</strong> in rewards under review
+                </p>
+              )}
+              {outgoing && (
+                <p className="flex items-center gap-1.5">
+                  <ArrowUpFromLine className="size-3.5" aria-hidden />
+                  <strong className="tabular">{outgoing}</strong> on its way to your bank
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <nav aria-label="Wallet actions" className="mt-4 grid grid-cols-4 gap-2">
+          {WALLET_ACTIONS.map(({ href, label, icon: Icon, tone }) => (
+            <Link key={href} href={href} className={cn("group flex flex-col items-center gap-1.5 rounded-2xl py-1 text-xs font-semibold", focusRing)}>
+              <span className={cn("grid size-14 place-items-center rounded-2xl transition-colors", tone)}>
+                <Icon className="size-6" aria-hidden />
+              </span>
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+    </>
+  );
+}
+
 /* ---------------------------------------------------------------- Account */
 
 /**
- * Account: the player's personal space. The bar names it with an edit-profile action;
- * below it, a profile card with avatar, name, rank, streak and membership.
+ * Account: the player's personal space, opened from the side drawer. An inner page with
+ * an edit-profile action; below it, a profile card with avatar, name, rank, streak and membership.
  */
 export function AccountHeader({
   name,
@@ -395,19 +532,14 @@ export function AccountHeader({
 }) {
   return (
     <>
-      <StickyBar
-        right={
-          <Link
-            href="/app/account/profile"
-            className={cn("inline-flex h-11 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-semibold transition-colors hover:bg-surface", focusRing)}
-            aria-label="Edit profile"
-          >
+      <InnerPageHeader
+        title="Your account"
+        action={
+          <Link href="/app/account/profile" className={headerPillButton} aria-label="Edit profile">
             <Pencil className="size-4" aria-hidden /> Edit
           </Link>
         }
-      >
-        <BarTitle>Your account</BarTitle>
-      </StickyBar>
+      />
 
       <header className="px-4 pt-1 pb-2 md:px-5">
         <div className="overflow-hidden rounded-3xl border bg-card">

@@ -255,9 +255,12 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
     const prev = i > 0 ? mapRows[i - 1] : null;
     const prevDone = !prev || completed.has(prev.level as number);
     const loot = lootByLevel.get(level) ?? 0;
-    const state: MapState = prog?.completedAt ? "completed" : prog ? "exploring" : !prevDone ? "locked" : loot >= m.lootRequired ? "ready" : "collecting";
+    // The first map is every player's starting point, so it is open without an unlock step.
+    const open = Boolean(prog) || !prev;
+    const lootRequired = prev ? m.lootRequired : 0;
+    const state: MapState = prog?.completedAt ? "completed" : open ? "exploring" : !prevDone ? "locked" : loot >= lootRequired ? "ready" : "collecting";
     const mine = cps.filter((c) => c.mapId === m.id);
-    const states = checkpointStates(mine, doneSet, loot, Boolean(prog));
+    const states = checkpointStates(mine, doneSet, loot, open);
     const nextId = mine.filter((c) => !doneSet.has(c.id)).sort((a, b) => Number(a.isFinal) - Number(b.isFinal) || a.position - b.position)[0]?.id;
     const checkpoints = mine.map((c) => ({
       id: c.id,
@@ -270,7 +273,7 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       posX: c.posX,
       posY: c.posY,
       state: states.get(c.id) ?? "locked",
-      isNext: c.id === nextId && Boolean(prog),
+      isNext: c.id === nextId && open,
     }));
     const next = checkpoints.find((c) => c.isNext);
     const bb = bigBoxes.find((b) => b.mapId === m.id);
@@ -282,7 +285,7 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       description: m.description,
       artwork: m.artwork,
       color: m.color,
-      lootRequired: m.lootRequired,
+      lootRequired,
       lootCollected: loot,
       lootItems: lootItems
         .filter((r) => r.item.adventureLevel === level)
@@ -291,7 +294,7 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       prerequisiteLevel: prev?.level ?? null,
       checkpoints,
       checkpointsDone: checkpoints.filter((c) => c.state === "completed").length,
-      nextLootTarget: state === "exploring" && next ? next.lootRequired : m.lootRequired,
+      nextLootTarget: state === "exploring" && next ? next.lootRequired : lootRequired,
       bigBox: bb
         ? {
             id: bb.id,
@@ -405,9 +408,9 @@ function nextStepFor(mapViews: AdventureMapView[], puzzleViews: PuzzleView[], cu
       return { kind: "map", title: `Unlock Map ${current.level}`, detail: `${current.name} is ready to explore`, href };
     case "exploring": {
       const next = current.checkpoints.find((c) => c.isNext);
-      if (!next) return { kind: "checkpoint", title: `Explore ${current.name}`, detail: "Find the final checkpoint", href };
-      if (next.state === "available") return { kind: "checkpoint", title: `Explore ${next.name}`, detail: next.isFinal ? "The final checkpoint is ready" : "A checkpoint is ready to discover", href };
-      return { kind: "loot", title: `Collect ${next.lootRequired - current.lootCollected} more Loot`, detail: `to reach ${next.name}`, href: `/app/play/mystery-box?level=${current.level}` };
+      if (!next) return { kind: "checkpoint", title: `Explore ${current.name}`, detail: "Reach the final checkpoint", href };
+      if (next.state === "available") return { kind: "checkpoint", title: "Your chest is full", detail: next.isFinal ? `Collect it to reach ${next.name} and unlock puzzles` : `Collect it and move up to ${next.name}`, href };
+      return { kind: "loot", title: `Fill the chest with ${next.lootRequired - current.lootCollected} more Loot`, detail: `to move up to ${next.name}`, href: `/app/play/mystery-box?level=${current.level}` };
     }
     case "completed":
       return { kind: "done", title: "Adventure complete", detail: "Every map has been explored.", href: "/app/play/prizes" };
@@ -443,7 +446,7 @@ export async function unlockMap(userId: string, mapId: string) {
         throw new AppError(`Complete Map ${prev.level} (${prev.name}) first`, "MAP_LOCKED", 403);
       }
       const loot = await lootCollected(tx, userId, map.level);
-      if (loot < map.lootRequired) {
+      if (prev && loot < map.lootRequired) {
         throw new AppError(`Collect ${map.lootRequired - loot} more Loot to unlock ${map.name}`, "LOOT_REQUIRED");
       }
       await tx.insert(userMapProgress).values({ userId, mapId: map.id, level: map.level, lootAtUnlock: loot });
@@ -512,7 +515,21 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
         .from(userMapProgress)
         .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)))
         .limit(1);
-      if (!prog) throw new AppError(`Unlock ${map.name} first`, "MAP_NOT_UNLOCKED", 403);
+      if (!prog) {
+        if (await previousMap(tx, level)) throw new AppError(`Unlock ${map.name} first`, "MAP_NOT_UNLOCKED", 403);
+        const startLoot = await lootCollected(tx, userId, level);
+        await tx.insert(userMapProgress).values({ userId, mapId: map.id, level, lootAtUnlock: startLoot });
+        await recordEvent(tx, {
+          userId,
+          type: "MAP_UNLOCK",
+          actionId: `map-unlock:${userId}:${map.id}`,
+          level,
+          refType: "map",
+          refId: map.id,
+          config: { lootRequired: 0, mapVersion: map.version, startingMap: true },
+          result: { lootCollected: startLoot },
+        });
+      }
 
       const all = await tx
         .select()
@@ -1007,7 +1024,7 @@ export async function adventureConfigWarnings(tx: DbOrTx = db): Promise<string[]
     for (let i = 1; i < ordered.length; i++) {
       if (ordered[i].lootRequired < ordered[i - 1].lootRequired) out.push(`Map ${m.level}: "${ordered[i].name}" needs less Loot than the checkpoint before it.`);
     }
-    if (ordered[0] && ordered[0].lootRequired < m.lootRequired) out.push(`Map ${m.level}: the first checkpoint needs less Loot than unlocking the map.`);
+    if (m !== mapRows[0] && ordered[0] && ordered[0].lootRequired < m.lootRequired) out.push(`Map ${m.level}: the first checkpoint needs less Loot than unlocking the map.`);
     if (!boxRows.some((b) => b.level === m.level)) out.push(`Map ${m.level} has no published Mystery Box at the same level, so its Loot cannot be found.`);
     if (!bbs.some((b) => b.mapId === m.id && b.active)) out.push(`Map ${m.level} has no active Big Mystery Box.`);
     if (!pz.some((p) => p.level === m.level)) out.push(`Map ${m.level} has no active puzzle.`);

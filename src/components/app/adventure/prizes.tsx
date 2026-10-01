@@ -181,7 +181,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
       <AnimatePresence>
         {wheelOpen && (
           <motion.div role="dialog" aria-modal="true" aria-labelledby={`wheel-${p.id}`} className="fixed inset-0 z-50 grid place-items-center bg-ocean-deep/75 p-5 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="relative w-full max-w-sm rounded-[2rem] bg-card p-6 text-center shadow-2xl" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            <motion.div className="relative w-full max-w-sm rounded-2xl bg-card p-6 text-center shadow-2xl" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
               {(!result || settled) && (
                 <button onClick={closeWheel} className="absolute top-3 right-3 grid size-11 place-items-center rounded-full text-muted-foreground hover:bg-muted" aria-label="Close">
                   <X className="size-5" />

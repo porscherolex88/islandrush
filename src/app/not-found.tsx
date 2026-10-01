@@ -31,7 +31,7 @@ export default function NotFound() {
           <span aria-hidden className={digit}>4</span>
         </p>
 
-        <div className="relative mt-6 w-full overflow-hidden rounded-[1.75rem] border border-amber-200/70">
+        <div className="relative mt-6 w-full overflow-hidden rounded-2xl border border-amber-200/70">
           <Image src={ART.island} alt="" width={900} height={600} priority className="aspect-[16/9] w-full object-cover" />
           <div aria-hidden className="absolute inset-0 bg-[linear-gradient(0deg,rgb(6_30_40/0.55),transparent_55%)]" />
           <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-amber-900">

@@ -1,14 +1,16 @@
 /** The five bottom-navigation roots. Every other /app route is an inner page. */
-export const ROOT_ROUTES = ["/app", "/app/play", "/app/daily", "/app/progress", "/app/account"] as const;
+export const ROOT_ROUTES = ["/app", "/app/market", "/app/daily", "/app/progress", "/app/wallet"] as const;
 
 export type RootRoute = (typeof ROOT_ROUTES)[number];
 
 const LABELS: Record<string, string> = {
   "/app": "Home",
+  "/app/market": "Market",
   "/app/play": "Play",
   "/app/daily": "Daily",
   "/app/progress": "Progress",
-  "/app/account": "Account",
+  "/app/account": "Settings",
+  "/app/account/withdrawal-accounts": "Bank accounts",
   "/app/play/mystery-box": "Mystery Box",
   "/app/play/map": "Adventure Map",
   "/app/play/prizes": "Prizes",
@@ -29,14 +31,16 @@ const PARENTS: [pattern: string, parent: string][] = [
   ["/app/play/map", "/app/play"],
   ["/app/play/prizes", "/app/play"],
   ["/app/play/vault", "/app/play"],
+  ["/app/play", "/app"],
   ["/app/collections/*", "/app/collections"],
   ["/app/collections", "/app/play"],
   ["/app/wallet/*", "/app/wallet"],
-  ["/app/wallet", "/app/account"],
   ["/app/referrals", "/app/account"],
-  ["/app/notifications", "/app/account"],
+  ["/app/notifications", "/app"],
+  ["/app/account/withdrawal-accounts", "/app/wallet"],
   ["/app/account/support/*", "/app/account/support"],
   ["/app/account/*", "/app/account"],
+  ["/app/account", "/app"],
 ];
 
 function normalise(pathname: string) {

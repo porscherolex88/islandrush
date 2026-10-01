@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { Check, Gift, Loader2, Sparkles } from "lucide-react";
+import { Check, Flame, Gift, Loader2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -17,7 +17,7 @@ import { ART } from "./art";
 import { OddsSheet } from "./odds-sheet";
 import { RewardChip, RewardReveal } from "./reward-reveal";
 
-export function CheckInButton({ claimed, streak }: { claimed: boolean; streak: number }) {
+export function CheckInButton({ claimed, streak, compact }: { claimed: boolean; streak: number; compact?: boolean }) {
   const [reveal, setReveal] = useState<{ rewards: RewardResult[]; title: string; xp: number } | null>(null);
   const { run, pending } = useAction(claimLoginAction, {
     onSuccess: (d) => {
@@ -33,7 +33,7 @@ export function CheckInButton({ claimed, streak }: { claimed: boolean; streak: n
     <>
       <Button onClick={() => run()} disabled={claimed || pending} size="pill" variant={claimed ? "secondary" : "gold"} className={cn("w-full", claimed && "bg-emerald-100 text-emerald-800 disabled:opacity-100")}>
         {pending ? <Loader2 className="animate-spin" /> : claimed ? <Check /> : null}
-        {claimed ? `Checked in today · ${streak}-day streak` : "Check in to keep your streak"}
+        {compact ? (claimed ? "Checked in" : "Check in") : claimed ? `Checked in today · ${streak}-day streak` : "Check in to keep your streak"}
       </Button>
       <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title={reveal?.title} rewards={reveal?.rewards ?? []} xp={reveal?.xp} />
     </>
@@ -42,9 +42,18 @@ export function CheckInButton({ claimed, streak }: { claimed: boolean; streak: n
 
 export function CheckInCard({ claimed, streak }: { claimed: boolean; streak: number }) {
   return (
-    <div className="rounded-2xl border border-orange-200 bg-orange-50 p-3">
-      <p className="mb-2 text-sm font-semibold text-orange-900">{claimed ? "You're checked in for today." : "Check in first to keep your streak going."}</p>
-      <CheckInButton claimed={claimed} streak={streak} />
+    <div className="relative isolate flex flex-col overflow-hidden rounded-2xl border border-orange-200 bg-[linear-gradient(160deg,oklch(0.98_0.03_75),oklch(0.93_0.07_60))] p-3">
+      <Flame aria-hidden className="absolute -top-3 -right-4 -z-10 size-24 text-orange-400/20" strokeWidth={1.5} />
+      <span className="grid size-11 place-items-center rounded-full bg-[linear-gradient(180deg,#fb923c,#ea580c)] text-white shadow-sm shadow-orange-600/30" aria-hidden>
+        <Flame className="size-6" />
+      </span>
+      <p className="mt-3 font-heading text-lg leading-tight font-extrabold text-orange-950">Daily check-in</p>
+      <p className="mt-1 mb-3 text-sm text-orange-900/75">
+        {claimed ? `${streak}-day streak. See you tomorrow!` : streak > 0 ? `Keep your ${streak}-day streak going.` : "Start a new streak today."}
+      </p>
+      <div className="mt-auto">
+        <CheckInButton claimed={claimed} streak={streak} compact />
+      </div>
     </div>
   );
 }

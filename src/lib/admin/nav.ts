@@ -31,6 +31,7 @@ export const ADMIN_NAV: NavGroup[] = [
       { label: "Game Pricing", href: "/admin/economy/pricing", permission: "economy.manage" },
       { label: "Withdrawal Rules", href: "/admin/economy/settings/withdrawal", permission: "economy.manage" },
       { label: "Limits", href: "/admin/economy/settings/limits", permission: "economy.manage" },
+      { label: "Market", href: "/admin/economy/settings/market", permission: "economy.manage" },
       { label: "Global Configuration", href: "/admin/system/settings", permission: "system.manage" },
     ],
   },

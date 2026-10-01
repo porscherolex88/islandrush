@@ -51,6 +51,7 @@ export function ArtCard({
   cta,
   className,
   tall,
+  top,
   priority,
 }: {
   href: string;
@@ -62,6 +63,8 @@ export function ArtCard({
   cta?: string;
   className?: string;
   tall?: boolean;
+  /** Pins the copy to the top and the CTA to the bottom. */
+  top?: boolean;
   priority?: boolean;
 }) {
   return (
@@ -75,13 +78,13 @@ export function ArtCard({
     >
       <Image src={art} alt="" fill sizes="(max-width: 430px) 100vw, 430px" priority={priority} className="-z-10 object-cover transition-transform duration-700 group-hover:scale-105" />
       <div aria-hidden className="art-scrim absolute inset-0 -z-10" />
-      <div className="flex w-full flex-col justify-end gap-1 p-5 pr-[30%]">
+      <div className={cn("flex w-full flex-col gap-1 p-5 pr-[30%]", top ? "justify-start" : "justify-end")}>
         {eyebrow && <p className="text-xs font-bold text-amber-200">{eyebrow}</p>}
         <p className="font-heading text-2xl leading-tight font-extrabold">{title}</p>
         {body && <div className="text-sm text-white/85">{body}</div>}
         {chips && <div className="mt-1 flex flex-wrap gap-1.5">{chips}</div>}
         {cta && (
-          <span className={cn(buttonVariants({ variant: "gold", size: "pill" }), "mt-3 w-fit group-hover:brightness-105")}>{cta}</span>
+          <span className={cn(buttonVariants({ variant: "gold", size: "pill" }), top ? "mt-auto" : "mt-3", "w-fit group-hover:brightness-105")}>{cta}</span>
         )}
       </div>
     </Link>
@@ -164,7 +167,7 @@ export function ProgressRing({ value, size = 88, stroke = 8, className, children
 /** Compact tappable row used for "Today's progress" and "Continue your journey" lists. */
 export function StatRow({ href, icon, label, value, done, className }: { href: string; icon: ReactNode; label: string; value: ReactNode; done?: boolean; className?: string }) {
   return (
-    <Link href={href} className={cn("flex min-h-14 items-center gap-3 rounded-2xl border bg-card px-3 py-2.5 transition-colors hover:bg-surface", className)}>
+    <Link href={href} className={cn("flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 transition-colors hover:bg-surface", className)}>
       <span className={cn("grid size-10 shrink-0 place-items-center rounded-full", done ? "bg-success-soft text-success" : "bg-brand-soft text-primary")}>{icon}</span>
       <span className="flex-1 text-sm font-semibold">{label}</span>
       <span className={cn("text-sm font-bold tabular", done ? "text-success" : "text-foreground")}>{value}</span>

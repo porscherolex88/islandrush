@@ -205,7 +205,7 @@ export function MysteryBoxGrid({ boxes, credits, rate, collections }: { boxes: B
         <p className="mx-auto max-w-xs text-sm text-muted-foreground">{box.description}</p>
       </div>
 
-      <div className="relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_0%,oklch(0.45_0.08_205),oklch(0.26_0.05_225)_70%)] p-3">
+      <div className="relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_0%,oklch(0.45_0.08_205),oklch(0.26_0.05_225)_70%)] p-3">
         <div aria-hidden className="animate-glow pointer-events-none absolute -top-24 left-1/2 size-64 -translate-x-1/2 rounded-full bg-amber-200/20 blur-3xl" />
         <div className="relative grid grid-cols-3 gap-2.5" role="group" aria-label="Nine crates. Choose one.">
           {Array.from({ length: 9 }).map((_, i) => (

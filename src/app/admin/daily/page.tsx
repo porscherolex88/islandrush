@@ -55,7 +55,7 @@ export default async function DailyPage({ searchParams }: PageProps<"/admin/dail
   return (
     <AdminPage
       title="Daily content calendar"
-      description="Schedule Daily Spin pools, missions, Mystery events and teasers per day. Days without a published schedule use the defaults."
+      description="Schedule Daily Spin pools, missions and Mystery events per day. Days without a published schedule use the defaults."
       actions={
         <Button asChild variant="outline">
           <Link href="/admin/economy/settings/daily_defaults">Edit defaults</Link>

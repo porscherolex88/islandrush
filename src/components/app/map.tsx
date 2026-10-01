@@ -62,7 +62,7 @@ function IslandOverview({ areas, selected, current, vault, onSelect }: { areas: 
   const reduce = useReducedMotion();
   const pins = areas.map((a, i) => ({ area: a, ...pinFor(a, i) }));
   return (
-    <div className="relative aspect-[3/4] overflow-hidden rounded-[2rem] bg-ocean">
+    <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-ocean">
       <Image src={ART.island} alt="Illustrated map of the island" fill priority sizes="(max-width: 430px) 100vw, 430px" className="object-cover" />
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden>
         {pins.slice(1).map((p, i) => {
@@ -341,7 +341,7 @@ export function MapCanvas({
           {freeLeft} / {freeTotal}
         </span>
       </div>
-      <div className="overflow-hidden rounded-[2rem] border bg-card">
+      <div className="overflow-hidden rounded-2xl border bg-card">
         <div className="relative isolate h-36 text-white">
           <Image src={regionArt(area.slug || area.name)} alt="" fill sizes="(max-width: 430px) 100vw, 430px" className={cn("-z-10 object-cover", !area.accessible && "grayscale-[60%]")} />
           <div aria-hidden className="art-scrim absolute inset-0 -z-10" />

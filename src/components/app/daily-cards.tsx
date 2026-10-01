@@ -1,4 +1,4 @@
-import { Check, ChevronRight, Flame, Gift, Moon } from "lucide-react";
+import { Check, ChevronRight, Flame, Gift } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { buttonVariants } from "@/components/ui/button";
@@ -58,7 +58,7 @@ export function StreakCard({
   const todayIndex = checkedInToday ? done - 1 : done;
   const rewardDays = new Set(milestones.map((m) => m.days));
   return (
-    <div className="rounded-3xl border bg-[linear-gradient(135deg,oklch(0.97_0.05_60),oklch(0.99_0.02_85))] p-4">
+    <div className="rounded-3xl border bg-[linear-gradient(135deg,oklch(0.97_0.05_60),oklch(0.99_0.02_85))] p-5">
       <div className="flex items-center gap-3">
         <div className="grid size-14 place-items-center rounded-full bg-[linear-gradient(180deg,#fb923c,#ea580c)] text-white">
           <Flame className="size-8" aria-hidden />
@@ -115,18 +115,33 @@ export function StreakCard({
   );
 }
 
-export function TomorrowTeaser({ title, text }: { title: string; text: string }) {
+const WHEEL = "bg-[conic-gradient(#f6c453_0_12.5%,#13798a_0_25%,#fbe3a1_0_37.5%,#0b4f5c_0_50%,#f2b134_0_62.5%,#1a8fa1_0_75%,#fdf0c8_0_87.5%,#0f5e6e_0)]";
+
+/** Home's half-width Daily Spin card; pairs with CheckInCard. */
+export function SpinCard({ spun, available }: { spun: boolean; available: boolean }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,oklch(0.3_0.06_240),oklch(0.2_0.05_255))] p-5 text-white">
-      <div aria-hidden className="absolute top-3 right-4 text-amber-100/25">
-        <Moon className="size-16" />
-      </div>
-      <p className="flex items-center gap-1.5 text-xs font-bold text-amber-200">
-        <Moon className="size-3.5" aria-hidden /> {title}
-      </p>
-      <p className="relative mt-1 max-w-[80%] font-heading text-lg font-semibold">{text}</p>
-      <p className="relative mt-1 text-xs text-white/65">New spin, missions and mystery at midnight (Malaysia time).</p>
-    </div>
+    <Link
+      href="/app/daily#spin"
+      className="group relative isolate flex flex-col overflow-hidden rounded-2xl bg-[linear-gradient(160deg,oklch(0.45_0.08_205),oklch(0.27_0.05_228))] p-3 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
+    >
+      <span aria-hidden className={cn("absolute -top-6 -right-6 -z-10 size-24 rounded-full opacity-20 transition-transform duration-700 group-hover:rotate-45", WHEEL)} />
+      <span className={cn("relative grid size-11 place-items-center rounded-full inset-ring-2 inset-ring-white/90 shadow-sm shadow-black/30", WHEEL)} aria-hidden>
+        <span className="size-3 rounded-full bg-white ring-2 ring-amber-300" />
+      </span>
+      <p className="mt-3 font-heading text-lg leading-tight font-extrabold">Daily Spin</p>
+      <p className="mt-1 mb-3 text-sm text-white/75">{spun ? "Spun today. Back tomorrow!" : available ? "Your free spin is ready." : "No spin today."}</p>
+      <span
+        className={cn(
+          buttonVariants({ variant: spun ? "secondary" : "gold", size: "pill" }),
+          "mt-auto w-full",
+          spun ? "bg-white/15 text-white" : "group-hover:brightness-105",
+          !spun && !available && "opacity-60",
+        )}
+      >
+        {spun ? <Check aria-hidden /> : null}
+        {spun ? "Done" : "Spin now"}
+      </span>
+    </Link>
   );
 }
 

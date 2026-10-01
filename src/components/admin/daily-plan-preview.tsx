@@ -49,11 +49,6 @@ export async function DailyPlanPreview({ plan }: { plan: DailyPlan }) {
           )}
         </dd>
       </div>
-      <div className="rounded-lg border p-3 sm:col-span-2">
-        <dt className="text-xs text-muted-foreground">Tomorrow teaser</dt>
-        <dd className="font-medium">{plan.teaserTitle}</dd>
-        <dd className="text-xs text-muted-foreground">{plan.teaserText}</dd>
-      </div>
     </dl>
   );
 }

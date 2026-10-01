@@ -228,8 +228,6 @@ async function main() {
       eventIcon: "⚓",
       eventPoolId: eventPool.id,
       freeDiscoveries: 4,
-      teaserTitle: "Tomorrow",
-      teaserText: "A storm is rolling in... something is washing ashore.",
     });
 
     /* Config ---------------------------------------------------------------- */

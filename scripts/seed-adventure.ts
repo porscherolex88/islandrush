@@ -3,9 +3,10 @@ loadEnv({ path: ".env.local" });
 loadEnv();
 
 async function main() {
-  const { seedAdventure } = await import("@/server/content/adventure-seed");
+  const { seedAdventure, updateAdventureContent } = await import("@/server/content/adventure-seed");
   const created = await seedAdventure((msg) => console.log(`  ${msg}`));
-  if (!created) console.log("Adventure content already present, nothing to do.");
+  if (!created) console.log("Adventure content already present.");
+  await updateAdventureContent((msg) => console.log(`  ${msg}`));
 }
 
 main()

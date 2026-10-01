@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { BottomNavigation } from "./bottom-navigation";
+import { PushDrawerFrame } from "./side-drawer";
 
 /**
  * Mobile-first user app frame. On phones it is full-bleed; on larger screens it is
@@ -8,17 +9,21 @@ import { BottomNavigation } from "./bottom-navigation";
  * and phones always scroll the document so Safari's toolbar can collapse.
  * There is no global header: each bottom-nav destination renders its own header from
  * root-page-header, and every other page renders InnerPageHeader. The bottom nav only
- * appears on the five roots.
+ * appears on the five roots. `drawer` is the left push drawer opened by DrawerTrigger.
  */
-export function AppShell({ children, banner }: { children: ReactNode; banner?: ReactNode }) {
+export function AppShell({ children, banner, drawer }: { children: ReactNode; banner?: ReactNode; drawer: ReactNode }) {
   return (
     <div className="min-h-dvh bg-surface desktop:flex desktop:items-center desktop:justify-center desktop:bg-[radial-gradient(circle_at_20%_10%,oklch(0.9_0.05_205),transparent_45%),radial-gradient(circle_at_80%_90%,oklch(0.93_0.06_85),transparent_40%)] desktop:py-6">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-background desktop:h-[min(920px,calc(100dvh-3rem))] desktop:min-h-0 desktop:overflow-hidden desktop:rounded-[2.25rem] desktop:border">
-        <main id="main" className="flex-1 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] desktop:overflow-y-auto desktop:overscroll-contain">
-          {banner && <div className="pt-[calc(env(safe-area-inset-top)+0.5rem)]">{banner}</div>}
-          {children}
-        </main>
-        <BottomNavigation />
+      <div
+        className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-clip bg-background desktop:h-[min(920px,calc(100dvh-3rem))] desktop:min-h-0 desktop:overflow-hidden desktop:rounded-[2.25rem] desktop:border"
+        style={{ "--drawer-w": "min(82vw, 320px)" } as CSSProperties}
+      >
+        <PushDrawerFrame drawer={drawer} nav={<BottomNavigation />}>
+          <main id="main" className="flex-1 desktop:overflow-y-auto desktop:overscroll-contain">
+            {banner && <div className="pt-[calc(env(safe-area-inset-top)+0.5rem)]">{banner}</div>}
+            {children}
+          </main>
+        </PushDrawerFrame>
       </div>
     </div>
   );

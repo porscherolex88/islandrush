@@ -14,7 +14,7 @@ import {
   userStreaks,
 } from "@/db/schema";
 import { AppError, isUniqueViolation } from "@/lib/errors";
-import { addDays, appDay, daysBetween } from "@/lib/time";
+import { appDay, daysBetween } from "@/lib/time";
 import { checkAchievements } from "./achievements";
 import { getConfig } from "./config";
 import { postTransaction } from "./ledger";
@@ -41,8 +41,6 @@ export type DailyPlan = {
   missionBonusPoolId: string | null;
   event: { title: string; description: string; icon: string; poolId: string | null; costCredits: number } | null;
   freeDiscoveries: number;
-  teaserTitle: string;
-  teaserText: string;
 };
 
 /** Resolves the daily content for a day: a published calendar schedule, otherwise the configured defaults. */
@@ -83,8 +81,6 @@ export async function getDailyPlan(day: string, tx: DbOrTx = db, opts: { include
         }
       : null,
     freeDiscoveries: s?.freeDiscoveries ?? defaults.freeDiscoveries,
-    teaserTitle: s?.teaserTitle ?? defaults.teaserTitle,
-    teaserText: s?.teaserText ?? defaults.teaserText,
   };
 }
 
@@ -274,7 +270,6 @@ export async function freeDiscoveriesUsed(tx: DbOrTx, userId: string, day: strin
 export async function getDailyState(userId: string) {
   const day = await today();
   const plan = await getDailyPlan(day);
-  const tomorrow = await getDailyPlan(addDays(day, 1));
   const [[login], [spin], progress, [bonus], [eventClaim], [streak], milestones, usedFree] = await Promise.all([
     db.select().from(dailyLogins).where(and(eq(dailyLogins.userId, userId), eq(dailyLogins.day, day))).limit(1),
     db.select().from(dailySpins).where(and(eq(dailySpins.userId, userId), eq(dailySpins.day, day))).limit(1),
@@ -308,6 +303,5 @@ export async function getDailyState(userId: string) {
     streak: { current: currentStreak, longest: streak?.longest ?? 0, lastClaimDay: streak?.lastClaimDay ?? null },
     milestones: milestones.map((m) => ({ id: m.id, days: m.days, title: m.title, reached: currentStreak >= m.days })),
     nextMilestone: milestones.find((m) => m.days > currentStreak) ?? null,
-    teaser: { title: tomorrow.teaserTitle, text: tomorrow.teaserText },
   };
 }

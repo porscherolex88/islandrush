@@ -278,7 +278,7 @@ export async function setFeatureFlagAction(key: string, enabled: boolean, reason
   });
 }
 
-const ECONOMY_KEYS: ConfigKey[] = ["conversion", "deposit", "withdrawal", "rewards", "limits", "daily_defaults"];
+const ECONOMY_KEYS: ConfigKey[] = ["conversion", "deposit", "withdrawal", "rewards", "limits", "daily_defaults", "market"];
 const REFERRAL_KEYS: ConfigKey[] = ["referral"];
 
 function permissionForConfig(key: ConfigKey): Permission {
@@ -302,6 +302,13 @@ export async function setConfigAction(key: string, value: unknown, reason: strin
       const v = value as { cash: string; credits: number };
       if (!/^\d+(\.\d{1,2})?$/.test(String(v.cash)) || Number(v.cash) <= 0 || !Number.isInteger(v.credits) || v.credits <= 0) {
         throw new AppError("Conversion needs a positive RM amount and a positive whole number of Credits");
+      }
+    }
+    if (k === "market") {
+      const v = value as { feePct: number; minPrice: number; maxPrice: number; maxActiveListings: number };
+      const whole = (n: number) => Number.isInteger(n) && n >= 0;
+      if (!whole(v.feePct) || v.feePct > 50 || !whole(v.minPrice) || v.minPrice < 1 || !whole(v.maxPrice) || v.maxPrice < v.minPrice || !whole(v.maxActiveListings) || v.maxActiveListings < 1) {
+        throw new AppError("Market fee must be a whole percentage from 0 to 50%, prices whole Credits with max at least min, and at least 1 active listing");
       }
     }
     if (k === "prize_wheel") {

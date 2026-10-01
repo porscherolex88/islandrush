@@ -74,6 +74,7 @@ export const ledgerTxTypeEnum = pgEnum("ledger_tx_type", [
   "WITHDRAWAL_COMPLETE",
   "WITHDRAWAL_RETURN",
   "ADJUSTMENT",
+  "MARKET_TRADE",
 ]);
 export const rewardSourceEnum = pgEnum("reward_source", [
   "GAME_REWARD",
@@ -673,6 +674,72 @@ export const collectionCompletions = pgTable(
 );
 
 /* ----------------------------------------------------------------------------
+ * Market (player-to-player item trading for Credits)
+ * ------------------------------------------------------------------------- */
+
+export const marketListingStatusEnum = pgEnum("market_listing_status", ["ACTIVE", "SOLD", "CANCELLED"]);
+
+/** Listed items are held in escrow: they leave the seller's inventory until sold or cancelled. */
+export const marketListings = pgTable(
+  "market_listings",
+  {
+    id: id(),
+    sellerId: text("seller_id")
+      .notNull()
+      .references(() => profiles.id),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => items.id),
+    listedQuantity: integer("listed_quantity").notNull(),
+    /** Units still for sale. */
+    quantity: integer("quantity").notNull(),
+    unitPrice: credits("unit_price").notNull(),
+    status: marketListingStatusEnum("status").notNull().default("ACTIVE"),
+    closedAt: ts("closed_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("ml_status_idx").on(t.status, t.createdAt),
+    index("ml_seller_idx").on(t.sellerId, t.status),
+    index("ml_item_idx").on(t.itemId, t.status),
+    check("ml_qty_valid", sql`${t.quantity} >= 0 AND ${t.quantity} <= ${t.listedQuantity}`),
+    check("ml_price_positive", sql`${t.unitPrice} > 0`),
+  ],
+);
+
+export const marketSales = pgTable(
+  "market_sales",
+  {
+    id: id(),
+    listingId: uuid("listing_id")
+      .notNull()
+      .references(() => marketListings.id),
+    buyerId: text("buyer_id")
+      .notNull()
+      .references(() => profiles.id),
+    sellerId: text("seller_id")
+      .notNull()
+      .references(() => profiles.id),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => items.id),
+    quantity: integer("quantity").notNull(),
+    unitPrice: credits("unit_price").notNull(),
+    total: credits("total").notNull(),
+    fee: credits("fee").notNull(),
+    ledgerTransactionId: uuid("ledger_transaction_id").references(() => ledgerTransactions.id),
+    idempotencyKey: text("idempotency_key").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("ms_buyer_idem_uq").on(t.buyerId, t.idempotencyKey),
+    index("ms_listing_idx").on(t.listingId),
+    index("ms_seller_idx").on(t.sellerId, t.createdAt),
+  ],
+);
+
+/* ----------------------------------------------------------------------------
  * Mystery Box
  * ------------------------------------------------------------------------- */
 
@@ -1248,8 +1315,6 @@ export const dailySchedules = pgTable(
     eventPoolId: uuid("event_pool_id").references(() => rewardPools.id),
     eventCostCredits: credits("event_cost_credits").notNull().default(0),
     freeDiscoveries: integer("free_discoveries"),
-    teaserTitle: text("teaser_title"),
-    teaserText: text("teaser_text"),
     notes: text("notes"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

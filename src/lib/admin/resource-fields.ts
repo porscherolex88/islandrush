@@ -398,11 +398,9 @@ export const RESOURCES = {
       pool("eventPoolId", "Mystery event pool"),
       { name: "eventCostCredits", label: "Mystery event cost (Credits)", type: "credits", default: 0 },
       { name: "freeDiscoveries", label: "Free map discoveries", type: "number", help: "Leave empty to use the default." },
-      { name: "teaserTitle", label: "Tomorrow teaser title", type: "text" },
-      { name: "teaserText", label: "Tomorrow teaser text", type: "textarea" },
       { name: "notes", label: "Internal notes", type: "textarea" },
     ],
-    columns: ["day", "status", "eventTitle", "teaserTitle"],
+    columns: ["day", "status", "eventTitle"],
     deletable: true,
   },
   streakMilestones: {

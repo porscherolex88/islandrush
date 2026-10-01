@@ -1,11 +1,11 @@
 import { Map as MapIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { AdventureMap } from "@/components/app/adventure/adventure-map";
-import { LevelTrack } from "@/components/app/adventure/level-track";
-import { levelParam, mapTrack } from "@/components/app/adventure/tracks";
+import { levelParam } from "@/components/app/adventure/tracks";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
 import { CreditsChip, Section } from "@/components/app/mobile-header";
 import { EmptyState } from "@/components/shared/states";
+import { parentRoute } from "@/lib/app-routes";
 import { requireUser } from "@/lib/auth/session";
 import { getAdventureState } from "@/server/services/adventure";
 import { isFeatureEnabled } from "@/server/services/config";
@@ -32,14 +32,16 @@ export default async function MapPage({ searchParams }: PageProps<"/app/play/map
   }
 
   return (
-    <div>
-      <InnerPageHeader title={`Map ${map.level}`} subtitle={map.name} action={<CreditsChip credits={balances.CREDITS} />} />
-      <Section>
-        <LevelTrack levels={mapTrack(s)} active={map.level} hrefFor={(l) => `/app/play/map?level=${l}`} label="Map levels" />
-      </Section>
-      <Section>
-        <AdventureMap key={map.id} map={map} enabled={enabled} nextMap={next ? { level: next.level, name: next.name } : null} />
-      </Section>
-    </div>
+    <AdventureMap
+      key={map.id}
+      map={map}
+      enabled={enabled}
+      nextMap={next ? { level: next.level, name: next.name } : null}
+      prevLevel={s.maps.findLast((m) => m.level < level)?.level ?? null}
+      nextLevel={next?.level ?? null}
+      levels={s.maps.length}
+      backHref={parentRoute("/app/play/map")}
+      action={<CreditsChip credits={balances.CREDITS} />}
+    />
   );
 }

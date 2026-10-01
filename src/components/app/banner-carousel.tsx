@@ -1,6 +1,6 @@
 "use client";
 
-import { Megaphone, Pause, Play } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -51,12 +51,11 @@ function Slide({ banner, index, count }: { banner: CarouselBanner; index: number
 
 /**
  * Home announcements as a swipeable strip. Auto-advances and loops, pausing while the
- * user hovers, focuses, touches or has paused it, and never auto-moves under reduced motion.
+ * user hovers, focuses or touches it, and never auto-moves under reduced motion.
  */
 export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [interactedAt, setInteractedAt] = useState(0);
@@ -95,7 +94,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
     setActive(nearest);
   }, []);
 
-  const autoplay = count > 1 && !paused && !hovered && !focused && !reducedMotion;
+  const autoplay = count > 1 && !hovered && !focused && !reducedMotion;
 
   useEffect(() => {
     if (!autoplay) return;
@@ -110,7 +109,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
   if (count === 0) return null;
   if (count === 1) {
     return (
-      <div className="px-4 py-1">
+      <div className="px-4">
         <Slide banner={banners[0]} index={0} count={1} />
       </div>
     );
@@ -120,7 +119,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
     <section
       aria-roledescription="carousel"
       aria-label="Announcements"
-      className="py-1"
+      className="mb-0"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
@@ -134,7 +133,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
         onPointerDown={() => setInteractedAt(Date.now())}
         onTouchStart={() => setInteractedAt(Date.now())}
         aria-live={autoplay ? "off" : "polite"}
-        className="flex snap-x snap-mandatory scroll-px-4 gap-2.5 overflow-x-auto overscroll-x-contain px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {banners.map((b, i) => (
           <div key={b.id} className="w-[86%] shrink-0 snap-start">
@@ -143,15 +142,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
         ))}
       </div>
 
-      <div className="mt-1 flex items-center justify-center gap-1 px-4">
-        <button
-          type="button"
-          onClick={() => setPaused((p) => !p)}
-          className={cn("grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", focusRing)}
-          aria-label={paused ? "Play announcements" : "Pause announcements"}
-        >
-          {paused ? <Play className="size-3.5" aria-hidden /> : <Pause className="size-3.5" aria-hidden />}
-        </button>
+      <div className="flex h-8 items-center justify-center px-4">
         {banners.map((b, i) => (
           <button
             key={b.id}
@@ -160,11 +151,11 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
               setInteractedAt(Date.now());
               goTo(i);
             }}
-            className={cn("grid h-11 w-6 place-items-center rounded-full", focusRing)}
+            className={cn("grid h-8 w-4 place-items-center rounded-full", focusRing)}
             aria-label={`Show announcement ${i + 1} of ${count}`}
             aria-current={i === active ? "true" : undefined}
           >
-            <span className={cn("block h-2 rounded-full transition-all", i === active ? "w-5 bg-gold" : "w-2 bg-border")} aria-hidden />
+            <span className={cn("block size-2 rounded-full transition-colors", i === active ? "bg-gold" : "bg-border")} aria-hidden />
           </button>
         ))}
       </div>

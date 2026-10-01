@@ -31,8 +31,6 @@ export type ConfigShape = {
     eventDescription: string;
     eventIcon: string;
     eventPoolId: string | null;
-    teaserTitle: string;
-    teaserText: string;
     streakGraceDays: number;
     streakSpinMinDays: number;
     streakSpinPoolId: string | null;
@@ -42,6 +40,7 @@ export type ConfigShape = {
   admin_security: { reauthMinutes: number };
   risk: { rapidSignupPerIpPerDay: number; largeDepositAmount: string };
   prize_wheel: { active: boolean; prizeUnlockPct: number; alternativePct: number };
+  market: { feePct: number; minPrice: number; maxPrice: number; maxActiveListings: number };
 };
 
 export const CONFIG_DEFAULTS: ConfigShape = {
@@ -66,8 +65,6 @@ export const CONFIG_DEFAULTS: ConfigShape = {
     eventDescription: "The tide has pulled back. Search the pools for something washed ashore.",
     eventIcon: "🌊",
     eventPoolId: null,
-    teaserTitle: "Tomorrow",
-    teaserText: "Something new is waiting on the island...",
     streakGraceDays: 0,
     streakSpinMinDays: 7,
     streakSpinPoolId: null,
@@ -77,6 +74,7 @@ export const CONFIG_DEFAULTS: ConfigShape = {
   admin_security: { reauthMinutes: 720 },
   risk: { rapidSignupPerIpPerDay: 3, largeDepositAmount: "20000.00" },
   prize_wheel: { active: true, prizeUnlockPct: 90, alternativePct: 10 },
+  market: { feePct: 15, minPrice: 1, maxPrice: 10_000_000, maxActiveListings: 20 },
 };
 
 export type ConfigKey = keyof ConfigShape;
@@ -94,6 +92,7 @@ export const CONFIG_DESCRIPTIONS: Record<ConfigKey, string> = {
   admin_security: "Admin security policy",
   risk: "Risk signal thresholds",
   prize_wheel: "Final Prize Unlock odds. Prize + alternative must total 100%.",
+  market: "Player market: fee on each sale (%), price range in Credits and max active listings per player",
 };
 
 /** Loads a config row with its last-updated time, used to version odds snapshots. */

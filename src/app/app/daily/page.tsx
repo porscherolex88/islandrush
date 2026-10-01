@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ART, mapArt } from "@/components/app/art";
 import { buttonVariants } from "@/components/ui/button";
 import { CheckInButton, MissionBonusButton, MysteryEventCard, SpinWheel } from "@/components/app/daily-actions";
-import { MissionCard, StreakCard, TomorrowTeaser } from "@/components/app/daily-cards";
+import { MissionCard, StreakCard } from "@/components/app/daily-cards";
 import { Panel, Section } from "@/components/app/mobile-header";
 import { DailyHeader } from "@/components/app/root-page-header";
 import { requireUser } from "@/lib/auth/session";
@@ -86,10 +86,6 @@ export default async function DailyPage() {
           </span>
           <span className={buttonVariants({ variant: "gold", size: "pill" })}>Go</span>
         </Link>
-      </Section>
-
-      <Section>
-        <TomorrowTeaser title={state.teaser.title} text={state.teaser.text} />
       </Section>
     </div>
   );

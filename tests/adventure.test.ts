@@ -169,7 +169,7 @@ describe("Mystery Box levels", () => {
     expect(events.map((e) => e.type).sort()).toEqual(["LOOT_REWARD", "MYSTERY_BOX_PURCHASE", "MYSTERY_BOX_REWARD"]);
     const state = await getAdventureState(u.id);
     expect(state.maps[0].lootCollected).toBe(5);
-    expect(state.maps[0].state).toBe("ready");
+    expect(state.maps[0].state).toBe("exploring");
   });
 
   it("rejects insufficient Credits without side effects", async () => {
@@ -182,11 +182,28 @@ describe("Mystery Box levels", () => {
 });
 
 describe("maps and checkpoints", () => {
-  it("requires Loot to unlock a map and is idempotent", async () => {
+  it("opens Map 1 for every new player without Loot", async () => {
+    const u = await makeUser();
+    const state = await getAdventureState(u.id);
+    expect(state.maps[0]).toMatchObject({ state: "exploring", lootRequired: 0, lootCollected: 0 });
+    expect(state.maps[0].checkpoints.find((c) => c.isNext)?.name).toBe("Camp");
+    expect(state.maps[1].state).toBe("locked");
+  });
+
+  it("lets a player reach Map 1 checkpoints without an unlock step", async () => {
     const u = await makeUser();
     await giveCredits(u.id, 10_000);
-    await expect(unlockMap(u.id, L[1].map.id)).rejects.toThrow(/Collect 5 more Loot/);
-    await open(u.id, 1);
+    for (let i = 0; i < 2; i++) await open(u.id, 1);
+    await expect(unlockCheckpoint(u.id, L[1].checkpoints[0].id)).resolves.toMatchObject({ name: "Camp", replayed: false });
+    const [{ n }] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(gameEvents)
+      .where(and(eq(gameEvents.userId, u.id), eq(gameEvents.type, "MAP_UNLOCK")));
+    expect(n).toBe(1);
+  });
+
+  it("unlocking Map 1 needs no Loot and is idempotent", async () => {
+    const u = await makeUser();
     const first = await unlockMap(u.id, L[1].map.id);
     const second = await unlockMap(u.id, L[1].map.id);
     expect(first.replayed).toBe(false);
