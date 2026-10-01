@@ -1,10 +1,17 @@
 import type { ReactNode } from "react";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadge , humanize } from "@/components/shared/status-badge";
 import type { FieldDef } from "@/lib/admin/resource-fields";
-import { formatCredits, formatMYR } from "@/lib/money";
+import type { FiatDisplay } from "@/lib/fiat-display.shared";
+import { formatCredits, formatCash } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 
-export function formatCell(field: FieldDef | undefined, name: string, value: unknown, labels: Record<string, Record<string, string>>): ReactNode {
+export function formatCell(
+  field: FieldDef | undefined,
+  name: string,
+  value: unknown,
+  labels: Record<string, Record<string, string>>,
+  fiat: FiatDisplay,
+): ReactNode {
   if (value === null || value === undefined || value === "") return <span className="text-muted-foreground">-</span>;
   if (value instanceof Date) return <span className="whitespace-nowrap text-xs">{formatDateTime(value)}</span>;
   if (!field) return typeof value === "object" ? JSON.stringify(value) : String(value);
@@ -12,9 +19,9 @@ export function formatCell(field: FieldDef | undefined, name: string, value: unk
     case "boolean":
       return value ? <StatusBadge status="ACTIVE" label="Yes" /> : <StatusBadge status="DRAFT" label="No" />;
     case "select":
-      return name === "status" ? <StatusBadge status={String(value)} /> : <span className="text-xs font-medium">{String(value).replace(/_/g, " ")}</span>;
+      return name === "status" ? <StatusBadge status={String(value)} /> : <span className="text-xs font-medium">{humanize(String(value))}</span>;
     case "money":
-      return <span className="tabular">{name === "amount" || name === "value" ? String(value) : formatMYR(String(value))}</span>;
+      return <span className="tabular">{name === "amount" || name === "value" ? String(value) : formatCash(String(value), { currency: fiat })}</span>;
     case "credits":
       return <span className="tabular">{formatCredits(Number(value))}</span>;
     case "relation":

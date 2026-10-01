@@ -3,13 +3,15 @@ import type { Metadata } from "next";
 import { ReconciliationRunner } from "@/components/admin/finance-forms";
 import { AdminCard, AdminPage, DataTable, StatGrid, StatsCard } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { rows } from "@/server/admin/queries";
 import { runReconciliation } from "@/server/services/admin-finance";
 
 export const metadata: Metadata = { title: "Reconciliation" };
 
 export default async function ReconciliationPage() {
+  const fiat = await getFiatDisplay();
   await requireAdmin("reconciliation.view");
   type Line = { type: string; currency: string; owner: string; total: string; n: number };
   const [checks, users, system] = await Promise.all([
@@ -23,7 +25,7 @@ export default async function ReconciliationPage() {
       where a.user_id is null group by a.id, a.type, a.currency order by a.type`),
   ]);
   const list = [...users, ...system].map((l) => ({ ...l, total: Number(l.total) }));
-  const fmt = (c: string, v: number) => (c === "CREDITS" ? `${formatCredits(Math.round(v))} Cr` : formatMYR(v.toFixed(2)));
+  const fmt = (c: string, v: number) => (c === "CREDITS" ? `${formatCredits(Math.round(v))} Cr` : formatCash(v.toFixed(2), { currency: fiat }));
   const failed = checks.filter((c) => !c.ok).length;
 
   return (

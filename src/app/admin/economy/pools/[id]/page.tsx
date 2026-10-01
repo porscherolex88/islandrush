@@ -11,12 +11,14 @@ import { db } from "@/db";
 import * as s from "@/db/schema";
 import { RESOURCES } from "@/lib/admin/resource-fields";
 import { requireAdmin } from "@/lib/auth/session";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { poolDistribution } from "@/server/admin/pools";
 import { serializeRow } from "@/server/admin/resources";
 
 export const metadata: Metadata = { title: "Reward pool" };
 
 export default async function PoolPage({ params }: PageProps<"/admin/economy/pools/[id]">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("economy.manage");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -61,7 +63,7 @@ export default async function PoolPage({ params }: PageProps<"/admin/economy/poo
         <StatsCard label="Used by" value={usedBy.length} />
       </StatGrid>
       <AdminCard title="Configured vs historical distribution" description="Configured odds exclude inactive and exhausted entries." bodyClassName="p-0">
-        <PoolTable stats={dist.stats} back={back} />
+        <PoolTable stats={dist.stats} back={back} fiat={fiat} />
       </AdminCard>
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <AdminCard title="Pool settings">

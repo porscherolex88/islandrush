@@ -7,7 +7,8 @@ import { ReferralCard } from "@/components/app/referral-card";
 import { EmptyState } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { siteUrl } from "@/lib/site-url";
 import { formatDate, formatDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -17,12 +18,13 @@ import { getReferralSummary } from "@/server/services/referrals";
 export const metadata: Metadata = { title: "Referrals" };
 
 export default async function ReferralsPage() {
+  const fiat = await getFiatDisplay();
   const user = await requireUser();
   const [s, origin, enabled] = await Promise.all([getReferralSummary(user.id), siteUrl(), isFeatureEnabled("referrals")]);
   const link = `${origin}/register?ref=${s.code}`;
   const active = enabled && s.config.enabled;
   const levels = s.levels.filter((l) => l.active && l.level <= s.config.levels);
-  const rewardText = (l: (typeof levels)[number]) => (l.rewardKind === "PERCENT" ? `${Number(l.value)}% of first deposit` : `${formatMYR(l.value)} each`);
+  const rewardText = (l: (typeof levels)[number]) => (l.rewardKind === "PERCENT" ? `${Number(l.value)}% of first deposit` : `${formatCash(l.value, { currency: fiat })} each`);
   const network = [
     { label: "Direct friends", hint: "People you invited", value: s.counts.l1 },
     { label: "Level 2", hint: "Friends they invited", value: s.counts.l2 },
@@ -31,7 +33,7 @@ export default async function ReferralsPage() {
 
   return (
     <div>
-      <InnerPageHeader title="Referrals" subtitle="Invite friends, earn rewards" icon={<Users />} />
+      <InnerPageHeader title="Referrals" subtitle="Invite friends, earn rewards" />
       <Section>
         {active ? (
           <ReferralCard code={s.code} link={link} />
@@ -43,7 +45,7 @@ export default async function ReferralsPage() {
       <Section title="Your network">
         <div className={cn("grid gap-2 text-center", network.length === 3 ? "grid-cols-3" : network.length === 2 ? "grid-cols-2" : "grid-cols-1")}>
           {network.map((c) => (
-            <div key={c.label} className="rounded-2xl border bg-card p-3 shadow-card">
+            <div key={c.label} className="rounded-2xl border bg-card p-3">
               <p className="font-heading text-3xl font-extrabold tabular">{c.value}</p>
               <p className="text-sm font-semibold">{c.label}</p>
               <p className="text-xs text-muted-foreground">{c.hint}</p>
@@ -56,12 +58,12 @@ export default async function ReferralsPage() {
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-2xl bg-surface p-4">
             <p className="text-sm text-muted-foreground">Pending</p>
-            <p className="font-heading text-2xl font-extrabold tabular">{formatMYR(s.totals.pending)}</p>
+            <p className="font-heading text-2xl font-extrabold tabular">{formatCash(s.totals.pending, { currency: fiat })}</p>
             <p className="text-xs text-muted-foreground">Under review</p>
           </div>
           <div className="rounded-2xl bg-success-soft p-4">
             <p className="text-sm text-muted-foreground">Earned</p>
-            <p className="font-heading text-2xl font-extrabold text-success tabular">{formatMYR(s.totals.settled)}</p>
+            <p className="font-heading text-2xl font-extrabold text-success tabular">{formatCash(s.totals.settled, { currency: fiat })}</p>
             <p className="text-xs text-muted-foreground">Now withdrawable</p>
           </div>
         </div>
@@ -71,7 +73,7 @@ export default async function ReferralsPage() {
         <div className="rounded-2xl border bg-card p-4">
           <ol className="flex items-start justify-between" aria-label="Invite levels">
             <li className="flex w-16 flex-col items-center gap-1 text-center">
-              <span className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-card">
+              <span className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground">
                 <UserRound className="size-5" aria-hidden />
               </span>
               <span className="text-sm font-bold">You</span>
@@ -80,7 +82,7 @@ export default async function ReferralsPage() {
               <Fragment key={l.level}>
                 <ChevronRight className="mt-4 size-4 shrink-0 text-muted-foreground" aria-hidden />
                 <li className="flex w-16 flex-col items-center gap-1 text-center">
-                  <span className="grid size-12 place-items-center rounded-full bg-gold-soft text-gold-foreground shadow-card">
+                  <span className="grid size-12 place-items-center rounded-full bg-gold-soft text-gold-foreground">
                     <UserRound className="size-5" aria-hidden />
                   </span>
                   <span className="text-sm font-bold">Friend</span>
@@ -91,7 +93,7 @@ export default async function ReferralsPage() {
           </ol>
           <ul className="mt-4 space-y-1.5 border-t pt-3 text-sm text-muted-foreground">
             <li>1. Share your link with a friend.</li>
-            <li>2. They sign up and make a first deposit of {formatMYR(s.config.qualifyingDepositMin)} or more.</li>
+            <li>2. They sign up and make a first deposit of {formatCash(s.config.qualifyingDepositMin, { currency: fiat })} or more.</li>
             <li>3. Your reward waits in Pending for about {s.config.pendingHours} hours, then becomes Withdrawable.</li>
           </ul>
         </div>
@@ -125,7 +127,7 @@ export default async function ReferralsPage() {
                   <p className="text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold tabular">{formatMYR(r.amount)}</p>
+                  <p className="font-semibold tabular">{formatCash(r.amount, { currency: fiat })}</p>
                   <StatusBadge status={r.status} />
                 </div>
               </li>

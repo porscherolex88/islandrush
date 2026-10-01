@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { collectionCompletions, collections, profiles, rewardPools } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { poolDistribution } from "@/server/admin/pools";
 import { one, rows } from "@/server/admin/queries";
@@ -18,6 +19,7 @@ import { one, rows } from "@/server/admin/queries";
 export const metadata: Metadata = { title: "Collection" };
 
 export default async function CollectionPage({ params }: PageProps<"/admin/collections/[id]">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("collections.manage");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -96,7 +98,7 @@ export default async function CollectionPage({ params }: PageProps<"/admin/colle
             </Button>
           }
         >
-          <PoolTable stats={dist.stats} back={`/admin/economy/pools/${pool.id}`} showObserved={false} />
+          <PoolTable stats={dist.stats} back={`/admin/economy/pools/${pool.id}`} showObserved={false} fiat={fiat} />
         </AdminCard>
       )}
       <AdminCard title="Recent completions" bodyClassName="p-0">

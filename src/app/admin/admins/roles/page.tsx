@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/session";
 import { ALL_PERMISSIONS, PERMISSIONS, type Role } from "@/lib/permissions";
 import { rows } from "@/server/admin/queries";
 import { permissionsForRole } from "@/server/services/permissions";
+import { humanize } from "@/components/shared/status-badge";
 
 export const metadata: Metadata = { title: "Roles and permissions" };
 
@@ -28,7 +29,7 @@ export default async function RolesPage() {
     <AdminPage title="Roles and permissions" description="Permissions are enforced on the server for every page and action. Changes apply immediately.">
       <StatGrid cols={4}>
         {[...EDITABLE, "SUPER_ADMIN"].map((r) => (
-          <StatsCard key={r} label={r.replace("_", " ")} value={`${n(r)} staff`} hint={SCOPE[r]} />
+          <StatsCard key={r} label={humanize(r)} value={`${n(r)} staff`} hint={SCOPE[r]} />
         ))}
       </StatGrid>
       <div id="matrix" className="scroll-mt-20">

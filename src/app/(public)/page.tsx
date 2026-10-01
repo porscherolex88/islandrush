@@ -1,8 +1,7 @@
 import { BadgeCheck, CalendarCheck, Gift, Lock, ShieldCheck, Sparkles, Users, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Container, CtaBand, FeatureCard, SectionBlock, Steps } from "@/components/public/marketing";
-import { Button } from "@/components/ui/button";
+import { Container, CtaBand, FeatureCard, LandingButton, SectionBlock, Steps } from "@/components/public/marketing";
 
 const GAMES = [
   {
@@ -38,17 +37,17 @@ export default function LandingPage() {
               Explore the island map, discover hidden treasures, fill your collection book and unlock the Ancient Vault. Something new every day.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="xl">
+              <LandingButton asChild>
                 <Link href="/register">Get started free</Link>
-              </Button>
-              <Button asChild size="xl" variant="outline">
+              </LandingButton>
+              <LandingButton asChild>
                 <Link href="/games">See the games</Link>
-              </Button>
+              </LandingButton>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">Free daily spin and check-in. 18+ only.</p>
           </div>
           <div className="relative mx-auto w-full max-w-sm">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-[2.5rem] border-8 border-foreground/90 shadow-lift">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-[2.5rem] border-8 border-foreground/90">
               <Image src="/illustrations/island-map.webp" alt="Illustrated map of Lost Island" fill priority sizes="384px" className="object-cover" />
               <div aria-hidden className="art-scrim-b absolute inset-0" />
               <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/90 p-3 backdrop-blur">
@@ -68,7 +67,7 @@ export default function LandingPage() {
       <SectionBlock title="Three ways to play" description="Every game feeds into the same adventure: items, fragments and keys you find in one game help you in another.">
         <div className="grid gap-5 md:grid-cols-3">
           {GAMES.map((g) => (
-            <div key={g.title} className="overflow-hidden rounded-3xl border bg-card shadow-card">
+            <div key={g.title} className="overflow-hidden rounded-3xl border bg-card">
               <div className="relative h-44">
                 <Image src={g.art} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover" />
               </div>

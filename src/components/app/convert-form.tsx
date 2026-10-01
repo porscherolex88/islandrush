@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { newKey, useAction } from "@/hooks/use-action";
-import { cashMinorToCredits, formatCredits, formatMYR, toDecimal, toMinor } from "@/lib/money";
+import { useFiatCurrency, useFormatCash } from "@/components/providers/fiat-currency-provider";
+import { cashMinorToCredits, formatCredits, toDecimal, toMinor } from "@/lib/money";
 import { convertAction } from "@/server/actions/wallet";
 
 function safeMinor(v: string) {
@@ -19,6 +20,8 @@ function safeMinor(v: string) {
 }
 
 export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rateCash: string; rateCredits: number }) {
+  const fmt = useFormatCash();
+  const fiat = useFiatCurrency();
   const [amount, setAmount] = useState("");
   const keyRef = useRef(newKey());
   const cashMinor = toMinor(cash);
@@ -28,7 +31,7 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
   const valid = minor > 0n && !over && credits > 0n;
 
   const { run, pending } = useAction(convertAction, {
-    success: (d) => `Converted ${formatMYR(d.cashAmount)} to ${formatCredits(d.credits)} Credits`,
+    success: (d) => `Converted ${fmt(d.cashAmount)} to ${formatCredits(d.credits)} Credits`,
     onSuccess: () => {
       setAmount("");
       keyRef.current = newKey();
@@ -39,13 +42,14 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border bg-card p-4 shadow-card">
+      <div className="rounded-2xl border bg-card p-4">
         <div className="flex items-center justify-between">
           <Label htmlFor="cash" className="text-base font-semibold">
             How much Cash?
           </Label>
-          <span className="text-sm text-muted-foreground tabular">Available: {formatMYR(cash)}</span>
+          <span className="text-sm text-muted-foreground tabular">Available: {fmt(cash)}</span>
         </div>
+        {fiat === "USD" ? <p className="mt-1 text-xs text-muted-foreground">Enter RM amounts; balances and summaries use USD.</p> : null}
         <div className="mt-2 flex items-center gap-2 rounded-xl bg-surface px-3">
           <span className="font-heading text-2xl font-bold text-muted-foreground">RM</span>
           <Input
@@ -54,7 +58,7 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-            className="h-14 border-0 bg-transparent px-0 font-heading text-3xl font-bold shadow-none focus-visible:ring-0"
+            className="h-14 border-0 bg-transparent px-0 font-heading text-3xl font-bold focus-visible:ring-0"
             aria-invalid={over}
           />
         </div>
@@ -74,7 +78,7 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
           <dl className="mt-2 space-y-2 text-sm">
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">You are converting</dt>
-              <dd className="font-semibold tabular">{formatMYR(minor)} Cash</dd>
+              <dd className="font-semibold tabular">{fmt(minor)} Cash</dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">You will receive</dt>
@@ -83,30 +87,30 @@ export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rat
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">Rate</dt>
               <dd className="tabular">
-                {formatMYR(rateCash)} = {formatCredits(rateCredits)} Credits
+                {fmt(rateCash)} = {formatCredits(rateCredits)} Credits
               </dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">Cash left after</dt>
-              <dd className="tabular">{formatMYR(over ? 0n : cashMinor - minor)}</dd>
+              <dd className="tabular">{fmt(over ? 0n : cashMinor - minor)}</dd>
             </div>
           </dl>
         ) : (
           <p className="mt-1 text-sm text-muted-foreground">
-            Enter an amount to see how many Credits you will get. Rate: {formatMYR(rateCash)} = {formatCredits(rateCredits)} Credits.
+            Enter an amount to see how many Credits you will get. Rate: {fmt(rateCash)} = {formatCredits(rateCredits)} Credits.
           </p>
         )}
       </div>
 
       <ConfirmDialog
         trigger={
-          <Button size="xl" variant="gold" className="w-full" disabled={!valid || pending}>
+          <Button size="pill" variant="gold" className="w-full" disabled={!valid || pending}>
             {pending && <Loader2 className="animate-spin" />}
-            {valid ? `Convert ${formatMYR(minor)} → ${formatCredits(credits)} Credits` : "Convert"}
+            {valid ? `Convert ${fmt(minor)} → ${formatCredits(credits)} Credits` : "Convert"}
           </Button>
         }
         title="Convert Cash to Credits?"
-        description={`${formatMYR(minor)} from your Cash will become ${formatCredits(credits)} Credits. Credits are used to play and cannot be converted back to Cash.`}
+        description={`${fmt(minor)} from your Cash will become ${formatCredits(credits)} Credits. Credits are used to play and cannot be converted back to Cash.`}
         confirmLabel="Yes, convert"
         onConfirm={() => run({ cashAmount: toDecimal(minor), idempotencyKey: keyRef.current })}
       />

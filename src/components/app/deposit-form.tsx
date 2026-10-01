@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { newKey, useAction } from "@/hooks/use-action";
-import { formatMYR } from "@/lib/money";
+import { useFiatCurrency, useFormatCash } from "@/components/providers/fiat-currency-provider";
 import { cn } from "@/lib/utils";
 import { createDepositAction } from "@/server/actions/wallet";
 import { CopyButton } from "./copy-button";
@@ -34,6 +34,8 @@ export function DepositForm({
   defaultName: string;
   reference: string;
 }) {
+  const fmt = useFormatCash();
+  const fiat = useFiatCurrency();
   const formRef = useRef<HTMLFormElement>(null);
   const keyRef = useRef<string>(newKey());
   const [amount, setAmount] = useState("");
@@ -44,7 +46,7 @@ export function DepositForm({
   const account = accounts.find((a) => a.id === accountId);
 
   const { run, pending } = useAction(createDepositAction, {
-    success: (d) => `Deposit of ${formatMYR(d.amount)} submitted for review`,
+    success: (d) => `Deposit of ${fmt(d.amount)} submitted for review`,
     onSuccess: (d) => {
       setDone({ amount: d.amount });
       keyRef.current = newKey();
@@ -57,14 +59,14 @@ export function DepositForm({
   if (done) {
     return (
       <div className="space-y-3 rounded-3xl border bg-success-soft/60 p-6 text-center">
-        <span className="mx-auto grid size-16 place-items-center rounded-full bg-success text-white shadow-lift">
+        <span className="mx-auto grid size-16 place-items-center rounded-full bg-success text-white">
           <CheckCircle2 className="size-8" aria-hidden />
         </span>
         <p className="font-heading text-xl font-bold">Deposit submitted</p>
         <p className="text-sm text-muted-foreground">
-          We are checking your {formatMYR(done.amount)} transfer. We will notify you as soon as it is added to your Cash, usually within a few hours.
+          We are checking your {fmt(done.amount)} transfer. We will notify you as soon as it is added to your Cash, usually within a few hours.
         </p>
-        <Button variant="outline" size="lg" onClick={() => setDone(null)}>
+        <Button variant="outline" size="pill" onClick={() => setDone(null)}>
           Make another deposit
         </Button>
       </div>
@@ -106,9 +108,9 @@ export function DepositForm({
           </div>
         )}
         {account ? (
-          <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.3_0.07_222)_75%)] p-5 text-white shadow-lift">
+          <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.3_0.07_222)_75%)] p-5 text-white">
             <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-xl bg-white/15">
+              <span className="grid size-11 place-items-center rounded-full bg-white/15">
                 <Landmark className="size-5" aria-hidden />
               </span>
               <div>
@@ -140,17 +142,20 @@ export function DepositForm({
       <fieldset className="space-y-4 rounded-3xl border bg-card p-4" disabled={!account || pending}>
         <legend className="px-1 font-heading text-lg font-bold">Step 2: After you transfer</legend>
         <div className="grid gap-1.5">
-          <Label htmlFor="amount">Amount you sent (RM)</Label>
+          <Label htmlFor="amount">
+            Amount you sent (RM)
+            {fiat === "USD" ? <span className="block text-xs font-normal text-muted-foreground">Enter the Ringgit amount on your transfer; balances elsewhere show in USD.</span> : null}
+          </Label>
           <Input id="amount" name="amount" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} required className="h-12 text-lg font-semibold" />
           <div className="flex gap-2">
             {QUICK.map((q) => (
               <button key={q} type="button" onClick={() => setAmount(q)} className="h-11 flex-1 rounded-xl border bg-surface text-sm font-semibold hover:bg-muted">
-                RM{q}
+                {fiat === "MYR" ? `RM${q}` : fmt(q)}
               </button>
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Minimum {formatMYR(min)}, maximum {formatMYR(max)}
+            Minimum {fmt(min)}, maximum {fmt(max)}
           </p>
         </div>
         {methods.length > 1 && (
@@ -198,7 +203,7 @@ export function DepositForm({
         </div>
       </fieldset>
 
-      <Button size="xl" className="w-full" type="submit" disabled={!account || pending}>
+      <Button variant="gold" size="pill" className="w-full" type="submit" disabled={!account || pending}>
         {pending && <Loader2 className="animate-spin" />}
         I have transferred, submit
       </Button>

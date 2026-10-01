@@ -5,13 +5,15 @@ import { ChartCard, HBarList } from "@/components/admin/charts";
 import { AdminCard, AdminPage, DataTable, StatGrid, StatsCard, UserLink } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { relativeTime } from "@/lib/time";
 import { one, rows } from "@/server/admin/queries";
 
 export const metadata: Metadata = { title: "Risk dashboard" };
 
 export default async function RiskDashboard() {
+  const fiat = await getFiatDisplay();
   await requireAdmin("risk.view");
   const [summary, byType, urgent, holds] = await Promise.all([
     one<{ open: number; review: number; high: number; week: number; failed: number; shared_ip: number; shared_device: number; suspended: number }>(sql`
@@ -46,7 +48,7 @@ export default async function RiskDashboard() {
         <StatsCard label="New flags (7 days)" value={summary.week} />
         <StatsCard label="Failed logins (24h)" value={summary.failed} href="/admin/risk/logins?success=false" />
         <StatsCard label="Shared IPs / devices" value={`${summary.shared_ip} / ${summary.shared_device}`} href="/admin/risk/signals" />
-        <StatsCard label="Held rewards" value={formatMYR(holds.held)} hint={`${holds.held_n} rewards · ${holds.on_hold} accounts on hold`} href="/admin/referrals/rewards?status=HELD" />
+        <StatsCard label="Held rewards" value={formatCash(holds.held, { currency: fiat })} hint={`${holds.held_n} rewards · ${holds.on_hold} accounts on hold`} href="/admin/referrals/rewards?status=HELD" />
         <StatsCard label="Suspended accounts" value={summary.suspended} href="/admin/users?status=SUSPENDED" />
       </StatGrid>
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">

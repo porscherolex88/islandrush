@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { CtaBand, PageHero, SectionBlock, Steps } from "@/components/public/marketing";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { publicReferralFacts } from "@/server/queries/public";
 
 export const metadata: Metadata = { title: "Referrals", description: "Invite friends and earn referral rewards up to three levels." };
 export const revalidate = 300;
 
 export default async function ReferralsInfoPage() {
+  const fiat = await getFiatDisplay();
   const { levels, referral } = await publicReferralFacts();
   return (
     <>
@@ -16,7 +18,7 @@ export default async function ReferralsInfoPage() {
           steps={[
             { title: "Share your code", body: "Find your personal referral link in the app under Referrals." },
             { title: "Friends sign up", body: "They register with your link or enter your code during sign-up." },
-            { title: "They make a deposit", body: `A first deposit of at least ${formatMYR(referral.qualifyingDepositMin)} qualifies.` },
+            { title: "They make a deposit", body: `A first deposit of at least ${formatCash(referral.qualifyingDepositMin, { currency: fiat })} qualifies.` },
             { title: "You earn", body: `Rewards are pending for ${referral.pendingHours} hours, then become withdrawable.` },
           ]}
         />
@@ -27,7 +29,7 @@ export default async function ReferralsInfoPage() {
             {levels.map((l) => (
               <div key={l.level} className="rounded-3xl border bg-card p-6 text-center">
                 <p className="text-sm font-semibold text-muted-foreground">Level {l.level}</p>
-                <p className="mt-2 font-heading text-3xl font-bold text-primary">{l.rewardKind === "PERCENT" ? `${Number(l.value)}%` : formatMYR(l.value)}</p>
+                <p className="mt-2 font-heading text-3xl font-bold text-primary">{l.rewardKind === "PERCENT" ? `${Number(l.value)}%` : formatCash(l.value, { currency: fiat })}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {l.level === 1 ? "Friends you invite directly" : l.level === 2 ? "Friends invited by your friends" : "The next level down"}
                 </p>

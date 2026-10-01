@@ -72,11 +72,11 @@ export function CollectionCard({
   unlocks: CollectionUnlock[];
 }) {
   return (
-    <Link href={`/app/collections/${slug}`} className="block overflow-hidden rounded-3xl border bg-card shadow-card transition-colors hover:bg-surface">
+    <Link href={`/app/collections/${slug}`} className="block overflow-hidden rounded-3xl border bg-card transition-colors hover:bg-surface">
       <div className="flex items-center gap-3 bg-[linear-gradient(135deg,oklch(0.95_0.04_85),oklch(0.98_0.02_85))] p-4">
         <Token icon={icon} rarity="LEGENDARY" size="md" />
         <div className="min-w-0 flex-1">
-          <p className="font-heading text-lg leading-tight font-extrabold uppercase">{name}</p>
+          <p className="font-heading text-lg leading-tight font-extrabold">{name}</p>
           <p className="font-heading text-2xl font-extrabold tabular">
             {owned} <span className="text-base text-muted-foreground">/ {total}</span>
           </p>
@@ -108,10 +108,10 @@ export function BookItem({ item }: { item: ItemView }) {
   const r = rarityOf(item.rarity);
   const owned = item.totalAcquired > 0;
   return (
-    <div className={cn("flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center", owned ? "bg-card shadow-card" : "border-dashed bg-surface/70")}>
+    <div className={cn("flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center", owned ? "bg-card" : "border-dashed bg-surface/70")}>
       <Token icon={item.icon} rarity={item.rarity} owned={owned} size="lg" quantity={item.quantity} />
       <p className={cn("line-clamp-2 text-sm leading-tight font-bold", !owned && "text-muted-foreground")}>{item.name}</p>
-      <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase", r.bg, r.text)}>{r.label}</span>
+      <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", r.bg, r.text)}>{r.label}</span>
       <p className="text-[11px] leading-snug text-muted-foreground">{owned ? "Found" : item.sources.length ? `Find it: ${item.sources.slice(0, 2).join(", ")}` : "Keep exploring"}</p>
     </div>
   );
@@ -126,7 +126,7 @@ export function InventoryItem({ item, showPurpose = true }: { item: ItemView; sh
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className={cn("truncate text-sm font-bold", !owned && "text-muted-foreground")}>{item.name}</p>
-          <span className={cn("text-[10px] font-bold tracking-wide uppercase", r.text)}>{r.label}</span>
+          <span className={cn("text-[10px] font-bold", r.text)}>{r.label}</span>
         </div>
         {showPurpose && <p className="text-xs text-muted-foreground">{item.purpose}</p>}
         {item.kind === "FRAGMENT" && item.fragmentsRequired && item.assemblesInto && (

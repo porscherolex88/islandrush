@@ -1,5 +1,6 @@
 import { ArrowDownToLine, ArrowUpFromLine, BadgeCheck, Banknote, Dices, Gift, Landmark, type LucideIcon, Repeat, Undo2, Users, Wrench } from "lucide-react";
-import { formatCredits, formatMYR } from "@/lib/money";
+import type { FiatDisplay } from "@/lib/fiat-display.shared";
+import { formatCash, formatCredits } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { ActivityRow } from "@/server/queries/wallet";
@@ -36,11 +37,11 @@ function detail(type: string, description: string, label: string) {
   return clean && clean !== label ? clean : null;
 }
 
-function amountText(currency: "MYR" | "CREDITS", amount: string) {
-  return currency === "MYR" ? formatMYR(amount, { sign: true }) : `${formatCredits(amount, { sign: true })} Credits`;
+function amountText(currency: "MYR" | "CREDITS", amount: string, fiat: FiatDisplay) {
+  return currency === "MYR" ? formatCash(amount, { currency: fiat, sign: true }) : `${formatCredits(amount, { sign: true })} Credits`;
 }
 
-export function TransactionList({ rows }: { rows: ActivityRow[] }) {
+export function TransactionList({ rows, fiat }: { rows: ActivityRow[]; fiat: FiatDisplay }) {
   return (
     <ul className="divide-y rounded-2xl border bg-card">
       {rows.map((r) => {
@@ -49,7 +50,7 @@ export function TransactionList({ rows }: { rows: ActivityRow[] }) {
         const sub = detail(r.type, r.description, t.label);
         return (
           <li key={r.id} className="flex gap-3 p-3.5">
-            <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl", t.tone)} aria-hidden>
+            <span className={cn("grid size-11 shrink-0 place-items-center rounded-full", t.tone)} aria-hidden>
               <Icon className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -60,7 +61,7 @@ export function TransactionList({ rows }: { rows: ActivityRow[] }) {
             <div className="shrink-0 text-right">
               {r.entries.map((e, i) => (
                 <p key={i} className={cn("text-sm font-semibold tabular", e.amount.startsWith("-") ? "text-foreground" : "text-success")}>
-                  {amountText(e.currency, e.amount)}
+                  {amountText(e.currency, e.amount, fiat)}
                   <span className="block text-[11px] font-medium text-muted-foreground">{ACCOUNT_LABEL[e.account] ?? e.account}</span>
                 </p>
               ))}

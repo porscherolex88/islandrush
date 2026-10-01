@@ -5,7 +5,8 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { db } from "@/db";
 import { depositLevels, profiles } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { ROLES } from "@/lib/permissions";
 import { formatDate, relativeTime } from "@/lib/time";
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = { title: "Users" };
 const PAGE = 50;
 
 export default async function UsersPage({ searchParams }: PageProps<"/admin/users">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("users.view");
   const sp = await searchParams;
   const page = pageOf(sp);
@@ -96,7 +98,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
     { key: "ver", header: "Verification", cell: (r) => <StatusBadge status={r.verificationStatus} /> },
     { key: "level", header: "Deposit level", cell: (r) => r.level ?? "-" },
     { key: "xp", header: "XP level", sortKey: "xpTotal", align: "right", cell: (r) => r.xpLevel },
-    { key: "dep", header: "Total deposits", sortKey: "totalDeposits", align: "right", cell: (r) => formatMYR(r.totalDeposits) },
+    { key: "dep", header: "Total deposits", sortKey: "totalDeposits", align: "right", cell: (r) => formatCash(r.totalDeposits, { currency: fiat }) },
     { key: "code", header: "Referral code", cell: (r) => <code className="text-xs">{r.referralCode}</code> },
     { key: "joined", header: "Joined", sortKey: "createdAt", cell: (r) => <span className="text-xs whitespace-nowrap">{formatDate(r.createdAt)}</span> },
     { key: "seen", header: "Last seen", sortKey: "lastSeenAt", cell: (r) => <span className="text-xs whitespace-nowrap text-muted-foreground">{r.lastSeenAt ? relativeTime(r.lastSeenAt) : "Never"}</span> },

@@ -12,6 +12,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import type { NavGroup } from "@/lib/admin/nav";
 import { signOutAction } from "@/server/actions/auth";
 import { AdminSidebar } from "./admin-sidebar";
+import { ScrollFadeHeader } from "@/components/shared/scroll-fade-header";
+import { humanize as humanizeEnum } from "@/components/shared/status-badge";
 
 const LABELS: Record<string, string> = {
   admin: "Admin",
@@ -98,7 +100,7 @@ function GlobalSearch() {
 export function AdminHeader({ nav, user }: { nav: NavGroup[]; user: { name: string; email: string; role: string } }) {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur">
+    <ScrollFadeHeader tint="var(--surface)" className="z-30 flex h-[66px] items-center gap-3 px-4">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open navigation">
@@ -127,7 +129,7 @@ export function AdminHeader({ nav, user }: { nav: NavGroup[]; user: { name: stri
             <DropdownMenuLabel>
               <p className="truncate">{user.name}</p>
               <p className="truncate text-xs font-normal text-muted-foreground">{user.email}</p>
-              <p className="mt-1 text-[10px] font-semibold tracking-wide text-primary uppercase">{user.role.replace("_", " ")}</p>
+              <p className="mt-1 text-[10px] font-semibold text-primary">{humanizeEnum(user.role)}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
@@ -145,6 +147,6 @@ export function AdminHeader({ nav, user }: { nav: NavGroup[]; user: { name: stri
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </ScrollFadeHeader>
   );
 }

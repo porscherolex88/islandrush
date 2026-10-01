@@ -4,7 +4,8 @@ import { ActionButton } from "@/components/admin/actions";
 import { AdminPage, DataTable, FilterBar, FilterInput, FilterSelect, Pagination, StatGrid, StatsCard, UserLink, pageOf, str } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { cashRewardAction } from "@/server/actions/admin/ops";
 import { one, rows } from "@/server/admin/queries";
@@ -14,6 +15,7 @@ const PAGE = 50;
 const STATUSES = ["PENDING", "HELD", "SETTLED", "REVERSED"] as const;
 
 export default async function ReferralRewardsPage({ searchParams }: PageProps<"/admin/referrals/rewards">) {
+  const fiat = await getFiatDisplay();
   const admin = await requireAdmin("referrals.view");
   const canManage = admin.can("risk.manage");
   const sp = await searchParams;
@@ -47,10 +49,10 @@ export default async function ReferralRewardsPage({ searchParams }: PageProps<"/
   return (
     <AdminPage title="Referral rewards" description="Pending rewards settle automatically after the holding period unless held for review.">
       <StatGrid cols={4}>
-        <StatsCard label="Pending" value={formatMYR(summary.pending)} />
-        <StatsCard label="Held for review" value={formatMYR(summary.held)} hint={`${summary.held_n} rewards`} tone={summary.held_n ? "warning" : "default"} href="/admin/referrals/rewards?status=HELD" />
-        <StatsCard label="Settled" value={formatMYR(summary.settled)} tone="success" />
-        <StatsCard label="Reversed" value={formatMYR(summary.reversed)} />
+        <StatsCard label="Pending" value={formatCash(summary.pending, { currency: fiat })} />
+        <StatsCard label="Held for review" value={formatCash(summary.held, { currency: fiat })} hint={`${summary.held_n} rewards`} tone={summary.held_n ? "warning" : "default"} href="/admin/referrals/rewards?status=HELD" />
+        <StatsCard label="Settled" value={formatCash(summary.settled, { currency: fiat })} tone="success" />
+        <StatsCard label="Reversed" value={formatCash(summary.reversed, { currency: fiat })} />
       </StatGrid>
       <FilterBar basePath="/admin/referrals/rewards">
         <FilterSelect name="status" label="Status" value={status} options={STATUSES} />
@@ -66,7 +68,7 @@ export default async function ReferralRewardsPage({ searchParams }: PageProps<"/
           { key: "u", header: "Referrer", cell: (r) => <UserLink id={r.user_id} name={r.name} email={r.email} /> },
           { key: "e", header: "Referee", cell: (r) => (r.referee_id ? <UserLink id={r.referee_id} name={r.referee_name} email={r.referee_email} /> : "-") },
           { key: "l", header: "Level", align: "right", cell: (r) => `L${r.level}` },
-          { key: "a", header: "Amount", align: "right", cell: (r) => <span className="font-semibold">{formatMYR(r.amount)}</span> },
+          { key: "a", header: "Amount", align: "right", cell: (r) => <span className="font-semibold">{formatCash(r.amount, { currency: fiat })}</span> },
           { key: "s", header: "Status", cell: (r) => <div><StatusBadge status={r.status} />{r.held_reason && <p className="mt-0.5 text-xs text-muted-foreground">{r.held_reason}</p>}</div> },
           { key: "sa", header: "Settles", cell: (r) => (r.status === "PENDING" ? <span className="text-xs">{formatDateTime(r.settle_after)}</span> : "-") },
           ...(canManage

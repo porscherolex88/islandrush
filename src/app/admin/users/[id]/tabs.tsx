@@ -2,10 +2,11 @@ import { and, desc, eq, or, sql } from "drizzle-orm";
 import Link from "next/link";
 import { ActionButton } from "@/components/admin/actions";
 import { AdminCard, DataTable, DiffView, JsonBlock, KeyValue, StatGrid, StatsCard, UserLink } from "@/components/admin/ui";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadge , humanize } from "@/components/shared/status-badge";
 import { db } from "@/db";
 import * as s from "@/db/schema";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { cashRewardAction } from "@/server/actions/admin/ops";
 import { getBalances } from "@/server/services/ledger";
@@ -17,6 +18,7 @@ const rewardLabel = (r: unknown) => {
 };
 
 export async function WalletTab({ userId, canManageRisk }: { userId: string; canManageRisk: boolean }) {
+  const fiat = await getFiatDisplay();
   const [b, rewards, conv] = await Promise.all([
     getBalances(userId),
     db.select().from(s.cashRewards).where(eq(s.cashRewards.userId, userId)).orderBy(desc(s.cashRewards.createdAt)).limit(50),
@@ -25,11 +27,11 @@ export async function WalletTab({ userId, canManageRisk }: { userId: string; can
   return (
     <div className="space-y-4">
       <StatGrid cols={5}>
-        <StatsCard label="Cash" value={formatMYR(b.CASH)} />
+        <StatsCard label="Cash" value={formatCash(b.CASH, { currency: fiat })} />
         <StatsCard label="Credits" value={formatCredits(b.CREDITS)} />
-        <StatsCard label="Pending rewards" value={formatMYR(b.PENDING_REWARDS)} />
-        <StatsCard label="Withdrawable" value={formatMYR(b.WITHDRAWABLE)} tone="brand" />
-        <StatsCard label="Withdrawal pending" value={formatMYR(b.WITHDRAWAL_PENDING)} />
+        <StatsCard label="Pending rewards" value={formatCash(b.PENDING_REWARDS, { currency: fiat })} />
+        <StatsCard label="Withdrawable" value={formatCash(b.WITHDRAWABLE, { currency: fiat })} tone="brand" />
+        <StatsCard label="Withdrawal pending" value={formatCash(b.WITHDRAWAL_PENDING, { currency: fiat })} />
       </StatGrid>
       <AdminCard title="Cash rewards" bodyClassName="p-0">
         <DataTable
@@ -37,8 +39,8 @@ export async function WalletTab({ userId, canManageRisk }: { userId: string; can
           rowKey={(r) => r.id}
           empty="No cash rewards"
           columns={[
-            { key: "amt", header: "Amount", align: "right", cell: (r) => formatMYR(r.amount) },
-            { key: "src", header: "Source", cell: (r) => r.source.replace("_", " ") },
+            { key: "amt", header: "Amount", align: "right", cell: (r) => formatCash(r.amount, { currency: fiat }) },
+            { key: "src", header: "Source", cell: (r) => humanize(r.source) },
             { key: "st", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
             { key: "settle", header: "Settles", cell: (r) => dt(r.settleAfter) },
             { key: "note", header: "Note", cell: (r) => <span className="text-xs text-muted-foreground">{r.heldReason ?? ""}</span> },
@@ -73,9 +75,9 @@ export async function WalletTab({ userId, canManageRisk }: { userId: string; can
           rowKey={(r) => r.id}
           empty="No conversions"
           columns={[
-            { key: "cash", header: "Cash", align: "right", cell: (r) => formatMYR(r.cashAmount) },
+            { key: "cash", header: "Cash", align: "right", cell: (r) => formatCash(r.cashAmount, { currency: fiat }) },
             { key: "cr", header: "Credits", align: "right", cell: (r) => formatCredits(r.credits) },
-            { key: "rate", header: "Rate", cell: (r) => `${formatMYR(r.rateCash)} = ${formatCredits(r.rateCredits)}` },
+            { key: "rate", header: "Rate", cell: (r) => `${formatCash(r.rateCash, { currency: fiat })} = ${formatCredits(r.rateCredits)}` },
             { key: "at", header: "When", cell: (r) => dt(r.createdAt) },
           ]}
         />
@@ -85,6 +87,7 @@ export async function WalletTab({ userId, canManageRisk }: { userId: string; can
 }
 
 export async function LedgerTab({ userId }: { userId: string }) {
+  const fiat = await getFiatDisplay();
   const entries = await db
     .select({ id: s.ledgerEntries.id, account: s.ledgerEntries.accountType, amount: s.ledgerEntries.amount, balanceAfter: s.ledgerEntries.balanceAfter, createdAt: s.ledgerEntries.createdAt, txId: s.ledgerTransactions.id, type: s.ledgerTransactions.type, description: s.ledgerTransactions.description })
     .from(s.ledgerEntries)
@@ -99,17 +102,18 @@ export async function LedgerTab({ userId }: { userId: string }) {
       empty="No ledger entries"
       columns={[
         { key: "at", header: "When", cell: (r) => dt(r.createdAt) },
-        { key: "type", header: "Type", cell: (r) => <Link href={`/admin/finance/ledger/${r.txId}`} className="text-primary hover:underline">{r.type.replace(/_/g, " ")}</Link> },
+        { key: "type", header: "Type", cell: (r) => <Link href={`/admin/finance/ledger/${r.txId}`} className="text-primary hover:underline">{humanize(r.type)}</Link> },
         { key: "desc", header: "Description", cell: (r) => <span className="line-clamp-1 text-xs">{r.description}</span> },
         { key: "acct", header: "Account", cell: (r) => <code className="text-xs">{r.account}</code> },
-        { key: "amt", header: "Amount", align: "right", cell: (r) => (r.account === "CREDITS" ? formatCredits(r.amount, { sign: true }) : formatMYR(r.amount, { sign: true })) },
-        { key: "bal", header: "Balance after", align: "right", cell: (r) => (r.balanceAfter === null ? "-" : r.account === "CREDITS" ? formatCredits(r.balanceAfter) : formatMYR(r.balanceAfter)) },
+        { key: "amt", header: "Amount", align: "right", cell: (r) => (r.account === "CREDITS" ? formatCredits(r.amount, { sign: true }) : formatCash(r.amount, { currency: fiat, ...{ sign: true } })) },
+        { key: "bal", header: "Balance after", align: "right", cell: (r) => (r.balanceAfter === null ? "-" : r.account === "CREDITS" ? formatCredits(r.balanceAfter) : formatCash(r.balanceAfter, { currency: fiat })) },
       ]}
     />
   );
 }
 
 export async function DepositsTab({ userId }: { userId: string }) {
+  const fiat = await getFiatDisplay();
   const rows = await db.select().from(s.deposits).where(eq(s.deposits.userId, userId)).orderBy(desc(s.deposits.createdAt)).limit(100);
   return (
     <DataTable
@@ -118,8 +122,8 @@ export async function DepositsTab({ userId }: { userId: string }) {
       empty="No deposits"
       columns={[
         { key: "at", header: "Submitted", cell: (r) => <Link href={`/admin/finance/deposits/${r.id}`} className="text-primary hover:underline">{formatDateTime(r.createdAt)}</Link> },
-        { key: "amt", header: "Amount", align: "right", cell: (r) => formatMYR(r.amount) },
-        { key: "m", header: "Method", cell: (r) => r.method.replace("_", " ") },
+        { key: "amt", header: "Amount", align: "right", cell: (r) => formatCash(r.amount, { currency: fiat }) },
+        { key: "m", header: "Method", cell: (r) => humanize(r.method) },
         { key: "ref", header: "Reference", cell: (r) => <code className="text-xs">{r.reference}</code> },
         { key: "st", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
       ]}
@@ -128,6 +132,7 @@ export async function DepositsTab({ userId }: { userId: string }) {
 }
 
 export async function WithdrawalsTab({ userId }: { userId: string }) {
+  const fiat = await getFiatDisplay();
   const [rows, accounts] = await Promise.all([
     db.select().from(s.withdrawals).where(eq(s.withdrawals.userId, userId)).orderBy(desc(s.withdrawals.createdAt)).limit(100),
     db.select().from(s.withdrawalAccounts).where(eq(s.withdrawalAccounts.userId, userId)),
@@ -140,7 +145,7 @@ export async function WithdrawalsTab({ userId }: { userId: string }) {
         empty="No withdrawals"
         columns={[
           { key: "at", header: "Requested", cell: (r) => <Link href={`/admin/finance/withdrawals/${r.id}`} className="text-primary hover:underline">{formatDateTime(r.createdAt)}</Link> },
-          { key: "amt", header: "Amount", align: "right", cell: (r) => formatMYR(r.amount) },
+          { key: "amt", header: "Amount", align: "right", cell: (r) => formatCash(r.amount, { currency: fiat }) },
           { key: "bank", header: "Bank", cell: (r) => `${r.accountSnapshot.bankName} ${r.accountSnapshot.accountNumber}` },
           { key: "st", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
         ]}
@@ -289,7 +294,7 @@ export async function XpTab({ userId }: { userId: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
       <AdminCard title="XP history" bodyClassName="p-0">
-        <DataTable rows={tx} rowKey={(r) => r.id} empty="No XP yet" columns={[{ key: "at", header: "When", cell: (r) => dt(r.createdAt) }, { key: "s", header: "Source", cell: (r) => r.source.replace(/_/g, " ") }, { key: "a", header: "XP", align: "right", cell: (r) => `+${r.amount}` }]} />
+        <DataTable rows={tx} rowKey={(r) => r.id} empty="No XP yet" columns={[{ key: "at", header: "When", cell: (r) => dt(r.createdAt) }, { key: "s", header: "Source", cell: (r) => humanize(r.source) }, { key: "a", header: "XP", align: "right", cell: (r) => `+${r.amount}` }]} />
       </AdminCard>
       <AdminCard title="Achievements">
         {ach.length === 0 ? <p className="text-sm text-muted-foreground">None yet</p> : (
@@ -329,6 +334,7 @@ export async function GamesTab({ userId }: { userId: string }) {
 }
 
 export async function ReferralsTab({ userId, referredById }: { userId: string; referredById: string | null }) {
+  const fiat = await getFiatDisplay();
   const [children, parent, rewards] = await Promise.all([
     db.select({ id: s.profiles.id, name: s.profiles.name, email: s.profiles.email, totalDeposits: s.profiles.totalDeposits, createdAt: s.profiles.createdAt }).from(s.profiles).where(eq(s.profiles.referredById, userId)).orderBy(desc(s.profiles.createdAt)).limit(100),
     referredById ? db.select({ id: s.profiles.id, name: s.profiles.name, email: s.profiles.email }).from(s.profiles).where(eq(s.profiles.id, referredById)).limit(1) : Promise.resolve([]),
@@ -338,10 +344,10 @@ export async function ReferralsTab({ userId, referredById }: { userId: string; r
     <div className="space-y-4">
       <AdminCard title="Referred by">{parent[0] ? <UserLink id={parent[0].id} name={parent[0].name} email={parent[0].email} /> : <p className="text-sm text-muted-foreground">Signed up without a referral</p>}</AdminCard>
       <AdminCard title={`Direct referrals (${children.length})`} actions={<Link href={`/admin/referrals/tree?root=${userId}`} className="text-xs font-medium text-primary">Open tree</Link>} bodyClassName="p-0">
-        <DataTable rows={children} rowKey={(r) => r.id} empty="No referrals" columns={[{ key: "u", header: "User", cell: (r) => <UserLink id={r.id} name={r.name} email={r.email} /> }, { key: "d", header: "Deposits", align: "right", cell: (r) => formatMYR(r.totalDeposits) }, { key: "j", header: "Joined", cell: (r) => dt(r.createdAt) }]} />
+        <DataTable rows={children} rowKey={(r) => r.id} empty="No referrals" columns={[{ key: "u", header: "User", cell: (r) => <UserLink id={r.id} name={r.name} email={r.email} /> }, { key: "d", header: "Deposits", align: "right", cell: (r) => formatCash(r.totalDeposits, { currency: fiat }) }, { key: "j", header: "Joined", cell: (r) => dt(r.createdAt) }]} />
       </AdminCard>
       <AdminCard title="Referral rewards earned" bodyClassName="p-0">
-        <DataTable rows={rewards} rowKey={(r) => r.id} empty="No referral rewards" columns={[{ key: "a", header: "Amount", align: "right", cell: (r) => formatMYR(r.amount) }, { key: "l", header: "Level", cell: (r) => `L${r.referralLevel}` }, { key: "s", header: "Status", cell: (r) => <StatusBadge status={r.status} /> }, { key: "at", header: "When", cell: (r) => dt(r.createdAt) }]} />
+        <DataTable rows={rewards} rowKey={(r) => r.id} empty="No referral rewards" columns={[{ key: "a", header: "Amount", align: "right", cell: (r) => formatCash(r.amount, { currency: fiat }) }, { key: "l", header: "Level", cell: (r) => `L${r.referralLevel}` }, { key: "s", header: "Status", cell: (r) => <StatusBadge status={r.status} /> }, { key: "at", header: "When", cell: (r) => dt(r.createdAt) }]} />
       </AdminCard>
     </div>
   );
@@ -419,7 +425,7 @@ export async function RiskTab({ userId }: { userId: string }) {
       empty="No risk signals"
       columns={[
         { key: "at", header: "Raised", cell: (r) => <Link href={`/admin/risk/flags/${r.id}`} className="text-primary hover:underline">{formatDateTime(r.createdAt)}</Link> },
-        { key: "t", header: "Signal", cell: (r) => r.type.replace(/_/g, " ") },
+        { key: "t", header: "Signal", cell: (r) => humanize(r.type) },
         { key: "sv", header: "Severity", cell: (r) => <StatusBadge status={r.severity} tone={r.severity === "HIGH" ? "danger" : r.severity === "MEDIUM" ? "warning" : "neutral"} /> },
         { key: "st", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
         { key: "s", header: "Summary", cell: (r) => <span className="text-xs">{r.summary}</span> },

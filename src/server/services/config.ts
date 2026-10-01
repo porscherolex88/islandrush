@@ -41,6 +41,7 @@ export type ConfigShape = {
   maintenance: { enabled: boolean; message: string };
   admin_security: { reauthMinutes: number };
   risk: { rapidSignupPerIpPerDay: number; largeDepositAmount: string };
+  prize_wheel: { active: boolean; prizeUnlockPct: number; alternativePct: number };
 };
 
 export const CONFIG_DEFAULTS: ConfigShape = {
@@ -75,6 +76,7 @@ export const CONFIG_DEFAULTS: ConfigShape = {
   maintenance: { enabled: false, message: "LootBox is getting a quick tune-up. We'll be right back." },
   admin_security: { reauthMinutes: 720 },
   risk: { rapidSignupPerIpPerDay: 3, largeDepositAmount: "20000.00" },
+  prize_wheel: { active: true, prizeUnlockPct: 90, alternativePct: 10 },
 };
 
 export type ConfigKey = keyof ConfigShape;
@@ -91,7 +93,14 @@ export const CONFIG_DESCRIPTIONS: Record<ConfigKey, string> = {
   maintenance: "Maintenance mode",
   admin_security: "Admin security policy",
   risk: "Risk signal thresholds",
+  prize_wheel: "Final Prize Unlock odds. Prize + alternative must total 100%.",
 };
+
+/** Loads a config row with its last-updated time, used to version odds snapshots. */
+export async function getConfigWithVersion<K extends ConfigKey>(key: K, tx: DbOrTx = db): Promise<{ value: ConfigShape[K]; updatedAt: string | null }> {
+  const [row] = await tx.select({ updatedAt: appConfig.updatedAt }).from(appConfig).where(eq(appConfig.key, key)).limit(1);
+  return { value: await getConfig(key, tx), updatedAt: row?.updatedAt?.toISOString() ?? null };
+}
 
 export async function getConfig<K extends ConfigKey>(key: K, tx: DbOrTx = db): Promise<ConfigShape[K]> {
   const [row] = await tx.select().from(appConfig).where(eq(appConfig.key, key)).limit(1);

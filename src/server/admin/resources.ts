@@ -4,6 +4,7 @@ import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import * as s from "@/db/schema";
 import { getResourceDef, type FieldDef, type RelationKey, type ResourceDef, type ResourceKey } from "@/lib/admin/resource-fields";
+import { ADVENTURE_LEVELS, isValidPercentSplit } from "@/lib/adventure";
 import { AppError } from "@/lib/errors";
 
 export const RESOURCE_TABLES: Record<ResourceKey, PgTable> = {
@@ -12,6 +13,10 @@ export const RESOURCE_TABLES: Record<ResourceKey, PgTable> = {
   poolEntries: s.rewardPoolEntries,
   boxes: s.mysteryBoxes,
   maps: s.maps,
+  checkpoints: s.mapCheckpoints,
+  bigBoxes: s.bigMysteryBoxes,
+  puzzles: s.puzzles,
+  prizes: s.prizes,
   areas: s.mapAreas,
   tiles: s.mapTiles,
   requirements: s.requirements,
@@ -121,6 +126,8 @@ function parseField(f: FieldDef, raw: unknown): unknown {
 
 type Values = Record<string, unknown>;
 
+const levelOk = (v: unknown) => Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= ADVENTURE_LEVELS;
+
 const VALIDATORS: Partial<Record<ResourceKey, (v: Values) => void>> = {
   poolEntries: (v) => {
     if (v.rewardType === "ITEM" && !v.itemId) throw new AppError("Choose an item for ITEM rewards");
@@ -133,6 +140,43 @@ const VALIDATORS: Partial<Record<ResourceKey, (v: Values) => void>> = {
   },
   boxes: (v) => {
     if (Number(v.priceCredits) <= 0) throw new AppError("Price must be greater than zero");
+    if (v.level != null) {
+      if (!levelOk(v.level)) throw new AppError(`Adventure level must be 1-${ADVENTURE_LEVELS}`);
+      if (v.requiresMapLevel != null && Number(v.requiresMapLevel) >= Number(v.level)) throw new AppError("A box can only require an earlier map");
+      if (!v.lootPoolId) throw new AppError("Adventure boxes need a Loot pool");
+    }
+  },
+  maps: (v) => {
+    if (v.level != null && !levelOk(v.level)) throw new AppError(`Adventure level must be 1-${ADVENTURE_LEVELS}`);
+    if (Number(v.lootRequired ?? 0) < 0) throw new AppError("Loot to unlock cannot be negative");
+  },
+  checkpoints: (v) => {
+    if (Number(v.position) < 1) throw new AppError("Order must be at least 1");
+    if (Number(v.lootRequired) < 0) throw new AppError("Loot required cannot be negative");
+    for (const k of ["posX", "posY"]) {
+      const n = Number(v[k]);
+      if (n < 0 || n > 100) throw new AppError("Positions must be between 0 and 100");
+    }
+  },
+  bigBoxes: (v) => {
+    if (!isValidPercentSplit([v.pieces1Pct, v.pieces2Pct, v.pieces3Pct].map(Number))) {
+      throw new AppError("Piece odds must be whole percentages that total exactly 100%");
+    }
+  },
+  puzzles: (v) => {
+    if (!levelOk(v.level)) throw new AppError(`Level must be 1-${ADVENTURE_LEVELS}`);
+    if (Number(v.piecesRequired) < 1) throw new AppError("Pieces required must be at least 1");
+    if (Number(v.alternativeRewardAmount) <= 0) throw new AppError("The alternative reward must be greater than zero");
+    if (v.alternativeRewardType === "CREDITS" && !Number.isInteger(Number(v.alternativeRewardAmount))) throw new AppError("Credit amounts must be whole numbers");
+  },
+  prizes: (v) => {
+    if (!levelOk(v.level)) throw new AppError(`Level must be 1-${ADVENTURE_LEVELS}`);
+    if (v.kind !== "PHYSICAL" && Number(v.amount) <= 0) throw new AppError("Credits and Cash prizes need an amount");
+    if (v.kind === "CREDITS" && !Number.isInteger(Number(v.amount))) throw new AppError("Credit amounts must be whole numbers");
+    if (v.inventoryTotal != null && Number(v.inventoryTotal) < 0) throw new AppError("Inventory cannot be negative");
+    if (v.inventoryTotal != null && v.inventoryAllocated != null && Number(v.inventoryTotal) < Number(v.inventoryAllocated)) {
+      throw new AppError(`Inventory cannot be lower than the ${v.inventoryAllocated} already unlocked`);
+    }
   },
   tiles: (v) => {
     if (Number(v.row) < 0 || Number(v.col) < 0) throw new AppError("Row and column must be 0 or more");
@@ -193,7 +237,21 @@ export async function relationOptions(keys: RelationKey[]): Promise<Partial<Reco
         case "collections":
           return [k, await db.select({ value: s.collections.id, label: s.collections.name }).from(s.collections).orderBy(asc(s.collections.sortOrder))];
         case "maps":
-          return [k, await db.select({ value: s.maps.id, label: s.maps.name }).from(s.maps).orderBy(asc(s.maps.name))];
+          return [
+            k,
+            (await db.select({ value: s.maps.id, name: s.maps.name, level: s.maps.level }).from(s.maps).orderBy(asc(s.maps.level), asc(s.maps.name))).map((m) => ({
+              value: m.value,
+              label: m.level ? `Map ${m.level}: ${m.name}` : m.name,
+            })),
+          ];
+        case "prizes":
+          return [
+            k,
+            (await db.select({ value: s.prizes.id, name: s.prizes.name, level: s.prizes.level }).from(s.prizes).orderBy(asc(s.prizes.level), asc(s.prizes.name))).map((p) => ({
+              value: p.value,
+              label: `Level ${p.level}: ${p.name}`,
+            })),
+          ];
         case "areas":
           return [k, await db.select({ value: s.mapAreas.id, label: s.mapAreas.name }).from(s.mapAreas).orderBy(asc(s.mapAreas.sortOrder))];
         case "vaults":

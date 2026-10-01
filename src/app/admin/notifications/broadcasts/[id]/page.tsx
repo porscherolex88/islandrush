@@ -71,7 +71,7 @@ export default async function BroadcastPage({ params }: PageProps<"/admin/notifi
           )}
         </AdminCard>
         <AdminCard title="Preview" description="How it appears in the notification center">
-          <div className="mx-auto max-w-sm rounded-2xl border bg-background p-4 shadow-sm">
+          <div className="mx-auto max-w-sm rounded-2xl border bg-background p-4">
             <div className="flex gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Bell className="size-4" />

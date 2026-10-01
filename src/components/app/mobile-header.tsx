@@ -3,13 +3,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { formatCredits } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { headerPillButton } from "./header-buttons";
 
 /** Compact Credits balance for inner game headers, linking to the Wallet. */
 export function CreditsChip({ credits }: { credits: bigint | number }) {
   return (
     <Link
       href="/app/wallet"
-      className="flex h-11 items-center gap-1.5 rounded-full border bg-card px-3 text-sm font-bold shadow-card tabular hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      className={cn(headerPillButton, "font-bold tabular")}
       aria-label={`${formatCredits(credits)} Credits, open Wallet`}
     >
       <Coins className="size-4 text-gold" aria-hidden />
@@ -44,7 +45,7 @@ export function Section({
 
 export function Panel({ className, children, ...props }: React.ComponentProps<"div">) {
   return (
-    <div className={cn("rounded-2xl border bg-card p-4 shadow-card", className)} {...props}>
+    <div className={cn("rounded-2xl border bg-card p-4", className)} {...props}>
       {children}
     </div>
   );

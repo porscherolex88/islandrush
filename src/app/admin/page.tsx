@@ -7,15 +7,16 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { db } from "@/db";
 import { deposits, profiles, riskFlags, withdrawals } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { relativeTime } from "@/lib/time";
 import { dailySeries, dashboardStats, parseRange } from "@/server/admin/queries";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-const rm = (v: string | number) => formatMYR(Number(v).toFixed(2));
-
 export default async function AdminDashboard({ searchParams }: PageProps<"/admin">) {
+  const fiat = await getFiatDisplay();
+  const rm = (v: string | number) => formatCash(Number(v).toFixed(2), { currency: fiat });
   const ctx = await requireAdmin("dashboard.view");
   const sp = await searchParams;
   const r = parseRange(sp);
@@ -66,7 +67,7 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
 
       {finance && (
         <>
-          <h2 className="pt-2 text-sm font-semibold text-muted-foreground uppercase">Finance</h2>
+          <h2 className="pt-2 text-sm font-semibold text-muted-foreground">Finance</h2>
           <StatGrid cols={6}>
             <StatsCard label="Deposits today" value={rm(s.deposits.today)} hint={`Week ${rm(s.deposits.week)}`} />
             <StatsCard label="Deposits (30 days)" value={rm(s.deposits.month)} hint={`Range ${rm(s.deposits.range_sum)} · ${s.deposits.range_count} approved`} />
@@ -78,7 +79,7 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
         </>
       )}
 
-      <h2 className="pt-2 text-sm font-semibold text-muted-foreground uppercase">Economy and games</h2>
+      <h2 className="pt-2 text-sm font-semibold text-muted-foreground">Economy and games</h2>
       <StatGrid cols={6}>
         <StatsCard label="Credits issued" value={formatCredits(s.credits.issued)} hint="In range" />
         <StatsCard label="Credits consumed" value={formatCredits(s.credits.consumed)} hint="In range" />
@@ -97,10 +98,10 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
         </ChartCard>
         {finance && (
           <>
-            <ChartCard title="Approved deposits (RM)">
+            <ChartCard title="Approved deposits">
               <BarChart data={dep} format={(n) => rm(n)} color="oklch(0.6 0.16 150)" />
             </ChartCard>
-            <ChartCard title="Completed withdrawals (RM)">
+            <ChartCard title="Completed withdrawals">
               <BarChart data={wd} format={(n) => rm(n)} color="oklch(0.7 0.16 60)" />
             </ChartCard>
           </>
@@ -120,7 +121,7 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
                   <Link href={`/admin/finance/deposits/${d.id}`} className="flex items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted/40">
                     <span className="truncate">{d.name}</span>
                     <span className="text-right">
-                      <span className="block font-medium tabular">{formatMYR(d.amount)}</span>
+                      <span className="block font-medium tabular">{formatCash(d.amount, { currency: fiat })}</span>
                       <span className="block text-xs text-muted-foreground">{relativeTime(d.createdAt)}</span>
                     </span>
                   </Link>
@@ -141,7 +142,7 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
                       <StatusBadge status={w.status} />
                     </span>
                     <span className="text-right">
-                      <span className="block font-medium tabular">{formatMYR(w.amount)}</span>
+                      <span className="block font-medium tabular">{formatCash(w.amount, { currency: fiat })}</span>
                       <span className="block text-xs text-muted-foreground">{relativeTime(w.createdAt)}</span>
                     </span>
                   </Link>

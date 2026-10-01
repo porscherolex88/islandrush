@@ -1,13 +1,15 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/shared/logo";
+import { ScrollFadeHeader } from "@/components/shared/scroll-fade-header";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { signOutAction } from "@/server/actions/auth";
 
 export const PUBLIC_NAV = [
   { href: "/how-it-works", label: "How it works" },
@@ -17,12 +19,62 @@ export const PUBLIC_NAV = [
   { href: "/faq", label: "FAQ" },
 ];
 
-export function SiteHeader() {
+function AuthActions({ signedIn, onNavigate }: { signedIn: boolean; onNavigate?: () => void }) {
+  if (!signedIn) {
+    return (
+      <>
+        <Button asChild variant="ghost" size="xl" className="md:h-10 md:px-4 md:text-sm">
+          <Link href="/login" onClick={onNavigate}>
+            Sign in
+          </Link>
+        </Button>
+        <Button asChild size="xl" className="md:h-10 md:px-4 md:text-sm">
+          <Link href="/register" onClick={onNavigate}>
+            Get started
+          </Link>
+        </Button>
+      </>
+    );
+  }
+
+  const launch = (
+    <Button asChild size="xl" className={cn("md:h-10 md:px-4 md:text-sm", onNavigate && "flex-1")}>
+      <Link href="/app" onClick={onNavigate}>
+        Launch App
+      </Link>
+    </Button>
+  );
+  const logout = (
+    <form action={signOutAction} className={onNavigate ? undefined : "contents"}>
+      <Button type="submit" variant="ghost" size="icon" className={cn("size-10 shrink-0", onNavigate && "size-14 rounded-xl border bg-card")} aria-label="Log out">
+        <LogOut className="size-4" aria-hidden />
+      </Button>
+    </form>
+  );
+
+  if (onNavigate) {
+    return (
+      <div className="flex items-center gap-2">
+        {launch}
+        {logout}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {launch}
+      {logout}
+    </>
+  );
+}
+
+export function SiteHeader({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+    <ScrollFadeHeader className="z-40">
+      <div className="mx-auto flex h-[66px] max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Logo />
         <nav className="hidden flex-1 items-center gap-1 md:flex" aria-label="Main">
           {PUBLIC_NAV.map((n) => (
@@ -39,12 +91,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <Button asChild variant="ghost">
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/register">Get started</Link>
-          </Button>
+          <AuthActions signedIn={signedIn} />
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -64,20 +111,11 @@ export function SiteHeader() {
               ))}
             </nav>
             <div className="mt-auto grid gap-2 p-4">
-              <Button asChild size="xl">
-                <Link href="/register" onClick={() => setOpen(false)}>
-                  Get started
-                </Link>
-              </Button>
-              <Button asChild size="xl" variant="outline">
-                <Link href="/login" onClick={() => setOpen(false)}>
-                  Sign in
-                </Link>
-              </Button>
+              <AuthActions signedIn={signedIn} onNavigate={() => setOpen(false)} />
             </div>
           </SheetContent>
         </Sheet>
       </div>
-    </header>
+    </ScrollFadeHeader>
   );
 }

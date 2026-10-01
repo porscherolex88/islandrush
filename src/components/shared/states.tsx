@@ -17,7 +17,7 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("flex flex-col items-center gap-2 rounded-2xl border border-dashed bg-surface/60 px-6 py-10 text-center", className)}>
-      <div className="grid size-16 place-items-center rounded-full bg-card text-4xl shadow-card" aria-hidden>
+      <div className="grid size-16 place-items-center rounded-full bg-card text-4xl" aria-hidden>
         {icon}
       </div>
       <p className="font-heading text-base font-semibold">{title}</p>

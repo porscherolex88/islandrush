@@ -387,6 +387,9 @@ async function main() {
     return body.user;
   };
 
+  const { seedAdventure } = await import("@/server/content/adventure-seed");
+  await seedAdventure((msg) => console.log(`  ${msg}`));
+
   const actors: Record<string, Awaited<ReturnType<typeof ensureProfile>>> = {};
   const accounts: [string, string, (typeof s.profiles.$inferInsert)["role"]][] = [
     ["admin@lootbox.my", "Aisha Rahman", "SUPER_ADMIN"],

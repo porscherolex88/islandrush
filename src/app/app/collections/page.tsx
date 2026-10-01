@@ -16,7 +16,7 @@ export default async function CollectionsPage() {
 
   return (
     <div>
-      <InnerPageHeader title="Collections" subtitle="Your collection book" icon={<BookOpen />} />
+      <InnerPageHeader title="Collections" subtitle="Your collection book" />
       <Section>
         {collections.length === 0 ? (
           <EmptyState icon={<BookOpen className="size-10 text-primary" />} title="Your collection book is empty" description="Collections appear here as new adventures open." />

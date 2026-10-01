@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { findUserByEmailAction, setRolePermissionsAction, setUserRoleAction } from "@/server/actions/admin/ops";
+import { humanize } from "@/components/shared/status-badge";
 
 const selectCls = "h-9 rounded-md border bg-background px-2 text-sm";
 
@@ -20,14 +21,14 @@ export function RoleSelect({ userId, role, roles, disabled }: { userId: string; 
       <select value={next} onChange={(e) => setNext(e.target.value)} className={selectCls} disabled={disabled} aria-label="Role">
         {roles.map((r) => (
           <option key={r} value={r}>
-            {r.replace("_", " ")}
+            {humanize(r)}
           </option>
         ))}
       </select>
       {next !== role && (
         <ConfirmDialog
           trigger={<Button size="sm">Save</Button>}
-          title={`Change role to ${next.replace("_", " ")}?`}
+          title={`Change role to ${humanize(next)}?`}
           description={next === "USER" ? "This removes all admin access immediately." : "The user gains the permissions of this role immediately. You may be asked to sign in again."}
           reasonLabel="Reason"
           destructive={next === "USER"}
@@ -79,18 +80,18 @@ export function GrantAdminForm({ roles }: { roles: string[] }) {
       {found && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm">
           <span className="flex-1">
-            <span className="font-medium">{found.name}</span> <span className="text-muted-foreground">is currently {found.role.replace("_", " ")}</span>
+            <span className="font-medium">{found.name}</span> <span className="text-muted-foreground">is currently {humanize(found.role)}</span>
           </span>
           <select value={role} onChange={(e) => setRole(e.target.value)} className={selectCls} aria-label="New role">
             {roles.map((r) => (
               <option key={r} value={r}>
-                {r.replace("_", " ")}
+                {humanize(r)}
               </option>
             ))}
           </select>
           <ConfirmDialog
             trigger={<Button size="sm">Grant role</Button>}
-            title={`Make ${found.name} a ${role.replace("_", " ")}?`}
+            title={`Make ${found.name} a ${humanize(role)}?`}
             description="They get admin access on their next page load."
             reasonLabel="Reason"
             onConfirm={async (reason) => {
@@ -134,10 +135,10 @@ export function PermissionMatrix({ roles, permissions, granted }: { roles: strin
             <th className="px-3 py-2.5 font-medium">Permission</th>
             {roles.map((r) => (
               <th key={r} className="px-3 py-2.5 text-center font-medium">
-                {r.replace("_", " ")}
+                {humanize(r)}
               </th>
             ))}
-            <th className="px-3 py-2.5 text-center font-medium">SUPER ADMIN</th>
+            <th className="px-3 py-2.5 text-center font-medium">Super admin</th>
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -169,8 +170,8 @@ export function PermissionMatrix({ roles, permissions, granted }: { roles: strin
                       Save
                     </Button>
                   }
-                  title={`Update ${r.replace("_", " ")} permissions?`}
-                  description={`${state[r].size} permissions will apply to every ${r.replace("_", " ").toLowerCase()} immediately.`}
+                  title={`Update ${humanize(r)} permissions?`}
+                  description={`${state[r].size} permissions will apply to every ${humanize(r).toLowerCase()} immediately.`}
                   reasonLabel="Reason"
                   onConfirm={async (reason) => {
                     const res = await setRolePermissionsAction(r, [...state[r]], reason);

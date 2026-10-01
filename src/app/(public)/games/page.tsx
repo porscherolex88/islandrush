@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Container, CtaBand, PageHero, SectionBlock } from "@/components/public/marketing";
-import { creditsToCashMinor, formatCredits, formatMYR, toMinor } from "@/lib/money";
+import { creditsToCashMinor, formatCredits, toMinor, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { publicGameFacts } from "@/server/queries/public";
 
 export const metadata: Metadata = { title: "Games", description: "Mystery Box, Mystery Map and the Vault." };
 export const revalidate = 300;
 
 export default async function GamesPage() {
+  const fiat = await getFiatDisplay();
   const { boxes, conversion } = await publicGameFacts();
   const rateCash = toMinor(conversion.cash);
   const rateCredits = BigInt(conversion.credits);
@@ -34,7 +36,7 @@ export default async function GamesPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-bold tabular">{formatCredits(b.priceCredits)} Credits</p>
-                  <p className="text-xs text-muted-foreground tabular">{formatMYR(creditsToCashMinor(BigInt(b.priceCredits), rateCash, rateCredits))}</p>
+                  <p className="text-xs text-muted-foreground tabular">{formatCash(creditsToCashMinor(BigInt(b.priceCredits), rateCash, rateCredits), { currency: fiat })}</p>
                 </div>
               </div>
             ))}

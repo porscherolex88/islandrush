@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { userAction } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
-import { formatMYR } from "@/lib/money";
+import {  } from "@/lib/money";
+import { fmtCash } from "@/lib/format-money";
 import { convertCashToCredits } from "@/server/services/conversion";
 import { createDeposit } from "@/server/services/deposits";
 import { saveUpload } from "@/server/services/files";
@@ -91,7 +92,7 @@ export async function requestWithdrawalAction(input: { amount: string; withdrawa
     await rateLimit(`withdraw:${user.id}`, 10, 3600);
     const w = await requestWithdrawal(user.id, d.data);
     revalidatePath("/app", "layout");
-    return { id: w.id, status: w.status, amount: w.amount, message: `Withdrawal of ${formatMYR(w.amount)} requested` };
+    return { id: w.id, status: w.status, amount: w.amount, message: `Withdrawal of ${await fmtCash(w.amount)} requested` };
   });
 }
 

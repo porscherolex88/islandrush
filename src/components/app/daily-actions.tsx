@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { CalendarCheck, Check, Gift, Loader2, Sparkles } from "lucide-react";
+import { Check, Gift, Loader2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,8 +31,8 @@ export function CheckInButton({ claimed, streak }: { claimed: boolean; streak: n
   });
   return (
     <>
-      <Button onClick={() => run()} disabled={claimed || pending} size="xl" variant={claimed ? "secondary" : "gold"} className="w-full">
-        {pending ? <Loader2 className="animate-spin" /> : claimed ? <Check /> : <CalendarCheck />}
+      <Button onClick={() => run()} disabled={claimed || pending} size="pill" variant={claimed ? "secondary" : "gold"} className={cn("w-full", claimed && "bg-emerald-100 text-emerald-800 disabled:opacity-100")}>
+        {pending ? <Loader2 className="animate-spin" /> : claimed ? <Check /> : null}
         {claimed ? `Checked in today · ${streak}-day streak` : "Check in to keep your streak"}
       </Button>
       <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title={reveal?.title} rewards={reveal?.rewards ?? []} xp={reveal?.xp} />
@@ -48,6 +48,9 @@ export function CheckInCard({ claimed, streak }: { claimed: boolean; streak: num
     </div>
   );
 }
+
+/** Rounds SVG coordinates so server and browser render identical attribute strings. */
+const px = (n: number) => Math.round(n * 1000) / 1000;
 
 const WHEEL_COLORS = ["#0f5e6e", "#f6c453", "#13798a", "#fbe3a1", "#0b4f5c", "#f2b134", "#1a8fa1", "#fdf0c8"];
 
@@ -81,13 +84,13 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
     const a0 = ((i * seg - 90) * Math.PI) / 180;
     const a1 = (((i + 1) * seg - 90) * Math.PI) / 180;
     const large = seg > 180 ? 1 : 0;
-    return `M0 0 L${r * Math.cos(a0)} ${r * Math.sin(a0)} A${r} ${r} 0 ${large} 1 ${r * Math.cos(a1)} ${r * Math.sin(a1)} Z`;
+    return `M0 0 L${px(r * Math.cos(a0))} ${px(r * Math.sin(a0))} A${r} ${r} 0 ${large} 1 ${px(r * Math.cos(a1))} ${px(r * Math.sin(a1))} Z`;
   };
 
   return (
     <div className="flex flex-col items-center">
       <div className="mb-3 flex items-center gap-2">
-        {!done && available && <span className="rounded-full bg-success px-3 py-1 text-xs font-extrabold tracking-wider text-white uppercase">Free</span>}
+        {!done && available && <span className="rounded-full bg-success px-3 py-1 text-xs font-extrabold text-white">Free</span>}
         {boosted && (
           <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
             <Sparkles className="size-3.5" /> Streak Spin: boosted rewards
@@ -95,10 +98,10 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
         )}
       </div>
       <div className="relative aspect-square w-full max-w-72">
-        <div aria-hidden className="absolute -top-1 left-1/2 z-10 h-0 w-0 -translate-x-1/2 border-x-[14px] border-t-[24px] border-x-transparent border-t-amber-400 drop-shadow-md" />
+        <div aria-hidden className="absolute -top-1 left-1/2 z-10 h-0 w-0 -translate-x-1/2 border-x-[14px] border-t-[24px] border-x-transparent border-t-amber-400" />
         <motion.svg
           viewBox="-130 -130 260 260"
-          className="size-full drop-shadow-xl"
+          className="size-full"
           animate={{ rotate: rotation }}
           transition={reduce ? { duration: 0 } : { duration: 4.2, ease: [0.12, 0.8, 0.2, 1] }}
           onAnimationComplete={() => {
@@ -117,14 +120,14 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
             return (
               <g key={e.id}>
                 <path d={arc(i)} fill={WHEEL_COLORS[i % WHEEL_COLORS.length]} stroke="#fff7e0" strokeWidth="2" />
-                <text x={Math.cos(mid) * 80} y={Math.sin(mid) * 80} textAnchor="middle" dominantBaseline="central" fontSize="24" transform={`rotate(${i * seg + seg / 2} ${Math.cos(mid) * 80} ${Math.sin(mid) * 80})`}>
+                <text x={px(Math.cos(mid) * 80)} y={px(Math.sin(mid) * 80)} textAnchor="middle" dominantBaseline="central" fontSize="24" transform={`rotate(${px(i * seg + seg / 2)} ${px(Math.cos(mid) * 80)} ${px(Math.sin(mid) * 80)})`}>
                   {e.icon}
                 </text>
               </g>
             );
           })}
           {Array.from({ length: 16 }).map((_, i) => (
-            <circle key={i} cx={Math.cos((i / 16) * Math.PI * 2) * 126} cy={Math.sin((i / 16) * Math.PI * 2) * 126} r="2.6" fill="#fff7e0" />
+            <circle key={i} cx={px(Math.cos((i / 16) * Math.PI * 2) * 126)} cy={px(Math.sin((i / 16) * Math.PI * 2) * 126)} r="2.6" fill="#fff7e0" />
           ))}
           <circle r="26" fill="#0b4f5c" stroke="#f6c453" strokeWidth="5" />
           <circle r="9" fill="#f6c453" />
@@ -140,7 +143,7 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
             <p className="mt-2 text-xs text-muted-foreground">Your next free spin unlocks tomorrow.</p>
           </div>
         ) : (
-          <Button size="xl" variant="gold" className="w-full text-lg tracking-wider uppercase" onClick={() => run()} disabled={!available || pending || spinning}>
+          <Button size="pill" variant="gold" className="w-full" onClick={() => run()} disabled={!available || pending || spinning}>
             {(pending || spinning) && <Loader2 className="animate-spin" />}
             {!available ? "Spin unavailable today" : pending || spinning ? "Spinning..." : "Spin"}
           </Button>
@@ -167,7 +170,7 @@ export function MissionBonusButton({ done, total, claimed }: { done: number; tot
   const ready = done >= total && total > 0;
   return (
     <>
-      <Button size="xl" variant={ready && !claimed ? "gold" : "secondary"} className="w-full" disabled={!ready || claimed || pending} onClick={() => run()}>
+      <Button size="pill" variant={ready && !claimed ? "gold" : "secondary"} className="w-full" disabled={!ready || claimed || pending} onClick={() => run()}>
         {pending ? <Loader2 className="animate-spin" /> : claimed ? <Check /> : <Gift />}
         {claimed ? "Mission reward claimed" : ready ? "Claim mission reward" : `Finish all ${total} missions for a bonus`}
       </Button>
@@ -184,12 +187,12 @@ export function MysteryEventCard({ event, claim }: { event: { title: string; des
   }
   const current = reveal?.reward ?? claim;
   return (
-    <div className="relative isolate overflow-hidden rounded-3xl bg-ocean-deep text-white shadow-lift">
+    <div className="relative isolate overflow-hidden rounded-3xl bg-ocean-deep text-white">
       <Image src={ART.tidePool} alt="" fill sizes="(max-width: 430px) 100vw, 430px" className="-z-10 object-cover" />
       <div aria-hidden className="art-scrim absolute inset-0 -z-10" />
       <div className="flex min-h-56 flex-col justify-end p-5">
-        <p className="text-xs font-bold tracking-wider text-amber-200 uppercase">Today&apos;s mystery</p>
-        <p className="max-w-[70%] font-heading text-2xl font-extrabold drop-shadow">{event.title}</p>
+        <p className="text-xs font-bold text-amber-200">Today&apos;s mystery</p>
+        <p className="max-w-[70%] font-heading text-2xl font-extrabold">{event.title}</p>
         <p className="max-w-[65%] text-sm text-white/85">{event.description}</p>
         <div className="mt-4">
           {current ? (
@@ -198,7 +201,7 @@ export function MysteryEventCard({ event, claim }: { event: { title: string; des
               <RewardChip reward={current} />
             </div>
           ) : (
-            <Button size="xl" variant="gold" className={cn("w-full max-w-60")} onClick={() => run()} disabled={pending}>
+            <Button size="pill" variant="gold" className={cn("w-full max-w-60")} onClick={() => run()} disabled={pending}>
               {pending && <Loader2 className="animate-spin" />}
               {event.costCredits > 0 ? `Explore for ${formatCredits(event.costCredits)} Credits` : "Explore for free"}
             </Button>

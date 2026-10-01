@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { formatCredits, formatMYR } from "@/lib/money";
+import type { FiatDisplay } from "@/lib/fiat-display.shared";
+import { formatCredits, formatCash } from "@/lib/money";
 import type { EntryStat } from "@/server/admin/pools";
 import { DataTable } from "./ui";
 
-function amountLabel(e: EntryStat) {
+function amountLabel(e: EntryStat, fiat: FiatDisplay) {
   switch (e.rewardType) {
     case "CREDITS":
       return `${formatCredits(Math.round(Number(e.amount)))} Credits`;
     case "CASH":
-      return formatMYR(e.amount);
+      return formatCash(e.amount, { currency: fiat });
     case "XP":
       return `${Math.round(Number(e.amount))} XP`;
     case "ITEM":
@@ -21,7 +22,7 @@ function amountLabel(e: EntryStat) {
   }
 }
 
-export function PoolTable({ stats, back, showObserved = true }: { stats: EntryStat[]; back: string; showObserved?: boolean }) {
+export function PoolTable({ stats, back, showObserved = true, fiat }: { stats: EntryStat[]; back: string; showObserved?: boolean; fiat: FiatDisplay }) {
   return (
     <DataTable
       rows={stats}
@@ -29,7 +30,7 @@ export function PoolTable({ stats, back, showObserved = true }: { stats: EntrySt
       empty="This pool has no entries yet"
       columns={[
         { key: "l", header: "Entry", cell: (e) => <Link href={`/admin/manage/poolEntries/${e.id}?back=${encodeURIComponent(back)}`} className="font-medium text-primary hover:underline">{e.label}</Link> },
-        { key: "r", header: "Reward", cell: (e) => amountLabel(e) },
+        { key: "r", header: "Reward", cell: (e) => amountLabel(e, fiat) },
         { key: "ra", header: "Rarity", cell: (e) => <span className="text-xs">{e.rarity}</span> },
         { key: "w", header: "Weight", align: "right", cell: (e) => e.weight },
         {

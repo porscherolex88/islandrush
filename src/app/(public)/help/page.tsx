@@ -20,10 +20,10 @@ export default async function HelpPage() {
           {[...groups].map(([category, items]) => (
             <section key={category}>
               <h2 className="mb-3 text-lg font-bold">{category}</h2>
-              <ul className="divide-y rounded-2xl border bg-card">
+              <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
                 {items.map((a) => (
                   <li key={a.slug}>
-                    <Link href={`/help/${a.slug}`} className="flex items-center gap-3 p-4 hover:bg-surface">
+                    <Link href={`/help/${a.slug}`} className="flex items-center gap-3 p-4 transition-colors hover:bg-surface">
                       <div className="flex-1">
                         <p className="font-semibold">{a.title}</p>
                         {a.summary && <p className="text-sm text-muted-foreground">{a.summary}</p>}

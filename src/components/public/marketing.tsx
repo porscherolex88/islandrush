@@ -1,9 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+/** Primary marketing CTA: gold gradient and fully rounded corners. */
+export function LandingButton({ className, ...props }: ComponentProps<typeof Button>) {
+  return <Button variant="gold" size="xl" className={cn("rounded-full", className)} {...props} />;
+}
 
 export function Container({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn("mx-auto w-full max-w-6xl px-4 sm:px-6", className)}>{children}</div>;
@@ -13,7 +18,7 @@ export function PageHero({ eyebrow, title, description, children }: { eyebrow?: 
   return (
     <section className="border-b bg-[radial-gradient(ellipse_at_top,var(--brand-soft),transparent_70%)]">
       <Container className="py-14 text-center sm:py-20">
-        {eyebrow && <p className="mb-3 text-sm font-semibold tracking-wide text-primary uppercase">{eyebrow}</p>}
+        {eyebrow && <p className="mb-3 text-sm font-semibold text-primary">{eyebrow}</p>}
         <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
         {description && <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">{description}</p>}
         {children && <div className="mt-8">{children}</div>}
@@ -40,8 +45,8 @@ export function SectionBlock({ title, description, children, className }: { titl
 
 export function FeatureCard({ icon: Icon, emoji, title, children, className }: { icon?: LucideIcon; emoji?: string; title: string; children: ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-3xl border bg-card p-6 shadow-card", className)}>
-      <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-brand-soft text-2xl text-primary">
+    <div className={cn("rounded-3xl border bg-card p-6", className)}>
+      <div className="mb-4 grid size-12 place-items-center rounded-full bg-brand-soft text-2xl text-primary">
         {Icon ? <Icon className="size-6" aria-hidden /> : <span aria-hidden>{emoji}</span>}
       </div>
       <h3 className="text-lg font-bold">{title}</h3>

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { mapAreas, maps, mapTiles, rewardPools } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatCredits } from "@/lib/money";
 import { poolDistribution } from "@/server/admin/pools";
 import { one, rows } from "@/server/admin/queries";
@@ -19,6 +20,7 @@ import { one, rows } from "@/server/admin/queries";
 export const metadata: Metadata = { title: "Map area" };
 
 export default async function AreaPage({ params }: PageProps<"/admin/games/areas/[id]">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("games.manage");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -124,7 +126,7 @@ export default async function AreaPage({ params }: PageProps<"/admin/games/areas
             </Button>
           }
         >
-          <PoolTable stats={dist.stats} back={`/admin/economy/pools/${pool.id}`} />
+          <PoolTable stats={dist.stats} back={`/admin/economy/pools/${pool.id}`} fiat={fiat} />
         </AdminCard>
       )}
       <AdminCard title="Area settings">

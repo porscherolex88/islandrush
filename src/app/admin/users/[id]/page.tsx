@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { depositLevels, profiles, userStreaks } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime, relativeTime } from "@/lib/time";
 import { addUserNoteAction, setRewardHoldAction, setSuspensionAction } from "@/server/actions/admin/ops";
 import { getBalances } from "@/server/services/ledger";
@@ -40,6 +41,7 @@ const TABS = [
 ] as const;
 
 export default async function UserDetailPage({ params, searchParams }: PageProps<"/admin/users/[id]">) {
+  const fiat = await getFiatDisplay();
   const ctx = await requireAdmin("users.view");
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const [row] = await db
@@ -105,10 +107,10 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
           <div className="space-y-4">
             {balances && (
               <StatGrid cols={4}>
-                <StatsCard label="Cash" value={formatMYR(balances.CASH)} />
+                <StatsCard label="Cash" value={formatCash(balances.CASH, { currency: fiat })} />
                 <StatsCard label="Credits" value={formatCredits(balances.CREDITS)} />
-                <StatsCard label="Pending rewards" value={formatMYR(balances.PENDING_REWARDS)} />
-                <StatsCard label="Withdrawable" value={formatMYR(balances.WITHDRAWABLE)} tone="brand" />
+                <StatsCard label="Pending rewards" value={formatCash(balances.PENDING_REWARDS, { currency: fiat })} />
+                <StatsCard label="Withdrawable" value={formatCash(balances.WITHDRAWABLE, { currency: fiat })} tone="brand" />
               </StatGrid>
             )}
             <AdminCard title="Profile">
@@ -134,7 +136,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
                   ["XP level", `Level ${u.xpLevel}`],
                   ["Total XP", u.xpTotal.toLocaleString()],
                   ["Deposit level", row.level ?? "None"],
-                  ["Total deposits", formatMYR(u.totalDeposits)],
+                  ["Total deposits", formatCash(u.totalDeposits, { currency: fiat })],
                   ["Current streak", `${row.streak ?? 0} days`],
                   ["Longest streak", `${row.longest ?? 0} days`],
                 ]}

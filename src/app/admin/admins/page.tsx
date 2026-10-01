@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { GrantAdminForm, RoleSelect } from "@/components/admin/admin-management";
 import { AdminCard, AdminPage, DataTable, UserLink } from "@/components/admin/ui";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadge , humanize } from "@/components/shared/status-badge";
 import { requireAdmin } from "@/lib/auth/session";
 import { ADMIN_ROLES } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/time";
@@ -36,7 +36,7 @@ export default async function AdminsPage() {
               header: "Role",
               cell: (a) =>
                 a.id === admin.user.id || (a.role === "SUPER_ADMIN" && admin.role !== "SUPER_ADMIN") ? (
-                  <span className="text-sm font-medium">{a.role.replace("_", " ")}{a.id === admin.user.id ? " (you)" : ""}</span>
+                  <span className="text-sm font-medium">{humanize(a.role)}{a.id === admin.user.id ? " (you)" : ""}</span>
                 ) : (
                   <RoleSelect userId={a.id} role={a.role} roles={assignable} />
                 ),

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import { FiatCurrencyProvider } from "@/components/providers/fiat-currency-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"] });
@@ -21,11 +23,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const fiat = await getFiatDisplay();
   return (
     <html lang="en" className={`${jakarta.variable} ${bricolage.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        {children}
+        <FiatCurrencyProvider currency={fiat}>{children}</FiatCurrencyProvider>
         <Toaster position="top-center" richColors closeButton />
       </body>
     </html>

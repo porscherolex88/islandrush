@@ -1,4 +1,4 @@
-import { ChevronRight, LifeBuoy } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -16,7 +16,7 @@ export default async function SupportPage() {
   const tickets = await userTickets(user.id);
   return (
     <div>
-      <InnerPageHeader title="Support" subtitle="We usually reply within a few hours" icon={<LifeBuoy />} />
+      <InnerPageHeader title="Support" subtitle="We usually reply within a few hours" />
       {tickets.length > 0 && (
         <Section title="Your tickets">
           <ul className="divide-y rounded-2xl border bg-card">

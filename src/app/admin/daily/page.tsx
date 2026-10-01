@@ -13,6 +13,7 @@ import { addDays } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { rows } from "@/server/admin/queries";
 import { getDailyPlan, today } from "@/server/services/daily";
+import { humanize } from "@/components/shared/status-badge";
 
 export const metadata: Metadata = { title: "Daily content" };
 
@@ -108,7 +109,7 @@ export default async function DailyPage({ searchParams }: PageProps<"/admin/dail
                   <span className={cn("font-semibold", isToday && "text-primary")}>{Number(day.slice(8))}</span>
                   {s ? (
                     <>
-                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.status}</span>
+                      <span className="text-[10px] text-muted-foreground">{humanize(s.status)}</span>
                       {(focus !== "spin" || !s.spinPoolId) && s.eventTitle && (
                         <span className="line-clamp-2">
                           {s.eventIcon} {s.eventTitle}

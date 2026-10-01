@@ -6,7 +6,8 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { db } from "@/db";
 import { profiles, withdrawals } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Withdrawals" };
@@ -20,6 +21,7 @@ const QUEUES: Record<string, (typeof STATUSES)[number][]> = {
 };
 
 export default async function WithdrawalsPage({ searchParams }: PageProps<"/admin/finance/withdrawals">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("finance.view");
   const sp = await searchParams;
   const page = pageOf(sp);
@@ -69,7 +71,7 @@ export default async function WithdrawalsPage({ searchParams }: PageProps<"/admi
   const columns: Column<Row>[] = [
     { key: "at", header: "Requested", sortKey: "createdAt", cell: (r) => <Link href={`/admin/finance/withdrawals/${r.w.id}`} className="font-medium whitespace-nowrap text-primary hover:underline">{formatDateTime(r.w.createdAt)}</Link> },
     { key: "user", header: "User", cell: (r) => <UserLink id={r.w.userId} name={r.name} email={r.email} /> },
-    { key: "amt", header: "Amount", sortKey: "amount", align: "right", cell: (r) => <span className="font-semibold">{formatMYR(r.w.amount)}</span> },
+    { key: "amt", header: "Amount", sortKey: "amount", align: "right", cell: (r) => <span className="font-semibold">{formatCash(r.w.amount, { currency: fiat })}</span> },
     { key: "bank", header: "Bank account", cell: (r) => <span className="text-xs">{r.w.accountSnapshot.bankName} · {r.w.accountSnapshot.accountNumber}</span> },
     { key: "st", header: "Status", cell: (r) => <StatusBadge status={r.w.status} /> },
     {
@@ -91,7 +93,7 @@ export default async function WithdrawalsPage({ searchParams }: PageProps<"/admi
         <StatsCard label="Pending" value={sum.pending} href="/admin/finance/withdrawals?queue=pending" tone={sum.pending ? "warning" : "default"} />
         <StatsCard label="In review" value={sum.review} href="/admin/finance/withdrawals?queue=review" tone={sum.review ? "brand" : "default"} />
         <StatsCard label="Awaiting payout" value={sum.payout} href="/admin/finance/withdrawals?queue=payout" />
-        <StatsCard label="Open value" value={formatMYR(sum.openSum)} />
+        <StatsCard label="Open value" value={formatCash(sum.openSum, { currency: fiat })} />
       </StatGrid>
       <FilterBar basePath="/admin/finance/withdrawals">
         <FilterSelect name="queue" label="Queue" value={queue} options={[{ value: "open", label: "All open" }, { value: "pending", label: "Pending" }, { value: "review", label: "Review" }, { value: "payout", label: "Awaiting payout" }]} allLabel="Any" />

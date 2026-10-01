@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { profiles, riskFlags, riskNotes } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { setRewardHoldAction, setSuspensionAction, updateRiskFlagAction } from "@/server/actions/admin/ops";
 import { one, rows } from "@/server/admin/queries";
@@ -27,6 +28,7 @@ async function party(id: string) {
 }
 
 export default async function RiskFlagPage({ params }: PageProps<"/admin/risk/flags/[id]">) {
+  const fiat = await getFiatDisplay();
   const admin = await requireAdmin("risk.view");
   const canManage = admin.can("risk.manage");
   const { id } = await params;
@@ -104,8 +106,8 @@ export default async function RiskFlagPage({ params }: PageProps<"/admin/risk/fl
                 items={[
                   ["Status", <StatusBadge key="s" status={p.status} />],
                   ["Joined", formatDateTime(p.created_at)],
-                  ["Lifetime deposits", formatMYR(p.total_deposits)],
-                  ["Pending/held rewards", formatMYR(p.pending)],
+                  ["Lifetime deposits", formatCash(p.total_deposits, { currency: fiat })],
+                  ["Pending/held rewards", formatCash(p.pending, { currency: fiat })],
                   ["Rewards on hold", p.rewards_on_hold ? "Yes" : "No"],
                   ["Active flags", p.open_flags],
                   ["Signup IP", p.signup_ip ?? "-"],

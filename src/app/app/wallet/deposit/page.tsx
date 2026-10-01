@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Landmark, Lock } from "lucide-react";
+import { Landmark, Lock } from "lucide-react";
 import type { Metadata } from "next";
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -9,7 +9,8 @@ import { Section } from "@/components/app/mobile-header";
 import { EmptyState } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { getConfig, isFeatureEnabled } from "@/server/services/config";
 import { listPaymentAccounts, userDeposits } from "@/server/services/deposits";
@@ -17,6 +18,7 @@ import { listPaymentAccounts, userDeposits } from "@/server/services/deposits";
 export const metadata: Metadata = { title: "Deposit" };
 
 export default async function DepositPage() {
+  const fiat = await getFiatDisplay();
   const user = await requireUser();
   const [accounts, cfg, deposits, enabled, [{ n }]] = await Promise.all([
     listPaymentAccounts(),
@@ -29,7 +31,7 @@ export default async function DepositPage() {
 
   return (
     <div>
-      <InnerPageHeader title="Deposit" subtitle="Add money by bank transfer" icon={<ArrowDownToLine />} />
+      <InnerPageHeader title="Deposit" subtitle="Add money by bank transfer" />
       <Section>
         {!enabled ? (
           <EmptyState icon={<Landmark className="size-8 text-primary" />} title="Deposits are paused" description="We are doing some maintenance. Please try again later." />
@@ -53,7 +55,7 @@ export default async function DepositPage() {
             {deposits.map((d) => (
               <li key={d.id} className="flex items-center justify-between gap-3 p-3.5 text-sm">
                 <div className="min-w-0">
-                  <p className="font-semibold tabular">{formatMYR(d.amount)}</p>
+                  <p className="font-semibold tabular">{formatCash(d.amount, { currency: fiat })}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {formatDateTime(d.createdAt)} · Ref {d.reference}
                   </p>

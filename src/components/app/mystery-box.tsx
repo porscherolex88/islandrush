@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { newKey, useAction } from "@/hooks/use-action";
+import { useFormatCash } from "@/components/providers/fiat-currency-provider";
 import { formatCredits } from "@/lib/money";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
@@ -61,7 +62,6 @@ export function MysteryBox({
         state === "others" && "opacity-60",
         state === "dimmed" && "opacity-25 grayscale",
       )}
-      whileTap={reduce || disabled ? undefined : { scale: 0.92 }}
       animate={
         reduce
           ? undefined
@@ -87,14 +87,14 @@ export function MysteryBox({
           alt=""
           fill
           sizes="(max-width: 430px) 30vw, 130px"
-          className={cn("rounded-2xl object-cover shadow-[0_6px_14px_-4px_rgb(0_0_0/0.5)] transition-shadow", (state === "selected" || state === "opening" || open) && "shadow-glow")}
+          className={cn("rounded-2xl object-cover", (state === "selected" || state === "opening" || open) && "outline-3 outline-offset-2 outline-amber-400")}
           draggable={false}
         />
         <span className="absolute top-1.5 left-1.5 grid size-6 place-items-center rounded-full bg-black/35 text-[11px] font-bold text-white/90">{index + 1}</span>
         <AnimatePresence>
           {state === "opened" && reward && (
             <motion.span
-              className={cn("absolute inset-x-1.5 bottom-1.5 flex items-center justify-center gap-1 rounded-xl bg-white/95 px-1 py-1 text-[11px] font-bold shadow ring-2", r.ring)}
+              className={cn("absolute inset-x-1.5 bottom-1.5 flex items-center justify-center gap-1 rounded-xl bg-white/95 px-1 py-1 text-[11px] font-bold ring-2", r.ring)}
               initial={reduce ? false : { y: 12, opacity: 0, scale: 0.8 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 18 }}
@@ -110,6 +110,7 @@ export function MysteryBox({
 }
 
 export function MysteryBoxGrid({ boxes, credits, rate, collections }: { boxes: BoxView[]; credits: number; rate: { cash: number; credits: number }; collections: CollectionLookup }) {
+  const fmt = useFormatCash();
   const router = useRouter();
   const reduce = useReducedMotion();
   const [activeId, setActiveId] = useState(boxes[0]?.id);
@@ -204,7 +205,7 @@ export function MysteryBoxGrid({ boxes, credits, rate, collections }: { boxes: B
         <p className="mx-auto max-w-xs text-sm text-muted-foreground">{box.description}</p>
       </div>
 
-      <div className="relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_0%,oklch(0.45_0.08_205),oklch(0.26_0.05_225)_70%)] p-3 shadow-lift">
+      <div className="relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_0%,oklch(0.45_0.08_205),oklch(0.26_0.05_225)_70%)] p-3">
         <div aria-hidden className="animate-glow pointer-events-none absolute -top-24 left-1/2 size-64 -translate-x-1/2 rounded-full bg-amber-200/20 blur-3xl" />
         <div className="relative grid grid-cols-3 gap-2.5" role="group" aria-label="Nine crates. Choose one.">
           {Array.from({ length: 9 }).map((_, i) => (
@@ -231,7 +232,7 @@ export function MysteryBoxGrid({ boxes, credits, rate, collections }: { boxes: B
         )}
       </p>
 
-      <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3 shadow-card">
+      <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3">
         <div>
           <p className="text-xs font-semibold text-muted-foreground">Cost per crate</p>
           <p className="flex items-center gap-1.5 font-heading text-xl font-extrabold tabular">
@@ -240,19 +241,19 @@ export function MysteryBoxGrid({ boxes, credits, rate, collections }: { boxes: B
           </p>
         </div>
         <p className="text-right text-sm font-semibold text-muted-foreground tabular">
-          ≈ RM{rm.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ≈ {fmt(rm.toFixed(2))}
           <span className="block text-[11px] font-normal">
-            RM{rate.cash.toLocaleString("en-MY")} = {formatCredits(rate.credits)} Credits
+            {fmt(String(rate.cash))} = {formatCredits(rate.credits)} Credits
           </span>
         </p>
       </div>
 
       {phase === "revealed" ? (
-        <Button size="xl" variant="gold" className="w-full" onClick={reset}>
+        <Button size="pill" variant="gold" className="w-full" onClick={reset}>
           Choose another crate
         </Button>
       ) : affordable ? (
-        <Button size="xl" variant="gold" className="w-full" disabled={selected === null || phase !== "choose" || pending} onClick={open}>
+        <Button size="pill" variant="gold" className="w-full" disabled={selected === null || phase !== "choose" || pending} onClick={open}>
           {(pending || phase === "opening" || phase === "lid") && <Loader2 className="animate-spin" />}
           {selected === null ? "Choose a crate first" : `Open crate ${selected + 1}`}
         </Button>
@@ -261,7 +262,7 @@ export function MysteryBoxGrid({ boxes, credits, rate, collections }: { boxes: B
           <p className="text-sm">
             You need <strong>{formatCredits(box.priceCredits - balance)}</strong> more Credits to open a crate.
           </p>
-          <Button asChild size="lg" variant="gold">
+          <Button asChild size="pill" variant="gold">
             <Link href="/app/wallet/convert">Get Credits</Link>
           </Button>
         </div>

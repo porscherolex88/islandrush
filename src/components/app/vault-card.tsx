@@ -48,7 +48,7 @@ function VaultDoor({ state }: { state: "locked" | "ready" | "opening" | "open" }
           fill
           priority
           sizes="288px"
-          className={cn("rounded-[2rem] object-cover shadow-lift", state === "locked" && "saturate-[.7]", state === "open" && "brightness-110")}
+          className={cn("rounded-[2rem] object-cover", state === "locked" && "saturate-[.7]", state === "open" && "brightness-110")}
         />
         {state === "locked" && (
           <span className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
@@ -57,7 +57,7 @@ function VaultDoor({ state }: { state: "locked" | "ready" | "opening" | "open" }
         )}
         {state === "open" && (
           <span className="absolute inset-0 grid place-items-center rounded-[2rem] bg-[radial-gradient(circle,rgb(253_230_138/0.75),transparent_65%)]">
-            <Sparkles className="size-14 text-white drop-shadow-lg" aria-hidden />
+            <Sparkles className="size-14 text-white" aria-hidden />
           </span>
         )}
       </motion.div>
@@ -84,10 +84,10 @@ export function VaultCard({ vault }: { vault: VaultView }) {
   const kept = vault.requirements.filter((r) => !r.consume);
 
   return (
-    <div className="overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_0%,oklch(0.4_0.07_215),oklch(0.22_0.045_228)_75%)] text-white shadow-lift">
+    <div className="overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_0%,oklch(0.4_0.07_215),oklch(0.22_0.045_228)_75%)] text-white">
       <div className="px-4 pt-5 text-center">
-        <p className="text-xs font-bold tracking-[0.25em] text-amber-200 uppercase">{vault.unlocked ? "Opened" : state === "ready" ? "Vault ready" : "Locked"}</p>
-        <h2 className="mt-1 font-heading text-3xl font-extrabold tracking-wide uppercase">{vault.name}</h2>
+        <p className="text-xs font-bold text-amber-200">{vault.unlocked ? "Opened" : state === "ready" ? "Vault ready" : "Locked"}</p>
+        <h2 className="mt-1 font-heading text-3xl font-extrabold">{vault.name}</h2>
         <p className="mx-auto mt-1 max-w-xs text-sm text-white/75">{vault.description}</p>
       </div>
       <div className="px-6 pt-4">
@@ -121,7 +121,7 @@ export function VaultCard({ vault }: { vault: VaultView }) {
             {state === "ready" || state === "opening" ? (
               <ConfirmDialog
                 trigger={
-                  <Button size="xl" variant="gold" className="w-full text-base tracking-wide uppercase" disabled={pending || opening}>
+                  <Button size="pill" variant="gold" className="w-full" disabled={pending || opening}>
                     {pending || opening ? <Loader2 className="animate-spin" /> : <Sparkles />}
                     {pending || opening ? "Opening the vault..." : "Open the vault"}
                   </Button>
@@ -154,7 +154,7 @@ export function VaultCard({ vault }: { vault: VaultView }) {
                 </div>
               </ConfirmDialog>
             ) : (
-              <Button size="xl" variant="secondary" className="w-full bg-white/10 text-white/80 hover:bg-white/10" disabled>
+              <Button size="pill" variant="secondary" className="w-full bg-white/10 text-white/80 hover:bg-white/10" disabled>
                 <Lock /> Vault locked
               </Button>
             )}

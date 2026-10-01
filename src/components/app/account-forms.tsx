@@ -46,7 +46,7 @@ export function ProfileForm({ name, phone, email }: { name: string; phone: strin
         <Input id="phone" type="tel" value={values.phone} onChange={(e) => setValues((v) => ({ ...v, phone: e.target.value }))} placeholder="012 345 6789" className="h-11" autoComplete="tel" />
         <p className="text-xs text-muted-foreground">Needed for account verification.</p>
       </div>
-      <Button type="submit" size="xl" className="w-full" disabled={pending}>
+      <Button variant="gold" type="submit" size="pill" className="w-full" disabled={pending}>
         {pending && <Loader2 className="animate-spin" />}
         Save changes
       </Button>
@@ -86,7 +86,7 @@ export function PasswordForm() {
         Sign out other devices
         <Switch checked={v.revokeOthers} onCheckedChange={(c) => setV({ ...v, revokeOthers: c })} />
       </label>
-      <Button type="submit" size="xl" className="w-full" disabled={pending || mismatch}>
+      <Button variant="gold" type="submit" size="pill" className="w-full" disabled={pending || mismatch}>
         {pending && <Loader2 className="animate-spin" />}
         Change password
       </Button>
@@ -140,7 +140,7 @@ export function SessionList({ sessions }: { sessions: SessionView[] }) {
 export function RequestVerificationButton({ disabled }: { disabled: boolean }) {
   const { run, pending } = useAction(requestVerificationAction, { success: "Verification requested. We'll be in touch." });
   return (
-    <Button size="xl" className="w-full" disabled={disabled || pending} onClick={() => run()}>
+    <Button variant="gold" size="pill" className="w-full" disabled={disabled || pending} onClick={() => run()}>
       {pending && <Loader2 className="animate-spin" />}
       Request verification
     </Button>
@@ -166,7 +166,7 @@ export function NotificationPrefsForm({ prefs }: { prefs: Prefs }) {
             <label className="flex items-center justify-between gap-3 p-4">
               <span>
                 <span className="block text-sm font-medium">{r.label}</span>
-                <span className="text-xs text-muted-foreground">{r.hint}</span>
+                <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">{r.hint}</span>
               </span>
               <Switch checked={v[r.key]} onCheckedChange={(c) => setV({ ...v, [r.key]: c })} />
             </label>
@@ -174,7 +174,7 @@ export function NotificationPrefsForm({ prefs }: { prefs: Prefs }) {
         ))}
       </ul>
       <p className="text-xs text-muted-foreground">Wallet and security notifications are always on.</p>
-      <Button size="xl" className="w-full" disabled={pending} onClick={() => run(v)}>
+      <Button variant="gold" size="pill" className="w-full" disabled={pending} onClick={() => run(v)}>
         {pending && <Loader2 className="animate-spin" />}
         Save preferences
       </Button>
@@ -195,7 +195,7 @@ export function PlayLimitsForm({ dailyCreditLimit, onBreak }: { dailyCreditLimit
         </Label>
         <p className="text-sm text-muted-foreground">The most Credits you can spend on games per day. Leave empty for no limit.</p>
         <Input id="limit" inputMode="numeric" placeholder="No limit" value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^\d]/g, ""))} className="h-11" />
-        <Button className="w-full" size="xl" disabled={save.pending} onClick={() => save.run({ dailyCreditLimit: parsed, breakDays: null })}>
+        <Button variant="gold" className="w-full" size="pill" disabled={save.pending} onClick={() => save.run({ dailyCreditLimit: parsed, breakDays: null })}>
           {save.pending && <Loader2 className="animate-spin" />}
           Save limit
         </Button>
@@ -208,7 +208,7 @@ export function PlayLimitsForm({ dailyCreditLimit, onBreak }: { dailyCreditLimit
             <ConfirmDialog
               key={d}
               trigger={
-                <Button variant="outline" size="xl" disabled={takeBreak.pending || onBreak}>
+                <Button variant="outline" size="pill" disabled={takeBreak.pending || onBreak}>
                   {d} day{d > 1 ? "s" : ""}
                 </Button>
               }
@@ -241,7 +241,7 @@ export function WithdrawalAccounts({ accounts, defaultName }: { accounts: Accoun
             <li key={a.id} className="flex items-center gap-2 p-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">
-                  {a.bankName} {a.isDefault && <span className="ml-1 text-[10px] font-bold text-primary uppercase">Default</span>}
+                  {a.bankName} {a.isDefault && <span className="ml-1 text-[10px] font-bold text-primary">Default</span>}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {a.accountName} · {maskAccount(a.accountNumber)}
@@ -293,7 +293,7 @@ export function WithdrawalAccounts({ accounts, defaultName }: { accounts: Accoun
           <Input id="acct-no" inputMode="numeric" value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/[^\d ]/g, "") })} required className="h-11 font-mono" />
         </div>
         <p className="text-xs text-muted-foreground">The account must be in your own name. Payouts to third-party accounts are rejected.</p>
-        <Button type="submit" size="xl" className="w-full" disabled={add.pending}>
+        <Button variant="gold" type="submit" size="pill" className="w-full" disabled={add.pending}>
           {add.pending && <Loader2 className="animate-spin" />}
           Add account
         </Button>

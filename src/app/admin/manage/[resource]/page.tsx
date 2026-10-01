@@ -7,6 +7,7 @@ import { AdminPage, DataTable, FilterBar, FilterInput, FilterSelect, Pagination,
 import { Button } from "@/components/ui/button";
 import { getResourceDef, resourceHref, type RelationKey } from "@/lib/admin/resource-fields";
 import { requireAdmin } from "@/lib/auth/session";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { listResource } from "@/server/admin/list";
 
 export async function generateMetadata({ params }: PageProps<"/admin/manage/[resource]">): Promise<Metadata> {
@@ -18,6 +19,7 @@ export default async function ResourceListPage({ params, searchParams }: PagePro
   const def = getResourceDef(resource);
   if (!def) notFound();
   await requireAdmin(def.permission);
+  const fiat = await getFiatDisplay();
   const data = await listResource(resource, sp);
   if (!data) notFound();
   const basePath = `/admin/manage/${resource}`;
@@ -36,10 +38,10 @@ export default async function ResourceListPage({ params, searchParams }: PagePro
     cell: (row) =>
       i === 0 ? (
         <Link href={resourceHref(def, String(row[def.pk]))} className="font-medium text-primary hover:underline">
-          {formatCell(fieldByName[c], c, row[c], data.labels)}
+          {formatCell(fieldByName[c], c, row[c], data.labels, fiat)}
         </Link>
       ) : (
-        formatCell(fieldByName[c], c, row[c], data.labels)
+        formatCell(fieldByName[c], c, row[c], data.labels, fiat)
       ),
   }));
 

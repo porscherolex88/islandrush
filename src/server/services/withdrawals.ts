@@ -2,7 +2,8 @@ import { and, desc, eq, gte, notInArray, sql } from "drizzle-orm";
 import { db, type DbOrTx } from "@/db";
 import { cashRewards, depositLevels, profiles, withdrawalAccounts, withdrawals } from "@/db/schema";
 import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
-import { formatMYR, minBig, toDecimal, toMinor } from "@/lib/money";
+import { minBig, toDecimal, toMinor } from "@/lib/money";
+import { fmtCash } from "@/lib/format-money";
 import { audit } from "./audit";
 import { getConfig } from "./config";
 import { getBalances, postTransaction } from "./ledger";
@@ -50,7 +51,7 @@ export async function getWithdrawalEligibility(userId: string, tx: DbOrTx = db):
     .where(and(eq(withdrawals.userId, userId), gte(withdrawals.createdAt, since), notInArray(withdrawals.status, ["REJECTED", "CANCELLED"])));
   const dailyLeft = dailyMax - toMinor(used);
   const max = minBig(minBig(toMinor(cfg.maxPerRequest), dailyLeft < 0n ? 0n : dailyLeft), balances.WITHDRAWABLE);
-  if (balances.WITHDRAWABLE < min) reasons.push(`Your Withdrawable balance is below the ${formatMYR(min)} minimum.`);
+  if (balances.WITHDRAWABLE < min) reasons.push(`Your Withdrawable balance is below the ${await fmtCash(min)} minimum.`);
   else if (max < min) reasons.push("You've reached your withdrawal limit for the last 24 hours.");
   const requiresReview = profile.rewardsOnHold || (await hasOpenRisk(tx, userId, ["HIGH", "MEDIUM"]));
   return { eligible: reasons.length === 0, reasons, available: balances.WITHDRAWABLE, min, max: max < 0n ? 0n : max, requiresReview };
@@ -99,8 +100,8 @@ export async function requestWithdrawal(userId: string, input: { amount: string;
       if (!account) throw new AppError("Choose a valid withdrawal account");
       const elig = await getWithdrawalEligibility(userId, tx);
       if (!elig.eligible) throw new AppError(elig.reasons[0] ?? "You are not eligible to withdraw right now");
-      if (amount < elig.min) throw new AppError(`Minimum withdrawal is ${formatMYR(elig.min)}`);
-      if (amount > elig.max) throw new AppError(`Maximum withdrawal right now is ${formatMYR(elig.max)}`);
+      if (amount < elig.min) throw new AppError(`Minimum withdrawal is ${await fmtCash(elig.min)}`);
+      if (amount > elig.max) throw new AppError(`Maximum withdrawal right now is ${await fmtCash(elig.max)}`);
 
       const id = crypto.randomUUID();
       const posted = await postTransaction(tx, {
@@ -134,7 +135,7 @@ export async function requestWithdrawal(userId: string, input: { amount: string;
           requestTransactionId: posted.transactionId,
         })
         .returning();
-      await notify(tx, userId, "WALLET", "Withdrawal requested", `Your ${formatMYR(amount)} withdrawal is being processed.`, "/app/wallet/transactions");
+      await notify(tx, userId, "WALLET", "Withdrawal requested", `Your ${await fmtCash(amount)} withdrawal is being processed.`, "/app/wallet/transactions");
       return row;
     });
   } catch (err) {
@@ -242,10 +243,10 @@ export async function transitionWithdrawal(
     }
     const [updated] = await tx.update(withdrawals).set(patch).where(eq(withdrawals.id, id)).returning();
     const messages: Partial<Record<WithdrawalAction, [string, string]>> = {
-      approve: ["Withdrawal approved", `Your ${formatMYR(amount)} withdrawal has been approved.`],
-      complete: ["Withdrawal completed", `${formatMYR(amount)} has been sent to your bank account.`],
-      reject: ["Withdrawal returned", `Your ${formatMYR(amount)} withdrawal was not processed and the funds are back in your Withdrawable balance. ${opts.note ?? ""}`],
-      reverse: ["Payout reversed", `A ${formatMYR(amount)} payout could not be delivered and has been returned to your Withdrawable balance.`],
+      approve: ["Withdrawal approved", `Your ${await fmtCash(amount)} withdrawal has been approved.`],
+      complete: ["Withdrawal completed", `${await fmtCash(amount)} has been sent to your bank account.`],
+      reject: ["Withdrawal returned", `Your ${await fmtCash(amount)} withdrawal was not processed and the funds are back in your Withdrawable balance. ${opts.note ?? ""}`],
+      reverse: ["Payout reversed", `A ${await fmtCash(amount)} payout could not be delivered and has been returned to your Withdrawable balance.`],
     };
     const msg = messages[action];
     if (msg) await notify(tx, w.userId, "WALLET", msg[0], msg[1], "/app/wallet/transactions");

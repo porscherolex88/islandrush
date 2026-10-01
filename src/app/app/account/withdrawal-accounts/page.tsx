@@ -1,4 +1,3 @@
-import { Landmark } from "lucide-react";
 import type { Metadata } from "next";
 import { WithdrawalAccounts } from "@/components/app/account-forms";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -13,7 +12,7 @@ export default async function WithdrawalAccountsPage() {
   const accounts = await userWithdrawalAccounts(user.id);
   return (
     <div>
-      <InnerPageHeader title="Bank Accounts" subtitle="Where we send your withdrawals" icon={<Landmark />} />
+      <InnerPageHeader title="Bank Accounts" subtitle="Where we send your withdrawals" />
       <Section>
         <WithdrawalAccounts
           accounts={accounts.map((a) => ({ id: a.id, bankName: a.bankName, accountName: a.accountName, accountNumber: a.accountNumber, isDefault: a.isDefault }))}

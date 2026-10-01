@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { deposits, featureFlags, notifications, profiles, withdrawals } from "@/db/schema";
+import { isValidPercentSplit } from "@/lib/adventure";
 import { adminAction, assertRecentAuth } from "@/lib/auth/session";
 import { AppError, type ActionResult } from "@/lib/errors";
 import { ALL_PERMISSIONS, ROLES, type Permission, type Role } from "@/lib/permissions";
@@ -17,6 +18,7 @@ import { JOBS, runJob, sendBroadcast, type JobName } from "@/server/services/job
 import { setRolePermissions, setUserRole } from "@/server/services/permissions";
 import { addUserNote, setSuspension, setVerification } from "@/server/services/profiles";
 import { flagRisk, updateRiskFlag } from "@/server/services/risk";
+import { updatePrizeClaimStatus } from "@/server/services/adventure";
 import { staffReply, updateTicket } from "@/server/services/support";
 import { transitionWithdrawal, type WithdrawalAction } from "@/server/services/withdrawals";
 
@@ -283,6 +285,7 @@ function permissionForConfig(key: ConfigKey): Permission {
   if (ECONOMY_KEYS.includes(key)) return key === "daily_defaults" ? "daily.manage" : "economy.manage";
   if (REFERRAL_KEYS.includes(key)) return "referrals.manage";
   if (key === "risk") return "risk.manage";
+  if (key === "prize_wheel") return "games.manage";
   return "system.manage";
 }
 
@@ -301,9 +304,29 @@ export async function setConfigAction(key: string, value: unknown, reason: strin
         throw new AppError("Conversion needs a positive RM amount and a positive whole number of Credits");
       }
     }
+    if (k === "prize_wheel") {
+      const v = value as { active: boolean; prizeUnlockPct: number; alternativePct: number };
+      if (!isValidPercentSplit([v.prizeUnlockPct, v.alternativePct])) {
+        throw new AppError("Prize unlock and alternative reward chances must be whole percentages that total exactly 100%");
+      }
+    }
     await setConfig(k, value as never, actor, r);
     revalidatePath("/", "layout");
     return null;
+  });
+}
+
+const CLAIM_STATUSES = ["UNDER_REVIEW", "APPROVED", "FULFILLING", "FULFILLED", "REJECTED"] as const;
+
+export async function updatePrizeClaimStatusAction(claimId: string, status: string, note: string | null) {
+  return adminAction("games.manage", async ({ actor }) => {
+    const data = z
+      .object({ claimId: z.string().uuid(), status: z.enum(CLAIM_STATUSES), note: z.string().trim().max(500) })
+      .parse({ claimId, status, note: note ?? "" });
+    if (data.status === "REJECTED" && data.note.length < 3) throw new AppError("Please give a reason for rejecting this claim");
+    const result = await updatePrizeClaimStatus(actor, data);
+    revalidatePath("/admin/games/prize-claims");
+    return result;
   });
 }
 

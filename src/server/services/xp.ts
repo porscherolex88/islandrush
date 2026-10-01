@@ -17,6 +17,9 @@ export const XP_SOURCES = [
   "COLLECTION_COMPLETE",
   "VAULT_UNLOCK",
   "DAILY_EVENT",
+  "MAP_UNLOCK",
+  "CHECKPOINT_UNLOCK",
+  "MAP_COMPLETE",
 ] as const;
 
 export async function xpForRule(tx: Tx, source: string): Promise<number> {

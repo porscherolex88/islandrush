@@ -1,4 +1,3 @@
-import { Bell } from "lucide-react";
 import type { Metadata } from "next";
 import { NotificationPrefsForm } from "@/components/app/account-forms";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -11,7 +10,7 @@ export default async function NotificationSettingsPage() {
   const user = await requireUser();
   return (
     <div>
-      <InnerPageHeader title="Notification Settings" icon={<Bell />} />
+      <InnerPageHeader title="Notification Settings" />
       <Section>
         <NotificationPrefsForm prefs={user.notificationPrefs} />
       </Section>

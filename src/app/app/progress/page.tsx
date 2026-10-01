@@ -31,7 +31,7 @@ export default async function ProgressPage() {
   const AchievementCard = ({ a }: { a: (typeof p.achievements)[number] }) => {
     const pct = Math.round((Math.min(a.current, a.threshold) / Math.max(1, a.threshold)) * 100);
     return (
-      <div className={cn("flex flex-col gap-2 rounded-2xl border p-3", a.earnedAt ? "border-gold/40 bg-gold-soft/70" : "bg-card shadow-card")}>
+      <div className={cn("flex flex-col gap-2 rounded-2xl border p-3", a.earnedAt ? "border-gold/40 bg-gold-soft/70" : "bg-card")}>
         <Token icon={a.badgeIcon} rarity={a.earnedAt ? "LEGENDARY" : "COMMON"} owned={Boolean(a.earnedAt) || a.current > 0} size="md" />
         <div>
           <p className="text-sm leading-tight font-bold">{a.name}</p>
@@ -54,13 +54,15 @@ export default async function ProgressPage() {
   return (
     <div>
       <ProgressHeader
-        userId={user.id}
         level={p.xp.level}
         title={p.xp.current?.title ?? "Explorer"}
         xp={p.xp.total}
+        xpNext={p.xp.next?.xpRequired ?? null}
         pct={p.xp.pct}
         toNext={p.xp.toNext}
         nextTitle={p.xp.next?.title ?? null}
+        earned={earned}
+        achievements={p.achievements.length}
       />
 
       <Section
@@ -106,7 +108,7 @@ export default async function ProgressPage() {
       >
         <div className="space-y-2">
           {cols.collections.map((c) => (
-            <Link key={c.id} href={`/app/collections/${c.slug}`} className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-3 shadow-card hover:bg-surface">
+            <Link key={c.id} href={`/app/collections/${c.slug}`} className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-3 hover:bg-surface">
               <Token icon={c.icon} rarity="LEGENDARY" size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold">{c.name}</p>
@@ -159,12 +161,12 @@ export default async function ProgressPage() {
 
       <Section>
         <Link href="/app/wallet#deposit-level" className="flex min-h-16 items-center gap-3 rounded-2xl bg-surface p-3 hover:bg-muted">
-          <span className="grid size-10 place-items-center rounded-xl bg-card text-primary">
+          <span className="grid size-10 place-items-center rounded-full bg-card text-primary">
             <Wallet className="size-5" aria-hidden />
           </span>
           <span className="flex-1 text-sm">
             <span className="block font-semibold">Deposit Level: {p.deposit.current?.name ?? "Starter"}</span>
-            <span className="text-xs text-muted-foreground">Sets your daily withdrawal limit. See details in Wallet.</span>
+            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">Sets your daily withdrawal limit. See details in Wallet.</span>
           </span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>

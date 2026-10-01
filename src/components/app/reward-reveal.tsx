@@ -88,7 +88,7 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, xp, 
           onClick={onClose}
         >
           <motion.div
-            className="relative w-full max-w-sm overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_30%,oklch(0.42_0.08_215),oklch(0.24_0.05_228))] p-6 text-center text-white shadow-lift ring-1 ring-white/10"
+            className="relative w-full max-w-sm overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_30%,oklch(0.42_0.08_215),oklch(0.24_0.05_228))] p-6 text-center text-white ring-1 ring-white/10"
             initial={reduce ? { opacity: 0 } : { scale: 0.8, y: 30, opacity: 0 }}
             animate={reduce ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
             exit={reduce ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}
@@ -110,15 +110,14 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, xp, 
             >
               <X className="size-5" />
             </button>
-            <p id="reward-title" className="relative flex items-center justify-center gap-1.5 text-sm font-bold tracking-[0.2em] text-amber-200 uppercase">
+            <p id="reward-title" className="relative flex items-center justify-center gap-1.5 text-sm font-bold text-amber-200">
               <Sparkles className="size-4" aria-hidden />
               {title}
             </p>
             <div className="relative mx-auto my-5 grid size-36 place-items-center">
               {!reduce && top && <Burst color={rarity.hex} />}
               <motion.div
-                className={cn("grid size-32 place-items-center rounded-[2.25rem] bg-white/95 text-7xl shadow-2xl ring-4", rarity.ring)}
-                style={{ boxShadow: `0 0 50px 6px ${rarity.hex}88` }}
+                className={cn("grid size-32 place-items-center rounded-[2.25rem] bg-white/95 text-7xl ring-4", rarity.ring)}
                 initial={reduce ? false : { rotate: -14, scale: 0.3 }}
                 animate={reduce ? undefined : { rotate: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 240, damping: 13, delay: 0.05 }}
@@ -138,7 +137,7 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, xp, 
                   transition={{ delay: 0.3 + i * 0.1 }}
                 >
                   <p className={cn("font-heading font-extrabold", i === 0 ? "text-4xl" : "text-2xl")}>{r.display}</p>
-                  <p className="text-sm font-bold tracking-wider uppercase" style={{ color: rarityOf(r.rarity).hex === "#64748b" ? "#cbd5e1" : rarityOf(r.rarity).hex }}>
+                  <p className="text-sm font-bold" style={{ color: rarityOf(r.rarity).hex === "#64748b" ? "#cbd5e1" : rarityOf(r.rarity).hex }}>
                     {rarityOf(r.rarity).label} Reward
                   </p>
                 </motion.div>
@@ -152,11 +151,11 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, xp, 
             </div>
             <div className="relative mt-6 grid gap-2">
               {primaryAction && (
-                <Button size="xl" variant="gold" onClick={primaryAction.onClick}>
+                <Button size="pill" variant="gold" onClick={primaryAction.onClick}>
                   {primaryAction.label}
                 </Button>
               )}
-              <Button size="xl" variant={primaryAction ? "ghost" : "gold"} className={cn(primaryAction && "text-white hover:bg-white/10 hover:text-white")} onClick={onClose}>
+              <Button size="pill" variant={primaryAction ? "ghost" : "gold"} className={cn(primaryAction && "text-white hover:bg-white/10 hover:text-white")} onClick={onClose}>
                 {primaryAction ? "Close" : collectLabel}
               </Button>
             </div>

@@ -1,4 +1,3 @@
-import { BadgeCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RequestVerificationButton } from "@/components/app/account-forms";
@@ -22,7 +21,7 @@ export default async function VerificationPage() {
   const canRequest = user.verificationStatus === "UNVERIFIED" || user.verificationStatus === "REJECTED";
   return (
     <div>
-      <InnerPageHeader title="Verification" icon={<BadgeCheck />} />
+      <InnerPageHeader title="Verification" />
       <Section>
         <Panel className="space-y-2">
           <div className="flex items-center justify-between">

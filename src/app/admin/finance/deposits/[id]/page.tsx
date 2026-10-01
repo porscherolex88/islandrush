@@ -4,17 +4,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton, TextActionForm } from "@/components/admin/actions";
 import { AdminCard, AdminPage, DataTable, KeyValue, UserLink } from "@/components/admin/ui";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadge , humanize } from "@/components/shared/status-badge";
 import { db } from "@/db";
 import { deposits, paymentAccounts, profiles, uploadedFiles } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { approveDepositAction, rejectDepositAction, reverseDepositAction, saveInternalNoteAction } from "@/server/actions/admin/ops";
 
 export const metadata: Metadata = { title: "Deposit" };
 
 export default async function DepositDetailPage({ params }: PageProps<"/admin/finance/deposits/[id]">) {
+  const fiat = await getFiatDisplay();
   const ctx = await requireAdmin("finance.view");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -37,7 +39,7 @@ export default async function DepositDetailPage({ params }: PageProps<"/admin/fi
 
   return (
     <AdminPage
-      title={`Deposit ${formatMYR(d.amount)}`}
+      title={`Deposit ${formatCash(d.amount, { currency: fiat })}`}
       description={<span className="flex items-center gap-2">Submitted {formatDateTime(d.createdAt)} <StatusBadge status={d.status} /></span>}
       actions={
         canManage && (
@@ -48,7 +50,7 @@ export default async function DepositDetailPage({ params }: PageProps<"/admin/fi
                   action={approveDepositAction}
                   args={[d.id]}
                   success="Deposit approved"
-                  confirm={{ title: `Approve ${formatMYR(d.amount)}?`, description: `Confirm the transfer with reference ${d.reference} has arrived in the company account. The amount is credited to ${user.name}'s Cash wallet.`, reasonLabel: "Review note (optional)", reasonRequired: false, confirmLabel: "Approve" }}
+                  confirm={{ title: `Approve ${formatCash(d.amount, { currency: fiat })}?`, description: `Confirm the transfer with reference ${d.reference} has arrived in the company account. The amount is credited to ${user.name}'s Cash wallet.`, reasonLabel: "Review note (optional)", reasonRequired: false, confirmLabel: "Approve" }}
                 >
                   Approve
                 </ActionButton>
@@ -83,8 +85,8 @@ export default async function DepositDetailPage({ params }: PageProps<"/admin/fi
           <AdminCard title="Transfer details">
             <KeyValue
               items={[
-                ["Amount", <span key="a" className="text-lg">{formatMYR(d.amount)}</span>],
-                ["Method", d.method.replace("_", " ")],
+                ["Amount", <span key="a" className="text-lg">{formatCash(d.amount, { currency: fiat })}</span>],
+                ["Method", humanize(d.method)],
                 ["Payment reference", <code key="r">{d.reference}</code>],
                 ["Payer name", d.payerName],
                 ["Paid to", row.account ? `${row.account.bankName} ${row.account.accountNumber}` : "-"],
@@ -121,7 +123,7 @@ export default async function DepositDetailPage({ params }: PageProps<"/admin/fi
           <AdminCard title="User">
             <UserLink id={user.id} name={user.name} email={user.email} />
             <div className="mt-3">
-              <KeyValue items={[["Status", <StatusBadge key="s" status={user.status} />], ["Total deposits", formatMYR(user.totalDeposits)], ["Verification", user.verificationStatus]]} />
+              <KeyValue items={[["Status", <StatusBadge key="s" status={user.status} />], ["Total deposits", formatCash(user.totalDeposits, { currency: fiat })], ["Verification", user.verificationStatus]]} />
             </div>
           </AdminCard>
           {canManage && (
@@ -136,7 +138,7 @@ export default async function DepositDetailPage({ params }: PageProps<"/admin/fi
               empty="First deposit"
               columns={[
                 { key: "at", header: "When", cell: (r) => <Link href={`/admin/finance/deposits/${r.id}`} className="text-xs text-primary hover:underline">{formatDateTime(r.createdAt)}</Link> },
-                { key: "a", header: "Amount", align: "right", cell: (r) => formatMYR(r.amount) },
+                { key: "a", header: "Amount", align: "right", cell: (r) => formatCash(r.amount, { currency: fiat }) },
                 { key: "s", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
               ]}
             />

@@ -1,4 +1,4 @@
-import { History, Package } from "lucide-react";
+import { Package } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -25,7 +25,7 @@ export default async function BoxHistoryPage({ searchParams }: PageProps<"/app/p
 
   return (
     <div>
-      <InnerPageHeader title="Mystery Box History" icon={<History />} />
+      <InnerPageHeader title="Mystery Box History" />
       <Section>
         {rows.length === 0 ? (
           <EmptyState
@@ -45,10 +45,15 @@ export default async function BoxHistoryPage({ searchParams }: PageProps<"/app/p
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{r.boxName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDateTime(r.createdAt)} · Box {r.selectedIndex + 1} · -{formatCredits(r.creditsSpent)} Credits
+                    {formatDateTime(r.createdAt)} · {r.level ? `Level ${r.level}` : `Box ${r.selectedIndex + 1}`} · -{formatCredits(r.creditsSpent)} Credits
                   </p>
                 </div>
-                <RewardChip reward={r.reward as unknown as RewardResult} />
+                <div className="flex flex-col items-end gap-1">
+                  <RewardChip reward={r.reward as unknown as RewardResult} />
+                  {(r.loot as unknown as RewardResult[]).map((l, i) => (
+                    <RewardChip key={i} reward={l} />
+                  ))}
+                </div>
               </li>
             ))}
           </ul>

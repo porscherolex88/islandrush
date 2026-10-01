@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { userAction } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
+import { claimPrize, openBigBox, spinPrizeWheel, unlockCheckpoint, unlockMap, type ClaimContact } from "@/server/services/adventure";
 import { claimDailyEvent, claimDailyLogin, claimMissionBonus, spinDaily } from "@/server/services/daily";
 import { discoverTile, unlockArea } from "@/server/services/map";
 import { playMysteryBox } from "@/server/services/mystery-box";
@@ -62,6 +63,74 @@ export async function playBoxAction(input: { boxId: string; selectedIndex: numbe
     await assertPlayable(user, "mystery_box");
     await gameRateLimit(user.id);
     return playMysteryBox(user.id, data);
+  });
+}
+
+/** Opens an adventure Mystery Box level. The reward and Loot are decided on the server. */
+export async function openBoxAction(input: { boxId: string; idempotencyKey: string }) {
+  return userAction(async (user) => {
+    const data = parse(z.object({ boxId: uuid, idempotencyKey: z.string().min(8).max(100) }), input);
+    await assertPlayable(user, "mystery_box");
+    await gameRateLimit(user.id);
+    return playMysteryBox(user.id, { ...data, selectedIndex: 0 });
+  });
+}
+
+export async function unlockMapAction(mapId: string) {
+  return userAction(async (user) => {
+    const id = parse(uuid, mapId);
+    await assertPlayable(user, "mystery_map");
+    await gameRateLimit(user.id);
+    return unlockMap(user.id, id);
+  });
+}
+
+export async function unlockCheckpointAction(checkpointId: string) {
+  return userAction(async (user) => {
+    const id = parse(uuid, checkpointId);
+    await assertPlayable(user, "mystery_map");
+    await gameRateLimit(user.id);
+    return unlockCheckpoint(user.id, id);
+  });
+}
+
+export async function openBigBoxAction(input: { mapId: string; idempotencyKey: string }) {
+  return userAction(async (user) => {
+    const data = parse(z.object({ mapId: uuid, idempotencyKey: z.string().min(8).max(100) }), input);
+    await assertPlayable(user, "mystery_map");
+    await gameRateLimit(user.id);
+    return openBigBox(user.id, data);
+  });
+}
+
+export async function spinPrizeWheelAction(input: { puzzleId: string; idempotencyKey: string }) {
+  return userAction(async (user) => {
+    const data = parse(z.object({ puzzleId: uuid, idempotencyKey: z.string().min(8).max(100) }), input);
+    await assertPlayable(user, "prize_wheel");
+    await gameRateLimit(user.id);
+    return spinPrizeWheel(user.id, data);
+  });
+}
+
+export async function claimPrizeAction(input: { claimId: string; contact: ClaimContact }) {
+  return userAction(async (user) => {
+    const data = parse(
+      z.object({
+        claimId: uuid,
+        contact: z.object({
+          fullName: z.string().trim().max(120).optional(),
+          phone: z.string().trim().max(40).optional(),
+          address: z.string().trim().max(500).optional(),
+          note: z.string().trim().max(500).optional(),
+        }),
+      }),
+      input,
+    );
+    await assertPlayable(user);
+    await gameRateLimit(user.id);
+    const result = await claimPrize(user.id, data);
+    revalidatePath("/app", "layout");
+    return result;
   });
 }
 

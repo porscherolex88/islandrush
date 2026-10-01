@@ -5,13 +5,16 @@ import { BarChart, ChartCard, HBarList } from "@/components/admin/charts";
 import { AdminCard, AdminPage, FilterBar, FilterInput, StatGrid, StatsCard } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { inRange, one, parseRange, rows } from "@/server/admin/queries";
 import { getConfig } from "@/server/services/config";
+import { humanize } from "@/components/shared/status-badge";
 
 export const metadata: Metadata = { title: "Economy" };
 
 export default async function EconomyPage({ searchParams }: PageProps<"/admin/economy">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("economy.manage");
   const r = parseRange(await searchParams);
   const [conversion, supply, flows, spendByGame, rewardTypes, daily] = await Promise.all([
@@ -74,19 +77,21 @@ export default async function EconomyPage({ searchParams }: PageProps<"/admin/ec
         }
       >
         <p className="font-heading text-3xl font-bold">
-          {formatMYR(conversion.cash)} = {formatCredits(conversion.credits)} Credits
+          {formatCash(conversion.cash, { currency: fiat })} = {formatCredits(conversion.credits)} Credits
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">1 Credit = RM{rmPerCredit.toFixed(5)} · RM1 = {formatCredits(Math.round(conversion.credits / Number(conversion.cash)))} Credits</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          1 Credit = {formatCash(rmPerCredit.toFixed(5), { currency: fiat })} · {formatCash("1", { currency: fiat })} = {formatCredits(Math.round(conversion.credits / Number(conversion.cash)))} Credits
+        </p>
       </AdminCard>
       <StatGrid cols={4}>
-        <StatsCard label="Credit supply (outstanding)" value={formatCredits(supply.credits)} hint={`≈ ${formatMYR((Number(supply.credits) * rmPerCredit).toFixed(2))}`} />
+        <StatsCard label="Credit supply (outstanding)" value={formatCredits(supply.credits)} hint={`≈ ${formatCash(String((Number(supply.credits) * rmPerCredit).toFixed(2)), { currency: fiat })}`} />
         <StatsCard label="Credits per user" value={formatCredits(Math.round(perUser))} hint={`${supply.holders} holders of ${supply.users} users`} />
-        <StatsCard label="Credits purchased" value={formatCredits(flows.converted_credits)} hint={`${formatMYR(flows.converted_cash)} in ${flows.conversions} conversions`} />
+        <StatsCard label="Credits purchased" value={formatCredits(flows.converted_credits)} hint={`${formatCash(flows.converted_cash, { currency: fiat })} in ${flows.conversions} conversions`} />
         <StatsCard label="Credits consumed (game spend)" value={formatCredits(flows.spend)} />
         <StatsCard label="Credits issued as rewards" value={formatCredits(flows.reward_credits)} />
-        <StatsCard label="Cash rewards issued" value={formatMYR(flows.cash_rewards)} />
-        <StatsCard label="Referral rewards" value={formatMYR(flows.referral)} />
-        <StatsCard label="Pending / withdrawable" value={formatMYR(supply.pending)} hint={`Withdrawable ${formatMYR(supply.withdrawable)}`} tone="brand" />
+        <StatsCard label="Cash rewards issued" value={formatCash(flows.cash_rewards, { currency: fiat })} />
+        <StatsCard label="Referral rewards" value={formatCash(flows.referral, { currency: fiat })} />
+        <StatsCard label="Pending / withdrawable" value={formatCash(supply.pending, { currency: fiat })} hint={`Withdrawable ${formatCash(supply.withdrawable, { currency: fiat })}`} tone="brand" />
       </StatGrid>
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -95,7 +100,7 @@ export default async function EconomyPage({ searchParams }: PageProps<"/admin/ec
           </ChartCard>
         </div>
         <ChartCard title="Game spend by game">
-          <HBarList data={spendByGame.map((s) => ({ label: SOURCE_LABEL[s.source] ?? s.source.replace(/_/g, " "), value: Number(s.total) }))} format={(n) => `${formatCredits(n)} Cr`} />
+          <HBarList data={spendByGame.map((s) => ({ label: SOURCE_LABEL[s.source] ?? humanize(s.source), value: Number(s.total) }))} format={(n) => `${formatCredits(n)} Cr`} />
         </ChartCard>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">

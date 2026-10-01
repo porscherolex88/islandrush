@@ -5,7 +5,8 @@ import Link from "next/link";
 import { AdminCard, AdminPage, DataTable, FilterBar, FilterInput, Pagination, UserLink, pageOf, str } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDate } from "@/lib/time";
 import { one, rows } from "@/server/admin/queries";
 
@@ -24,6 +25,7 @@ const nodeSelect = sql`
   (select coalesce(sum(amount), 0)::text from cash_rewards cr where cr.user_id = p.id and cr.source::text like 'REFERRAL%' and cr.status <> 'REVERSED') as earned`;
 
 export default async function ReferralTreePage({ searchParams }: PageProps<"/admin/referrals/tree">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("referrals.view");
   const sp = await searchParams;
   const page = pageOf(sp);
@@ -47,7 +49,7 @@ export default async function ReferralTreePage({ searchParams }: PageProps<"/adm
         </FilterBar>
         {q && <p className="text-sm text-amber-600">No user found for &quot;{q}&quot;.</p>}
         <AdminCard title="Top referrers" bodyClassName="p-0">
-          <NodeTable nodes={top.slice(0, PAGE)} />
+          <NodeTable nodes={top.slice(0, PAGE)} fiat={fiat} />
         </AdminCard>
         <Pagination page={page} hasMore={top.length > PAGE} sp={sp} basePath="/admin/referrals/tree" />
       </AdminPage>
@@ -74,7 +76,7 @@ export default async function ReferralTreePage({ searchParams }: PageProps<"/adm
   }
 
   return (
-    <AdminPage title={`${root.name}'s referrals`} description={`${root.direct} direct referrals, ${root.network} across three levels, ${formatMYR(root.earned)} earned.`}>
+    <AdminPage title={`${root.name}'s referrals`} description={`${root.direct} direct referrals, ${root.network} across three levels, ${formatCash(root.earned, { currency: fiat })} earned.`}>
       <nav aria-label="Upline" className="flex flex-wrap items-center gap-1 text-sm">
         <Link href="/admin/referrals/tree" className="text-primary hover:underline">
           All
@@ -91,14 +93,14 @@ export default async function ReferralTreePage({ searchParams }: PageProps<"/adm
         <span className="font-medium">{root.name}</span>
       </nav>
       <AdminCard title="Direct referrals (level 1)" description="Open a branch to see the next level" bodyClassName="p-0">
-        <NodeTable nodes={children.slice(0, PAGE)} />
+        <NodeTable nodes={children.slice(0, PAGE)} fiat={fiat} />
       </AdminCard>
       <Pagination page={page} hasMore={children.length > PAGE} sp={sp} basePath="/admin/referrals/tree" />
     </AdminPage>
   );
 }
 
-function NodeTable({ nodes }: { nodes: Node[] }) {
+function NodeTable({ nodes, fiat }: { nodes: Node[]; fiat: import("@/lib/fiat-display.shared").FiatDisplay }) {
   return (
     <DataTable
       rows={nodes}
@@ -107,10 +109,10 @@ function NodeTable({ nodes }: { nodes: Node[] }) {
       columns={[
         { key: "u", header: "User", cell: (n) => <UserLink id={n.id} name={n.name} email={n.email} /> },
         { key: "j", header: "Joined", cell: (n) => formatDate(n.created_at) },
-        { key: "d", header: "Deposits", align: "right", cell: (n) => formatMYR(n.total_deposits) },
+        { key: "d", header: "Deposits", align: "right", cell: (n) => formatCash(n.total_deposits, { currency: fiat }) },
         { key: "r", header: "Direct", align: "right", cell: (n) => n.direct },
         { key: "n", header: "Network (3 lvl)", align: "right", cell: (n) => n.network },
-        { key: "e", header: "Earned", align: "right", cell: (n) => formatMYR(n.earned) },
+        { key: "e", header: "Earned", align: "right", cell: (n) => formatCash(n.earned, { currency: fiat }) },
         { key: "s", header: "Status", cell: (n) => <StatusBadge status={n.status} /> },
         {
           key: "o",

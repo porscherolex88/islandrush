@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { CtaBand, FeatureCard, PageHero, SectionBlock, Steps } from "@/components/public/marketing";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { getConfig } from "@/server/services/config";
 
 export const metadata: Metadata = { title: "How it works", description: "Deposit, convert to Credits, play three games and withdraw your rewards." };
 export const revalidate = 300;
 
 export default async function HowItWorksPage() {
+  const fiat = await getFiatDisplay();
   const conversion = await getConfig("conversion");
   return (
     <>
@@ -16,7 +18,7 @@ export default async function HowItWorksPage() {
           steps={[
             { title: "Sign up", body: "Create a free account. Your daily check-in, spin and missions are ready right away." },
             { title: "Deposit Cash", body: "Make a manual bank transfer and submit the reference. Our team verifies it, usually within 30 minutes." },
-            { title: "Convert to Credits", body: `Credits power the games. ${formatMYR(conversion.cash)} = ${formatCredits(conversion.credits)} Credits.` },
+            { title: "Convert to Credits", body: `Credits power the games. ${formatCash(conversion.cash, { currency: fiat })} = ${formatCredits(conversion.credits)} Credits.` },
             { title: "Play, collect, withdraw", body: "Rewards land in your wallet. Cash rewards settle, then you can withdraw to your bank." },
           ]}
         />
@@ -27,7 +29,7 @@ export default async function HowItWorksPage() {
             Money you&apos;ve deposited. Convert it into Credits whenever you want to play.
           </FeatureCard>
           <FeatureCard emoji="🪙" title="Credits">
-            Used to open boxes and explore. Every Credit price also shows its RM value.
+            Used to open boxes and explore. Every Credit price also shows its cash value in your currency.
           </FeatureCard>
           <FeatureCard emoji="⏳" title="Pending rewards">
             Cash rewards you&apos;ve won that are going through the settlement period.

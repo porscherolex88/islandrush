@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { profiles, supportMessages, supportTickets } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { one } from "@/server/admin/queries";
@@ -17,6 +18,7 @@ import { one } from "@/server/admin/queries";
 export const metadata: Metadata = { title: "Ticket" };
 
 export default async function TicketPage({ params }: PageProps<"/admin/support/[id]">) {
+  const fiat = await getFiatDisplay();
   const admin = await requireAdmin("support.view");
   const canManage = admin.can("support.manage");
   const { id } = await params;
@@ -101,8 +103,8 @@ export default async function TicketPage({ params }: PageProps<"/admin/support/[
                     ["Verification", <StatusBadge key="v" status={user.verificationStatus} />],
                     ["Joined", formatDateTime(user.createdAt)],
                     ["Deposit Level", context.level ?? "-"],
-                    ["Cash", formatMYR(context.cash)],
-                    ["Withdrawable", formatMYR(context.withdrawable)],
+                    ["Cash", formatCash(context.cash, { currency: fiat })],
+                    ["Withdrawable", formatCash(context.withdrawable, { currency: fiat })],
                     ["Pending deposits", context.pending_deposits ? <Link key="d" href={`/admin/users/${user.id}?tab=deposits`} className="text-primary hover:underline">{context.pending_deposits}</Link> : "0"],
                     ["Open withdrawals", context.open_withdrawals ? <Link key="w" href={`/admin/users/${user.id}?tab=withdrawals`} className="text-primary hover:underline">{context.open_withdrawals}</Link> : "0"],
                     ["Active risk flags", context.open_flags],

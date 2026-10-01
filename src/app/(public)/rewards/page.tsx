@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { CtaBand, FeatureCard, PageHero, SectionBlock } from "@/components/public/marketing";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { publicRewardFacts } from "@/server/queries/public";
 
 export const metadata: Metadata = { title: "Rewards", description: "Credits, collection items, keys, Special Items and Cash rewards." };
 export const revalidate = 300;
 
 export default async function RewardsPage() {
+  const fiat = await getFiatDisplay();
   const { levels, rewards, withdrawal } = await publicRewardFacts();
   return (
     <>
@@ -37,7 +39,7 @@ export default async function RewardsPage() {
         <div className="mx-auto grid max-w-3xl gap-3 text-sm">
           {[
             `Cash rewards start as Pending and settle after ${rewards.pendingHours} hours.`,
-            `Withdraw from ${formatMYR(withdrawal.min)} up to ${formatMYR(withdrawal.maxPerRequest)} per request, to a bank account in your name.`,
+            `Withdraw from ${formatCash(withdrawal.min, { currency: fiat })} up to ${formatCash(withdrawal.maxPerRequest, { currency: fiat })} per request, to a bank account in your name.`,
             "Requests go through review, approval and payout. You can follow every step in your wallet.",
             "Rewards obtained through fraud or abuse may be held or reversed.",
           ].map((t) => (
@@ -53,7 +55,7 @@ export default async function RewardsPage() {
             {levels.map((l) => (
               <div key={l.name} className="rounded-3xl border bg-card p-5" style={{ borderTopColor: l.color, borderTopWidth: 4 }}>
                 <p className="font-heading text-lg font-bold">{l.name}</p>
-                <p className="text-sm text-muted-foreground">From {formatMYR(l.threshold)}</p>
+                <p className="text-sm text-muted-foreground">From {formatCash(l.threshold, { currency: fiat })}</p>
                 {l.benefits.length > 0 && (
                   <ul className="mt-3 list-disc space-y-1 pl-4 text-sm">
                     {l.benefits.map((b) => (

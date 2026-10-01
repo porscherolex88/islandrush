@@ -2,6 +2,7 @@ import { ChevronRight, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,15 @@ export const ART = {
   beach: "/illustrations/region-beach.webp",
   jungle: "/illustrations/region-jungle.webp",
   ruins: "/illustrations/region-ruins.webp",
+  bigBox: "/illustrations/adventure/big-box.webp",
 } as const;
+
+/** Default illustrated map for an adventure level, used when a map has no custom artwork. */
+export function mapArt(level: number, artwork?: string | null) {
+  if (artwork) return artwork;
+  const n = ((Math.max(1, level) - 1) % 10) + 1;
+  return `/illustrations/adventure/map-${n}.webp`;
+}
 
 /** Picks region artwork from an area slug or name, falling back to the island map. */
 export function regionArt(key: string) {
@@ -59,7 +68,7 @@ export function ArtCard({
     <Link
       href={href}
       className={cn(
-        "group relative isolate flex overflow-hidden rounded-3xl bg-ocean-deep text-white shadow-lift outline-none focus-visible:ring-4 focus-visible:ring-ring/50",
+        "group relative isolate flex overflow-hidden rounded-3xl bg-ocean-deep text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50",
         tall ? "min-h-64" : "min-h-48",
         className,
       )}
@@ -67,15 +76,12 @@ export function ArtCard({
       <Image src={art} alt="" fill sizes="(max-width: 430px) 100vw, 430px" priority={priority} className="-z-10 object-cover transition-transform duration-700 group-hover:scale-105" />
       <div aria-hidden className="art-scrim absolute inset-0 -z-10" />
       <div className="flex w-full flex-col justify-end gap-1 p-5 pr-[30%]">
-        {eyebrow && <p className="text-xs font-bold tracking-wider text-amber-200 uppercase">{eyebrow}</p>}
-        <p className="font-heading text-2xl leading-tight font-extrabold drop-shadow">{title}</p>
+        {eyebrow && <p className="text-xs font-bold text-amber-200">{eyebrow}</p>}
+        <p className="font-heading text-2xl leading-tight font-extrabold">{title}</p>
         {body && <div className="text-sm text-white/85">{body}</div>}
         {chips && <div className="mt-1 flex flex-wrap gap-1.5">{chips}</div>}
         {cta && (
-          <span className="mt-3 inline-flex h-11 w-fit items-center gap-1 rounded-full bg-[linear-gradient(180deg,oklch(0.86_0.15_85),oklch(0.76_0.16_70))] px-5 text-sm font-bold text-[oklch(0.3_0.08_55)] shadow-[0_2px_0_oklch(0.6_0.14_60)] transition-transform group-hover:translate-x-0.5">
-            {cta}
-            <ChevronRight className="size-4" aria-hidden />
-          </span>
+          <span className={cn(buttonVariants({ variant: "gold", size: "pill" }), "mt-3 w-fit group-hover:brightness-105")}>{cta}</span>
         )}
       </div>
     </Link>
@@ -115,14 +121,14 @@ export function Token({
     <span
       className={cn(
         "relative grid shrink-0 place-items-center rounded-2xl ring-2",
-        owned ? cn(r.bg, r.ring, "shadow-[inset_0_-3px_0_rgb(0_0_0/0.06)]") : "bg-muted ring-border",
+        owned ? cn(r.bg, r.ring, "") : "bg-muted ring-border",
         dims,
         className,
       )}
       aria-hidden
     >
       <span className={cn(!owned && "opacity-25 brightness-0")}>{icon}</span>
-      {!owned && <Lock className="absolute -right-1 -bottom-1 size-4 rounded-full bg-background p-0.5 text-muted-foreground shadow" />}
+      {!owned && <Lock className="absolute -right-1 -bottom-1 size-4 rounded-full bg-background p-0.5 text-muted-foreground" />}
       {owned && quantity !== undefined && quantity > 1 && (
         <span className="absolute -right-1.5 -bottom-1.5 rounded-full bg-foreground px-1.5 text-[10px] leading-4 font-bold text-background">×{quantity}</span>
       )}
@@ -158,8 +164,8 @@ export function ProgressRing({ value, size = 88, stroke = 8, className, children
 /** Compact tappable row used for "Today's progress" and "Continue your journey" lists. */
 export function StatRow({ href, icon, label, value, done, className }: { href: string; icon: ReactNode; label: string; value: ReactNode; done?: boolean; className?: string }) {
   return (
-    <Link href={href} className={cn("flex min-h-14 items-center gap-3 rounded-2xl border bg-card px-3 py-2.5 shadow-card transition-colors hover:bg-surface", className)}>
-      <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", done ? "bg-success-soft text-success" : "bg-brand-soft text-primary")}>{icon}</span>
+    <Link href={href} className={cn("flex min-h-14 items-center gap-3 rounded-2xl border bg-card px-3 py-2.5 transition-colors hover:bg-surface", className)}>
+      <span className={cn("grid size-10 shrink-0 place-items-center rounded-full", done ? "bg-success-soft text-success" : "bg-brand-soft text-primary")}>{icon}</span>
       <span className="flex-1 text-sm font-semibold">{label}</span>
       <span className={cn("text-sm font-bold tabular", done ? "text-success" : "text-foreground")}>{value}</span>
       <ChevronRight className="size-4 text-muted-foreground" aria-hidden />

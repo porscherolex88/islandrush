@@ -3,6 +3,9 @@
  * on bigint minor units (sen for MYR, whole credits for CREDITS). Never use floats.
  */
 
+import type { FiatDisplay } from "@/lib/fiat-display.shared";
+import { usdMyrRate } from "@/lib/fiat-display.shared";
+
 export type Currency = "MYR" | "CREDITS";
 
 const SCALE: Record<Currency, number> = { MYR: 2, CREDITS: 0 };
@@ -34,14 +37,42 @@ export function toDecimal(minor: bigint, currency: Currency = "MYR"): string {
   return `${negative ? "-" : ""}${whole.toString()}.${frac}`;
 }
 
-export function formatMYR(value: string | bigint, opts: { sign?: boolean } = {}): string {
-  const minor = typeof value === "bigint" ? value : toMinor(value, "MYR");
-  const negative = minor < 0n;
-  const abs = negative ? -minor : minor;
+function formatMyrMinor(myrMinor: bigint, opts: { sign?: boolean } = {}): string {
+  const negative = myrMinor < 0n;
+  const abs = negative ? -myrMinor : myrMinor;
   const whole = (abs / 100n).toLocaleString("en-MY");
   const frac = (abs % 100n).toString().padStart(2, "0");
-  const sign = negative ? "-" : opts.sign && minor > 0n ? "+" : "";
+  const sign = negative ? "-" : opts.sign && myrMinor > 0n ? "+" : "";
   return `${sign}RM${whole}.${frac}`;
+}
+
+function formatUsdMinor(usdMinor: bigint, opts: { sign?: boolean } = {}): string {
+  const negative = usdMinor < 0n;
+  const abs = negative ? -usdMinor : usdMinor;
+  const whole = (abs / 100n).toLocaleString("en-US");
+  const frac = (abs % 100n).toString().padStart(2, "0");
+  const sign = negative ? "-" : opts.sign && usdMinor > 0n ? "+" : "";
+  return `${sign}$${whole}.${frac}`;
+}
+
+/** Converts stored MYR sen to USD cents for display (half-up). */
+export function myrMinorToUsdMinor(myrMinor: bigint, rateMyrPerUsd = usdMyrRate()): bigint {
+  const rateSen = BigInt(Math.round(rateMyrPerUsd * 100));
+  if (rateSen <= 0n) throw new Error("Invalid USD/MYR rate");
+  return (myrMinor * 100n + rateSen / 2n) / rateSen;
+}
+
+/** Formats a stored MYR amount for display in USD or MYR. */
+export function formatCash(value: string | bigint, opts: { sign?: boolean; currency: FiatDisplay }): string {
+  const myrMinor = typeof value === "bigint" ? value : toMinor(value, "MYR");
+  if (opts.currency === "MYR") return formatMyrMinor(myrMinor, opts);
+  return formatUsdMinor(myrMinorToUsdMinor(myrMinor), opts);
+}
+
+/** Always formats as Malaysian Ringgit (tests, explicit ledger labels). */
+export function formatMYR(value: string | bigint, opts: { sign?: boolean } = {}): string {
+  const minor = typeof value === "bigint" ? value : toMinor(value, "MYR");
+  return formatMyrMinor(minor, opts);
 }
 
 export function formatCredits(value: number | bigint | string, opts: { sign?: boolean } = {}): string {

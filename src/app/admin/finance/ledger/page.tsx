@@ -5,14 +5,17 @@ import { AdminPage, DataTable, FilterBar, FilterInput, FilterSelect, Pagination,
 import { db } from "@/db";
 import { accountTypeEnum, ledgerEntries, ledgerTransactions, ledgerTxTypeEnum, profiles, rewardSourceEnum } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
+import { humanize } from "@/components/shared/status-badge";
 
 export const metadata: Metadata = { title: "Ledger" };
 const PAGE = 100;
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export default async function LedgerPage({ searchParams }: PageProps<"/admin/finance/ledger">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("finance.view");
   const sp = await searchParams;
   const page = pageOf(sp);
@@ -63,11 +66,11 @@ export default async function LedgerPage({ searchParams }: PageProps<"/admin/fin
     .offset((page - 1) * PAGE);
   const rows = list.slice(0, PAGE);
   type Row = (typeof rows)[number];
-  const money = (r: Row, v: string, sign = false) => (r.currency === "CREDITS" ? `${formatCredits(v, { sign })} Cr` : formatMYR(v, { sign }));
+  const money = (r: Row, v: string, sign = false) => (r.currency === "CREDITS" ? `${formatCredits(v, { sign })} Cr` : formatCash(v, { currency: fiat, ...{ sign } }));
   const columns: Column<Row>[] = [
     { key: "id", header: "#", cell: (r) => <span className="text-xs text-muted-foreground tabular">{r.id}</span> },
     { key: "at", header: "When", cell: (r) => <span className="text-xs whitespace-nowrap">{formatDateTime(r.createdAt)}</span> },
-    { key: "tx", header: "Transaction", cell: (r) => <Link href={`/admin/finance/ledger/${r.txId}`} className="font-medium text-primary hover:underline">{r.type.replace(/_/g, " ")}</Link> },
+    { key: "tx", header: "Transaction", cell: (r) => <Link href={`/admin/finance/ledger/${r.txId}`} className="font-medium text-primary hover:underline">{humanize(r.type)}</Link> },
     { key: "acct", header: "Account", cell: (r) => <code className="text-xs">{r.account}</code> },
     { key: "user", header: "Owner", cell: (r) => (r.userId ? <UserLink id={r.userId} name={r.name} email={r.email} /> : <span className="text-xs text-muted-foreground">System</span>) },
     { key: "desc", header: "Description", cell: (r) => <span className="line-clamp-1 text-xs">{r.description}</span> },

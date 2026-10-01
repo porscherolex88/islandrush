@@ -1,4 +1,3 @@
-import { HeartHandshake } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PlayLimitsForm } from "@/components/app/account-forms";
@@ -16,7 +15,7 @@ export default async function ResponsiblePlayPage() {
   const onBreak = Boolean(until && until > new Date());
   return (
     <div>
-      <InnerPageHeader title="Responsible Play" subtitle="Tools to keep LootBox fun" icon={<HeartHandshake />} />
+      <InnerPageHeader title="Responsible Play" subtitle="Tools to keep LootBox fun" />
       <Section>
         <Panel className="space-y-1 bg-brand-soft/60">
           <p className="text-sm font-semibold">Your current settings</p>

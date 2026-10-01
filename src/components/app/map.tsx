@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAction } from "@/hooks/use-action";
+import { useFormatCash } from "@/components/providers/fiat-currency-provider";
 import { formatCredits } from "@/lib/money";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
@@ -61,7 +62,7 @@ function IslandOverview({ areas, selected, current, vault, onSelect }: { areas: 
   const reduce = useReducedMotion();
   const pins = areas.map((a, i) => ({ area: a, ...pinFor(a, i) }));
   return (
-    <div className="relative aspect-[3/4] overflow-hidden rounded-[2rem] bg-ocean shadow-lift">
+    <div className="relative aspect-[3/4] overflow-hidden rounded-[2rem] bg-ocean">
       <Image src={ART.island} alt="Illustrated map of the island" fill priority sizes="(max-width: 430px) 100vw, 430px" className="object-cover" />
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden>
         {pins.slice(1).map((p, i) => {
@@ -87,13 +88,13 @@ function IslandOverview({ areas, selected, current, vault, onSelect }: { areas: 
           >
             {isCurrent && (
               <span className="absolute -top-9 left-1/2 flex -translate-x-1/2 flex-col items-center" aria-hidden>
-                <span className="rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap text-amber-950 shadow">You are here</span>
+                <span className="rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap text-amber-950">You are here</span>
                 <MapPin className="size-5 fill-amber-300 text-amber-900" />
               </span>
             )}
             <span
               className={cn(
-                "flex min-h-11 items-center gap-1.5 rounded-full border-2 py-1 pr-3 pl-1 text-xs font-bold whitespace-nowrap shadow-lift backdrop-blur",
+                "flex min-h-11 items-center gap-1.5 rounded-full border-2 py-1 pr-3 pl-1 text-xs font-bold whitespace-nowrap backdrop-blur",
                 selected === a.id ? "border-amber-300 bg-white text-foreground" : "border-white/80 bg-white/90 text-foreground",
                 !a.accessible && "border-white/40 bg-slate-900/70 text-white",
               )}
@@ -115,7 +116,7 @@ function IslandOverview({ areas, selected, current, vault, onSelect }: { areas: 
       {vault && (
         <Link
           href="/app/play/vault"
-          className="absolute top-[24%] right-[4%] z-10 flex min-h-11 items-center gap-1.5 rounded-full border-2 border-amber-300/80 bg-slate-900/75 py-1 pr-3 pl-1 text-xs font-bold text-white shadow-lift backdrop-blur"
+          className="absolute top-[24%] right-[4%] z-10 flex min-h-11 items-center gap-1.5 rounded-full border-2 border-amber-300/80 bg-slate-900/75 py-1 pr-3 pl-1 text-xs font-bold text-white backdrop-blur"
           aria-label={`${vault.name}${vault.unlocked ? ", opened" : vault.ready ? ", ready to open" : ", locked"}`}
         >
           <span className="grid size-8 place-items-center rounded-full bg-amber-400 text-amber-950">
@@ -138,7 +139,7 @@ export function MapTile({ tile, selected, next, discovering, onSelect }: { tile:
     const r = rarityOf(tile.reward.rarity);
     return (
       <motion.div
-        className={cn("relative grid size-14 shrink-0 place-items-center rounded-full text-2xl shadow-card ring-[3px]", r.bg, r.ring)}
+        className={cn("relative grid size-14 shrink-0 place-items-center rounded-full text-2xl ring-[3px]", r.bg, r.ring)}
         initial={reduce ? false : { scale: 0.5, rotate: -20, opacity: 0 }}
         animate={{ scale: 1, rotate: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 16 }}
@@ -159,10 +160,9 @@ export function MapTile({ tile, selected, next, discovering, onSelect }: { tile:
       aria-pressed={selected}
       aria-label={`${tile.name}, not discovered yet`}
       className={cn(
-        "relative grid size-14 shrink-0 place-items-center rounded-full border-2 border-dashed border-amber-700/40 bg-[radial-gradient(circle_at_35%_30%,#fef3c7,#fcd34d_70%,#d97706)] text-xl font-black text-amber-900/70 shadow-card outline-none focus-visible:ring-4 focus-visible:ring-ring/40",
-        selected && "border-solid border-white shadow-glow",
+        "relative grid size-14 shrink-0 place-items-center rounded-full border-2 border-dashed border-amber-700/40 bg-[radial-gradient(circle_at_35%_30%,#fef3c7,#fcd34d_70%,#d97706)] text-xl font-black text-amber-900/70 outline-none focus-visible:ring-4 focus-visible:ring-ring/40",
+        selected && "border-solid border-white outline-3 outline-offset-1 outline-amber-400",
       )}
-      whileTap={reduce ? undefined : { scale: 0.9 }}
       animate={reduce ? undefined : discovering && selected ? { scale: [1, 1.12, 1], rotate: [0, 6, -6, 0] } : selected ? { y: -4, scale: 1.08 } : next ? { scale: [1, 1.06, 1] } : { scale: 1, y: 0 }}
       transition={discovering && selected ? { duration: 0.6, repeat: Infinity } : next && !selected ? { duration: 1.8, repeat: Infinity } : { type: "spring", stiffness: 400, damping: 20 }}
     >
@@ -231,7 +231,7 @@ export function LockedArea({ area }: { area: AreaViewModel }) {
       </p>
       <RequirementList requirements={area.requirements} />
       {consumed.length > 0 && <p className="text-xs text-muted-foreground">{consumed.map((c) => c.label).join(" and ")} will be used up when you unlock.</p>}
-      <Button size="xl" className="w-full" variant={area.canUnlock ? "gold" : "secondary"} disabled={!area.canUnlock || pending} onClick={() => run(area.id)}>
+      <Button size="pill" className="w-full" variant={area.canUnlock ? "gold" : "secondary"} disabled={!area.canUnlock || pending} onClick={() => run(area.id)}>
         {pending ? <Loader2 className="animate-spin" /> : area.canUnlock ? <Sparkles /> : <Lock />}
         {area.canUnlock ? `Unlock the ${area.name}` : `${area.name} locked`}
       </Button>
@@ -252,6 +252,7 @@ export function LockedArea({ area }: { area: AreaViewModel }) {
 }
 
 export function MapArea({ area, freeLeft, credits, rate }: { area: AreaViewModel; freeLeft: number; credits: number; rate: { cash: number; credits: number } }) {
+  const fmt = useFormatCash();
   const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);
   const [reveal, setReveal] = useState<{ reward: RewardResult; xp: number; areaCompleted: boolean } | null>(null);
@@ -279,21 +280,21 @@ export function MapArea({ area, freeLeft, credits, rate }: { area: AreaViewModel
       ) : !tile ? (
         <p className="text-center text-sm text-muted-foreground">Tap a glowing spot to explore it</p>
       ) : affordable ? (
-        <Button size="xl" variant="gold" className="w-full" onClick={() => run(tile.id)} disabled={pending}>
+        <Button size="pill" variant="gold" className="w-full" onClick={() => run(tile.id)} disabled={pending}>
           {pending ? <Loader2 className="animate-spin" /> : <Compass />}
           {free ? "Use a free discovery" : cost === 0 ? "Discover" : `Discover for ${formatCredits(cost)} Credits`}
         </Button>
       ) : (
         <div className="space-y-2 rounded-2xl border border-gold/40 bg-gold-soft p-3 text-center text-sm">
           <p>You need {formatCredits(cost - credits)} more Credits to explore this spot.</p>
-          <Button asChild variant="gold" size="lg">
+          <Button asChild variant="gold" size="pill">
             <Link href="/app/wallet/convert">Get Credits</Link>
           </Button>
         </div>
       )}
       {tile && !free && cost > 0 && (
         <p className="-mt-2 text-center text-xs text-muted-foreground tabular">
-          ≈ RM{rm.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per spot
+          ≈ {fmt(rm.toFixed(2))} per spot
         </p>
       )}
       <RewardReveal
@@ -340,15 +341,15 @@ export function MapCanvas({
           {freeLeft} / {freeTotal}
         </span>
       </div>
-      <div className="overflow-hidden rounded-[2rem] border bg-card shadow-card">
+      <div className="overflow-hidden rounded-[2rem] border bg-card">
         <div className="relative isolate h-36 text-white">
           <Image src={regionArt(area.slug || area.name)} alt="" fill sizes="(max-width: 430px) 100vw, 430px" className={cn("-z-10 object-cover", !area.accessible && "grayscale-[60%]")} />
           <div aria-hidden className="art-scrim absolute inset-0 -z-10" />
           <div className="flex h-full flex-col justify-end p-4">
-            <p className="flex items-center gap-2 font-heading text-2xl font-extrabold drop-shadow">
+            <p className="flex items-center gap-2 font-heading text-2xl font-extrabold">
               {!area.accessible && <Lock className="size-5" aria-hidden />}
               {area.name}
-              {area.isSpecial && <span className="rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-950 uppercase">Special Area</span>}
+              {area.isSpecial && <span className="rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-950">Special Area</span>}
             </p>
             <p className="max-w-[75%] text-sm text-white/85">{area.description}</p>
             {area.accessible && (

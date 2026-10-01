@@ -3,7 +3,7 @@
 import { CalendarCheck, Compass, Home, TrendingUp, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { rootSection, type RootRoute } from "@/lib/app-routes";
+import { isRootRoute, rootSection, type RootRoute } from "@/lib/app-routes";
 import { cn } from "@/lib/utils";
 
 const TABS: { href: RootRoute; label: string; icon: typeof Home }[] = [
@@ -16,6 +16,7 @@ const TABS: { href: RootRoute; label: string; icon: typeof Home }[] = [
 
 export function BottomNavigation() {
   const pathname = usePathname();
+  if (!isRootRoute(pathname)) return null;
   const section = rootSection(pathname);
   return (
     <nav aria-label="Main" className="sticky bottom-0 z-30 border-t bg-background/95 pb-safe backdrop-blur supports-backdrop-filter:bg-background/80">

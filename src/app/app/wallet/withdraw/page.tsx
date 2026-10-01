@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowUpFromLine, Landmark } from "lucide-react";
+import { AlertCircle, Landmark } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -8,7 +8,8 @@ import { maskAccount } from "@/lib/format";
 import { EmptyState } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
-import { formatMYR, toDecimal } from "@/lib/money";
+import { toDecimal, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { settleDueRewards } from "@/server/services/cash-rewards";
 import { isFeatureEnabled } from "@/server/services/config";
@@ -19,6 +20,7 @@ export const metadata: Metadata = { title: "Withdraw" };
 const STEPS = ["PENDING", "REVIEW", "APPROVED", "PROCESSING", "COMPLETED"];
 
 export default async function WithdrawPage() {
+  const fiat = await getFiatDisplay();
   const user = await requireUser();
   await settleDueRewards({ userId: user.id, limit: 50 });
   const [elig, accounts, history, enabled] = await Promise.all([
@@ -30,11 +32,11 @@ export default async function WithdrawPage() {
 
   return (
     <div>
-      <InnerPageHeader title="Withdraw" subtitle="To your bank account" icon={<ArrowUpFromLine />} />
+      <InnerPageHeader title="Withdraw" subtitle="To your bank account" />
       <Section>
         <Panel className="bg-success-soft/60">
           <p className="text-sm text-muted-foreground">Withdrawable balance</p>
-          <p className="font-heading text-3xl font-bold tabular">{formatMYR(elig.available)}</p>
+          <p className="font-heading text-3xl font-bold tabular">{formatCash(elig.available, { currency: fiat })}</p>
           <Link href="/app/wallet#deposit-level" className="mt-1 inline-flex h-11 items-center text-sm font-semibold text-primary">
             Your daily limit depends on your Deposit Level
           </Link>
@@ -75,7 +77,7 @@ export default async function WithdrawPage() {
                 <li key={w.id} className="rounded-2xl border bg-card p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <p className="font-semibold tabular">{formatMYR(w.amount)}</p>
+                      <p className="font-semibold tabular">{formatCash(w.amount, { currency: fiat })}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDateTime(w.createdAt)} · {w.accountSnapshot.bankName} {maskAccount(w.accountSnapshot.accountNumber)}
                       </p>

@@ -15,6 +15,20 @@
       "when": 1790471897747,
       "tag": "0001_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790823823636,
+      "tag": "0002_adventure",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790823827002,
+      "tag": "0003_adventure_immutability",
+      "breakpoints": true
     }
   ]
 }

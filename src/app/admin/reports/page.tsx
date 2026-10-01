@@ -4,7 +4,8 @@ import Link from "next/link";
 import { AdminCard, AdminPage, DataTable, FilterBar, FilterInput, FilterSelect, Pagination, pageOf, str } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay, type FiatDisplay } from "@/lib/fiat-display";
 import { formatDate, formatDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { parseRange, rows } from "@/server/admin/queries";
@@ -13,11 +14,11 @@ import { REPORT_GROUPS, REPORTS, reportPage, type ReportFormat, type ReportGroup
 export const metadata: Metadata = { title: "Reports" };
 const PAGE = 100;
 
-function fmt(v: unknown, f: ReportFormat | undefined) {
+function fmt(v: unknown, f: ReportFormat | undefined, fiat: FiatDisplay) {
   if (v === null || v === undefined || v === "") return "-";
   switch (f) {
     case "money":
-      return formatMYR(String(v));
+      return formatCash(String(v), { currency: fiat });
     case "credits":
       return formatCredits(Math.round(Number(v)));
     case "int":
@@ -34,6 +35,7 @@ function fmt(v: unknown, f: ReportFormat | undefined) {
 }
 
 export default async function ReportsPage({ searchParams }: PageProps<"/admin/reports">) {
+  const fiat = await getFiatDisplay();
   const admin = await requireAdmin("reports.view");
   const sp = await searchParams;
   const available = REPORTS.filter((r) => admin.can(r.permission));
@@ -99,7 +101,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
               key: c.key,
               header: c.label,
               align: c.format && ["int", "money", "credits", "pct"].includes(c.format) ? ("right" as const) : undefined,
-              cell: (row: Record<string, unknown>) => <span className="whitespace-nowrap">{fmt(row[c.key], c.format)}</span>,
+              cell: (row: Record<string, unknown>) => <span className="whitespace-nowrap">{fmt(row[c.key], c.format, fiat)}</span>,
             }))}
           />
           <Pagination page={page} hasMore={data.length > PAGE} sp={sp} basePath="/admin/reports" />

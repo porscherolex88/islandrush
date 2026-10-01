@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { profiles, rewardPools, vaults, vaultUnlocks } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { poolDistribution } from "@/server/admin/pools";
 import { one } from "@/server/admin/queries";
@@ -18,6 +19,7 @@ import { one } from "@/server/admin/queries";
 export const metadata: Metadata = { title: "Vault" };
 
 export default async function VaultPage({ params }: PageProps<"/admin/games/vaults/[id]">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("games.manage");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -57,7 +59,7 @@ export default async function VaultPage({ params }: PageProps<"/admin/games/vaul
             </Button>
           }
         >
-          <PoolTable stats={dist.stats} back={`/admin/economy/pools/${pool.id}`} showObserved={false} />
+          <PoolTable stats={dist.stats} back={`/admin/economy/pools/${pool.id}`} showObserved={false} fiat={fiat} />
         </AdminCard>
       )}
       <AdminCard title="Recent unlocks" bodyClassName="p-0">

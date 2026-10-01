@@ -2,11 +2,12 @@ import { and, asc, desc, eq, gte, ilike, lte, or, sql, type SQL } from "drizzle-
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminPage, DataTable, FilterBar, FilterInput, FilterSelect, Pagination, StatGrid, StatsCard, UserLink, pageOf, str, type Column } from "@/components/admin/ui";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadge , humanize } from "@/components/shared/status-badge";
 import { db } from "@/db";
 import { deposits, profiles } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime, relativeTime } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Deposits" };
@@ -14,6 +15,7 @@ const PAGE = 50;
 const STATUSES = ["PENDING", "APPROVED", "REJECTED", "REVERSED"] as const;
 
 export default async function DepositsPage({ searchParams }: PageProps<"/admin/finance/deposits">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("finance.view");
   const sp = await searchParams;
   const page = pageOf(sp);
@@ -61,8 +63,8 @@ export default async function DepositsPage({ searchParams }: PageProps<"/admin/f
   const columns: Column<Row>[] = [
     { key: "at", header: "Submitted", sortKey: "createdAt", cell: (r) => <Link href={`/admin/finance/deposits/${r.d.id}`} className="font-medium whitespace-nowrap text-primary hover:underline">{formatDateTime(r.d.createdAt)}</Link> },
     { key: "user", header: "User", cell: (r) => <UserLink id={r.d.userId} name={r.name} email={r.email} /> },
-    { key: "amt", header: "Amount", sortKey: "amount", align: "right", cell: (r) => <span className="font-semibold">{formatMYR(r.d.amount)}</span> },
-    { key: "m", header: "Method", cell: (r) => r.d.method.replace("_", " ") },
+    { key: "amt", header: "Amount", sortKey: "amount", align: "right", cell: (r) => <span className="font-semibold">{formatCash(r.d.amount, { currency: fiat })}</span> },
+    { key: "m", header: "Method", cell: (r) => humanize(r.d.method) },
     { key: "ref", header: "Reference", cell: (r) => <code className="text-xs">{r.d.reference}</code> },
     { key: "payer", header: "Payer", cell: (r) => r.d.payerName },
     { key: "proof", header: "Proof", cell: (r) => (r.d.proofFileId ? "Attached" : "-") },
@@ -74,16 +76,16 @@ export default async function DepositsPage({ searchParams }: PageProps<"/admin/f
     <AdminPage title="Deposits" description="Manual bank transfer deposits. Approving credits the user's Cash wallet through the ledger.">
       <StatGrid cols={4}>
         <StatsCard label="Pending" value={summary.pending} tone={summary.pending ? "warning" : "default"} href="/admin/finance/deposits" />
-        <StatsCard label="Pending value" value={formatMYR(summary.pendingSum)} />
+        <StatsCard label="Pending value" value={formatCash(summary.pendingSum, { currency: fiat })} />
         <StatsCard label="Oldest pending" value={summary.oldest ? relativeTime(new Date(summary.oldest)) : "-"} />
-        <StatsCard label="Approved (24h)" value={formatMYR(summary.today)} />
+        <StatsCard label="Approved (24h)" value={formatCash(summary.today, { currency: fiat })} />
       </StatGrid>
       <FilterBar basePath="/admin/finance/deposits">
         <FilterSelect name="status" label="Status" value={status} options={[...STATUSES, { value: "ALL", label: "All statuses" }]} allLabel="Pending (default)" />
         <FilterInput name="q" label="Search" value={q} placeholder="Reference, payer, user" />
         <FilterSelect name="method" label="Method" value={method} options={["BANK_TRANSFER", "DUITNOW"]} />
-        <FilterInput name="min" label="Min RM" value={min} className="w-24" />
-        <FilterInput name="max" label="Max RM" value={max} className="w-24" />
+        <FilterInput name="min" label="Min amount" value={min} className="w-24" />
+        <FilterInput name="max" label="Max amount" value={max} className="w-24" />
         <FilterInput name="from" label="From" type="date" value={from} />
         <FilterInput name="to" label="To" type="date" value={to} />
       </FilterBar>

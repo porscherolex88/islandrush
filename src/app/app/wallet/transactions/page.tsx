@@ -7,6 +7,7 @@ import { TransactionList } from "@/components/app/transaction-list";
 import { EmptyState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { cn } from "@/lib/utils";
 import { ledgerActivity } from "@/server/queries/wallet";
 import type { UserAccountType } from "@/server/services/ledger";
@@ -24,6 +25,7 @@ const FILTERS: { key: string; label: string; account?: UserAccountType }[] = [
 const PAGE = 25;
 
 export default async function TransactionsPage({ searchParams }: PageProps<"/app/wallet/transactions">) {
+  const fiat = await getFiatDisplay();
   const user = await requireUser();
   const sp = await searchParams;
   const filter = FILTERS.find((f) => f.key === sp.filter) ?? FILTERS[0];
@@ -33,7 +35,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/app
 
   return (
     <div>
-      <InnerPageHeader title="Transactions" icon={<ReceiptText />} />
+      <InnerPageHeader title="Transactions" />
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3 pb-2" role="tablist" aria-label="Filter by account">
         {FILTERS.map((f) => (
           <Link
@@ -48,7 +50,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/app
         ))}
       </div>
       <Section>
-        {rows.length ? <TransactionList rows={rows} /> : <EmptyState icon={<ReceiptText className="size-8 text-primary" />} title="Nothing here yet" description="Transactions for this account will appear here." />}
+        {rows.length ? <TransactionList rows={rows} fiat={fiat} /> : <EmptyState icon={<ReceiptText className="size-8 text-primary" />} title="Nothing here yet" description="Transactions for this account will appear here." />}
         {(page > 1 || hasMore) && (
           <div className="mt-3 flex justify-between">
             {page > 1 ? (

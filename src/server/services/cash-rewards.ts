@@ -2,7 +2,8 @@ import { and, eq, inArray, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { cashRewards, profiles } from "@/db/schema";
 import { AppError, NotFoundError } from "@/lib/errors";
-import { formatMYR, toMinor } from "@/lib/money";
+import { toMinor } from "@/lib/money";
+import { fmtCash } from "@/lib/format-money";
 import { audit } from "./audit";
 import { postTransaction } from "./ledger";
 import { notify } from "./notifications";
@@ -54,7 +55,7 @@ export async function settleDueRewards(opts: { userId?: string; limit?: number }
         .update(cashRewards)
         .set({ status: "SETTLED", settleTransactionId: posted.transactionId, settledAt: new Date(), updatedAt: new Date() })
         .where(eq(cashRewards.id, id));
-      await notify(tx, reward.userId, "WALLET", "Reward now withdrawable", `${formatMYR(reward.amount)} moved to your Withdrawable balance.`, "/app/wallet");
+      await notify(tx, reward.userId, "WALLET", "Reward now withdrawable", `${await fmtCash(reward.amount)} moved to your Withdrawable balance.`, "/app/wallet");
       return "settled";
     });
     if (outcome === "settled") settled++;

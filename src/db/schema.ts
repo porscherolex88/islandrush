@@ -94,7 +94,7 @@ export const withdrawalStatusEnum = pgEnum("withdrawal_status", [
 ]);
 export const cashRewardStatusEnum = pgEnum("cash_reward_status", ["PENDING", "HELD", "SETTLED", "REVERSED"]);
 export const rarityEnum = pgEnum("rarity", ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"]);
-export const itemKindEnum = pgEnum("item_kind", ["COLLECTIBLE", "SPECIAL", "KEY", "FRAGMENT", "COSMETIC"]);
+export const itemKindEnum = pgEnum("item_kind", ["COLLECTIBLE", "SPECIAL", "KEY", "FRAGMENT", "COSMETIC", "LOOT"]);
 export const rewardTypeEnum = pgEnum("reward_type", ["CREDITS", "CASH", "XP", "ITEM", "AREA_UNLOCK"]);
 export const poolModeEnum = pgEnum("pool_mode", ["WEIGHTED", "ALL"]);
 export const contentStatusEnum = pgEnum("content_status", ["DRAFT", "PUBLISHED", "ARCHIVED"]);
@@ -154,6 +154,33 @@ export const notificationTypeEnum = pgEnum("notification_type", [
 ]);
 export const jobStatusEnum = pgEnum("job_status", ["RUNNING", "SUCCESS", "FAILED"]);
 export const bannerKindEnum = pgEnum("banner_kind", ["BANNER", "ANNOUNCEMENT"]);
+export const prizeKindEnum = pgEnum("prize_kind", ["PHYSICAL", "CREDITS", "CASH"]);
+export const prizeClaimStatusEnum = pgEnum("prize_claim_status", [
+  "UNLOCKED",
+  "CLAIM_PENDING",
+  "UNDER_REVIEW",
+  "APPROVED",
+  "FULFILLING",
+  "FULFILLED",
+  "REJECTED",
+]);
+export const unlockOutcomeEnum = pgEnum("unlock_outcome", ["PRIZE", "ALTERNATIVE"]);
+export const gameEventTypeEnum = pgEnum("game_event_type", [
+  "MYSTERY_BOX_PURCHASE",
+  "MYSTERY_BOX_REWARD",
+  "LOOT_REWARD",
+  "MAP_UNLOCK",
+  "MAP_CHECKPOINT_UNLOCK",
+  "MAP_COMPLETION",
+  "BIG_MYSTERY_BOX_OPEN",
+  "PUZZLE_PIECE_REWARD",
+  "PUZZLE_COMPLETED",
+  "PRIZE_UNLOCK_ATTEMPT",
+  "PRIZE_UNLOCK_RESULT",
+  "ALTERNATIVE_REWARD",
+  "PRIZE_CLAIM",
+  "PRIZE_CLAIM_STATUS",
+]);
 
 /* ----------------------------------------------------------------------------
  * Identity & access
@@ -575,6 +602,8 @@ export const items = pgTable(
     assemblesIntoItemId: uuid("assembles_into_item_id"),
     fragmentsRequired: integer("fragments_required"),
     autoAssemble: boolean("auto_assemble").notNull().default(false),
+    /** For LOOT items: the adventure Map level this Loot counts toward. */
+    adventureLevel: integer("adventure_level"),
     status: contentStatusEnum("status").notNull().default("PUBLISHED"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: createdAt(),
@@ -584,6 +613,7 @@ export const items = pgTable(
     uniqueIndex("items_slug_uq").on(t.slug),
     index("items_collection_idx").on(t.collectionId),
     index("items_kind_idx").on(t.kind),
+    index("items_adventure_level_idx").on(t.adventureLevel),
   ],
 );
 
@@ -662,11 +692,23 @@ export const mysteryBoxes = pgTable(
     totalLimit: integer("total_limit"),
     theme: jsonb("theme").$type<{ color: string; accent: string }>().notNull().default({ color: "#7c3aed", accent: "#f59e0b" }),
     xpReward: integer("xp_reward"),
+    /** Adventure level (1-10). Boxes without a level are legacy and hidden from the adventure. */
+    level: integer("level"),
+    /** Map level that must be completed before this box can be opened. Null = available immediately. */
+    requiresMapLevel: integer("requires_map_level"),
+    /** Guaranteed Loot drop granted on every open, in addition to the reward pool. */
+    lootPoolId: uuid("loot_pool_id").references(() => rewardPools.id),
+    artwork: text("artwork"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("mystery_boxes_slug_uq").on(t.slug), check("mb_price_pos", sql`${t.priceCredits} > 0`)],
+  (t) => [
+    uniqueIndex("mystery_boxes_slug_uq").on(t.slug),
+    uniqueIndex("mystery_boxes_level_uq").on(t.level).where(sql`${t.level} is not null`),
+    check("mb_price_pos", sql`${t.priceCredits} > 0`),
+    check("mb_level_range", sql`${t.level} is null or ${t.level} between 1 and 10`),
+  ],
 );
 
 export const mysteryBoxPlays = pgTable(
@@ -687,6 +729,10 @@ export const mysteryBoxPlays = pgTable(
     idempotencyKey: text("idempotency_key").notNull(),
     ledgerTransactionId: uuid("ledger_transaction_id").references(() => ledgerTransactions.id),
     appDay: date("app_day").notNull(),
+    level: integer("level"),
+    loot: jsonb("loot").$type<Record<string, unknown>[]>().notNull().default([]),
+    /** Box configuration at the moment of opening, so later edits never change history. */
+    configSnapshot: jsonb("config_snapshot").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: createdAt(),
   },
   (t) => [
@@ -710,10 +756,21 @@ export const maps = pgTable(
     description: text("description").notNull().default(""),
     status: contentStatusEnum("status").notNull().default("PUBLISHED"),
     version: integer("version").notNull().default(1),
+    /** Adventure level (1-10). Maps without a level are the legacy tile island. */
+    level: integer("level"),
+    /** Loot (for this map level) that must be collected before the map can be unlocked. */
+    lootRequired: integer("loot_required").notNull().default(0),
+    artwork: text("artwork"),
+    color: text("color").notNull().default("#0ea5e9"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("maps_slug_uq").on(t.slug)],
+  (t) => [
+    uniqueIndex("maps_slug_uq").on(t.slug),
+    uniqueIndex("maps_level_uq").on(t.level).where(sql`${t.level} is not null`),
+    check("maps_level_range", sql`${t.level} is null or ${t.level} between 1 and 10`),
+    check("maps_loot_nonneg", sql`${t.lootRequired} >= 0`),
+  ],
 );
 
 export const mapAreas = pgTable(
@@ -860,6 +917,298 @@ export const vaultUnlocks = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("vu_user_vault_uq").on(t.userId, t.vaultId)],
+);
+
+/* ----------------------------------------------------------------------------
+ * Adventure: map checkpoints, Big Mystery Boxes, puzzles, prizes
+ * ------------------------------------------------------------------------- */
+
+export const mapCheckpoints = pgTable(
+  "map_checkpoints",
+  {
+    id: id(),
+    mapId: uuid("map_id")
+      .notNull()
+      .references(() => maps.id),
+    position: integer("position").notNull(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    /** Lucide landmark key shown on the node, e.g. "tent", "landmark", "castle". */
+    landmark: text("landmark").notNull().default("flag"),
+    /** Total Loot for this map that must have been collected (milestone, never consumed). */
+    lootRequired: integer("loot_required").notNull(),
+    isFinal: boolean("is_final").notNull().default(false),
+    posX: integer("pos_x").notNull().default(50),
+    posY: integer("pos_y").notNull().default(50),
+    status: contentStatusEnum("status").notNull().default("PUBLISHED"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("mcp_map_pos_uq").on(t.mapId, t.position),
+    uniqueIndex("mcp_map_final_uq").on(t.mapId).where(sql`${t.isFinal}`),
+    check("mcp_loot_nonneg", sql`${t.lootRequired} >= 0`),
+    check("mcp_pos_range", sql`${t.posX} between 0 and 100 and ${t.posY} between 0 and 100`),
+  ],
+);
+
+export const userMapProgress = pgTable(
+  "user_map_progress",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    mapId: uuid("map_id")
+      .notNull()
+      .references(() => maps.id),
+    level: integer("level").notNull(),
+    lootAtUnlock: integer("loot_at_unlock").notNull(),
+    unlockedAt: ts("unlocked_at").notNull().defaultNow(),
+    completedAt: ts("completed_at"),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.mapId] }), index("ump_user_idx").on(t.userId)],
+);
+
+export const userCheckpoints = pgTable(
+  "user_checkpoints",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    checkpointId: uuid("checkpoint_id")
+      .notNull()
+      .references(() => mapCheckpoints.id),
+    mapId: uuid("map_id")
+      .notNull()
+      .references(() => maps.id),
+    lootRequired: integer("loot_required").notNull(),
+    lootAtUnlock: integer("loot_at_unlock").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("uc_user_cp_uq").on(t.userId, t.checkpointId), index("uc_user_map_idx").on(t.userId, t.mapId)],
+);
+
+export const bigMysteryBoxes = pgTable(
+  "big_mystery_boxes",
+  {
+    id: id(),
+    mapId: uuid("map_id")
+      .notNull()
+      .references(() => maps.id),
+    name: text("name").notNull().default("Big Mystery Box"),
+    description: text("description").notNull().default(""),
+    artwork: text("artwork"),
+    pieces1Pct: integer("pieces_1_pct").notNull().default(50),
+    pieces2Pct: integer("pieces_2_pct").notNull().default(35),
+    pieces3Pct: integer("pieces_3_pct").notNull().default(15),
+    active: boolean("active").notNull().default(true),
+    version: integer("version").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("bmb_map_uq").on(t.mapId),
+    check("bmb_pct_nonneg", sql`${t.pieces1Pct} >= 0 and ${t.pieces2Pct} >= 0 and ${t.pieces3Pct} >= 0`),
+    check("bmb_pct_total", sql`${t.pieces1Pct} + ${t.pieces2Pct} + ${t.pieces3Pct} = 100`),
+  ],
+);
+
+export const bigBoxOpenings = pgTable(
+  "big_box_openings",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    mapId: uuid("map_id")
+      .notNull()
+      .references(() => maps.id),
+    bigBoxId: uuid("big_box_id")
+      .notNull()
+      .references(() => bigMysteryBoxes.id),
+    level: integer("level").notNull(),
+    pieces: integer("pieces").notNull(),
+    odds: jsonb("odds").$type<Record<string, unknown>>().notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("bbo_user_map_uq").on(t.userId, t.mapId), check("bbo_pieces_range", sql`${t.pieces} between 1 and 3`)],
+);
+
+export const prizes = pgTable(
+  "prizes",
+  {
+    id: id(),
+    level: integer("level").notNull(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    image: text("image"),
+    kind: prizeKindEnum("kind").notNull().default("PHYSICAL"),
+    /** Credits or RM amount for CREDITS / CASH prizes. Unused for PHYSICAL. */
+    amount: numeric("amount", { precision: 20, scale: 2 }).notNull().default("0"),
+    /** Indicative value for PHYSICAL prizes, shown only where legally appropriate. */
+    estimatedValue: money("estimated_value"),
+    showEstimatedValue: boolean("show_estimated_value").notNull().default(false),
+    /** Null = unlimited. */
+    inventoryTotal: integer("inventory_total"),
+    inventoryAllocated: integer("inventory_allocated").notNull().default(0),
+    requiresVerification: boolean("requires_verification").notNull().default(false),
+    claimInstructions: text("claim_instructions").notNull().default(""),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("prizes_level_idx").on(t.level),
+    check("prizes_inventory", sql`${t.inventoryTotal} is null or ${t.inventoryAllocated} <= ${t.inventoryTotal}`),
+    check("prizes_allocated_nonneg", sql`${t.inventoryAllocated} >= 0`),
+  ],
+);
+
+export const puzzles = pgTable(
+  "puzzles",
+  {
+    id: id(),
+    level: integer("level").notNull(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    image: text("image"),
+    piecesRequired: integer("pieces_required").notNull(),
+    prizeId: uuid("prize_id")
+      .notNull()
+      .references(() => prizes.id),
+    alternativeRewardType: text("alternative_reward_type").$type<"CREDITS" | "CASH">().notNull().default("CREDITS"),
+    alternativeRewardAmount: numeric("alternative_reward_amount", { precision: 20, scale: 2 }).notNull().default("0"),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("puzzles_level_uq").on(t.level),
+    check("puzzles_pieces_pos", sql`${t.piecesRequired} > 0`),
+    check("puzzles_alt_type", sql`${t.alternativeRewardType} in ('CREDITS', 'CASH')`),
+  ],
+);
+
+/** Append-only record of every puzzle piece a player has received. */
+export const puzzlePieceEvents = pgTable(
+  "puzzle_piece_events",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    delta: integer("delta").notNull(),
+    sourceType: text("source_type").notNull(),
+    sourceId: text("source_id").notNull(),
+    level: integer("level"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("ppe_source_uq").on(t.sourceType, t.sourceId), index("ppe_user_idx").on(t.userId)],
+);
+
+export const userPuzzles = pgTable(
+  "user_puzzles",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    puzzleId: uuid("puzzle_id")
+      .notNull()
+      .references(() => puzzles.id),
+    level: integer("level").notNull(),
+    piecesRequired: integer("pieces_required").notNull(),
+    piecesTotalAt: integer("pieces_total_at").notNull(),
+    prizeId: uuid("prize_id")
+      .notNull()
+      .references(() => prizes.id),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("up_user_puzzle_uq").on(t.userId, t.puzzleId)],
+);
+
+/** One final unlock attempt per completed puzzle. The outcome is decided and stored server-side. */
+export const prizeUnlockAttempts = pgTable(
+  "prize_unlock_attempts",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    puzzleId: uuid("puzzle_id")
+      .notNull()
+      .references(() => puzzles.id),
+    userPuzzleId: uuid("user_puzzle_id")
+      .notNull()
+      .references(() => userPuzzles.id),
+    prizeId: uuid("prize_id")
+      .notNull()
+      .references(() => prizes.id),
+    level: integer("level").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    outcome: unlockOutcomeEnum("outcome").notNull(),
+    roll: integer("roll").notNull(),
+    odds: jsonb("odds").$type<{ prizeUnlockPct: number; alternativePct: number; configUpdatedAt: string | null }>().notNull(),
+    alternativeReward: jsonb("alternative_reward").$type<Record<string, unknown> | null>(),
+    ledgerTransactionId: uuid("ledger_transaction_id").references(() => ledgerTransactions.id),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("pua_user_puzzle_uq").on(t.userId, t.puzzleId), index("pua_user_idx").on(t.userId, t.createdAt)],
+);
+
+export const prizeClaims = pgTable(
+  "prize_claims",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    prizeId: uuid("prize_id")
+      .notNull()
+      .references(() => prizes.id),
+    attemptId: uuid("attempt_id")
+      .notNull()
+      .references(() => prizeUnlockAttempts.id),
+    level: integer("level").notNull(),
+    status: prizeClaimStatusEnum("status").notNull().default("UNLOCKED"),
+    prizeSnapshot: jsonb("prize_snapshot").$type<Record<string, unknown>>().notNull(),
+    contact: jsonb("contact").$type<{ fullName?: string; phone?: string; address?: string; note?: string }>().notNull().default({}),
+    reviewerId: text("reviewer_id").references(() => profiles.id),
+    reviewNote: text("review_note"),
+    ledgerTransactionId: uuid("ledger_transaction_id").references(() => ledgerTransactions.id),
+    claimedAt: ts("claimed_at"),
+    fulfilledAt: ts("fulfilled_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("pc_attempt_uq").on(t.attemptId), index("pc_status_idx").on(t.status, t.createdAt), index("pc_user_idx").on(t.userId)],
+);
+
+/** Append-only audit trail for every reward-producing adventure event. */
+export const gameEvents = pgTable(
+  "game_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    type: gameEventTypeEnum("type").notNull(),
+    actionId: text("action_id").notNull(),
+    level: integer("level"),
+    refType: text("ref_type"),
+    refId: text("ref_id"),
+    config: jsonb("config").$type<Record<string, unknown>>().notNull().default({}),
+    result: jsonb("result").$type<Record<string, unknown>>().notNull().default({}),
+    ledgerTransactionId: uuid("ledger_transaction_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("ge_type_action_uq").on(t.type, t.actionId),
+    index("ge_user_idx").on(t.userId, t.createdAt),
+    index("ge_type_idx").on(t.type, t.createdAt),
+  ],
 );
 
 /* ----------------------------------------------------------------------------

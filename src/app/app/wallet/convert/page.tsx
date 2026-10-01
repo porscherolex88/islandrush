@@ -18,7 +18,7 @@ export default async function ConvertPage() {
   const [b, rate] = await Promise.all([getBalances(user.id), getRate()]);
   return (
     <div>
-      <InnerPageHeader title="Convert to Credits" subtitle="Turn Cash into Credits to play" icon={<Repeat />} />
+      <InnerPageHeader title="Convert to Credits" subtitle="Turn Cash into Credits to play" />
       <Section>
         {b.CASH === 0n ? (
           <EmptyState
@@ -26,7 +26,7 @@ export default async function ConvertPage() {
             title="You have no Cash to convert"
             description="Deposit money first. Once it is approved it becomes Cash, and you can turn it into Credits here."
             action={
-              <Button asChild size="lg">
+              <Button variant="gold" asChild size="pill">
                 <Link href="/app/wallet/deposit">Make a deposit</Link>
               </Button>
             }

@@ -6,6 +6,7 @@ import { getAuthSession, requireAdmin } from "@/lib/auth/session";
 import { formatDateTime, relativeTime } from "@/lib/time";
 import { revokeSessionAction } from "@/server/actions/admin/ops";
 import { rows } from "@/server/admin/queries";
+import { humanize } from "@/components/shared/status-badge";
 
 export const metadata: Metadata = { title: "Sessions" };
 
@@ -33,7 +34,7 @@ export default async function SessionsPage({ searchParams }: PageProps<"/admin/a
         empty="No active sessions"
         columns={[
           { key: "u", header: "Account", cell: (s) => <UserLink id={s.user_id} name={s.name} email={s.email} /> },
-          { key: "r", header: "Role", cell: (s) => <span className="text-xs">{s.role.replace("_", " ")}</span> },
+          { key: "r", header: "Role", cell: (s) => <span className="text-xs">{humanize(s.role)}</span> },
           { key: "c", header: "Signed in", cell: (s) => <span className="whitespace-nowrap text-xs">{formatDateTime(s.created_at)}</span> },
           { key: "a", header: "Last active", cell: (s) => <span className="whitespace-nowrap text-xs">{relativeTime(new Date(s.updated_at))}</span> },
           { key: "ip", header: "IP", cell: (s) => <code className="text-xs">{s.ip ?? "-"}</code> },

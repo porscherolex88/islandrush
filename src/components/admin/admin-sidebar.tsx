@@ -12,6 +12,7 @@ import {
   Landmark,
   LayoutDashboard,
   LifeBuoy,
+  Map as MapIcon,
   ScrollText,
   Settings,
   Share2,
@@ -34,6 +35,7 @@ const ICONS: Record<string, LucideIcon> = {
   Landmark,
   Coins,
   Gamepad2,
+  Map: MapIcon,
   Gem,
   CalendarDays,
   TrendingUp,
@@ -70,9 +72,9 @@ export function AdminSidebar({ nav, onNavigate }: { nav: NavGroup[]; onNavigate?
   );
   return (
     <nav aria-label="Admin" className="flex h-full flex-col">
-      <Link href="/admin" className="flex h-14 shrink-0 items-center gap-2 border-b px-4 font-heading font-bold" onClick={onNavigate}>
+      <Link href="/admin" className="flex h-[66px] shrink-0 items-center gap-2 border-b px-4 font-heading font-bold" onClick={onNavigate}>
         <LogoMark className="size-7" />
-        LootBox <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase">Admin</span>
+        LootBox <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">Admin</span>
       </Link>
       <div className="flex-1 space-y-0.5 overflow-y-auto p-2 text-sm">
         {nav.map((g) => {

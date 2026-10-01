@@ -21,7 +21,7 @@ export function ReferralCard({ code, link }: { code: string; link: string }) {
     }
   }
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.3_0.07_222)_75%)] p-5 text-white shadow-lift">
+    <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.3_0.07_222)_75%)] p-5 text-white">
       <div aria-hidden className="absolute -top-14 -right-12 size-44 rounded-full bg-amber-300/15" />
       <p className="relative font-heading text-2xl leading-tight font-extrabold">Invite friends, explore together</p>
       <p className="relative mt-1 text-sm text-white/80">Share your link. When friends join and deposit, you earn a reward.</p>
@@ -35,7 +35,7 @@ export function ReferralCard({ code, link }: { code: string; link: string }) {
         </p>
         <CopyButton value={code} className="h-11 px-3 text-sm text-white hover:bg-white/15" />
       </div>
-      <Button onClick={share} size="xl" variant="gold" className="relative mt-3 w-full">
+      <Button onClick={share} size="pill" variant="gold" className="relative mt-3 w-full">
         <Share2 /> Share invite
       </Button>
     </div>

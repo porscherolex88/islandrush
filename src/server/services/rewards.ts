@@ -2,7 +2,8 @@ import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import type { Tx } from "@/db";
 import { areaUnlocks, cashRewards, items, mapAreas, profiles, rewardPoolEntries, rewardPools } from "@/db/schema";
 import { AppError } from "@/lib/errors";
-import { formatCredits, formatMYR, toMinor } from "@/lib/money";
+import { formatCredits, toMinor } from "@/lib/money";
+import { fmtCash } from "@/lib/format-money";
 import { weightedPick } from "@/lib/rng";
 import { getConfig } from "./config";
 import { grantItem } from "./inventory";
@@ -88,7 +89,7 @@ export async function describeEntry(tx: Tx, entry: PoolEntry): Promise<RewardRes
     case "CREDITS":
       return { ...base, display: `${formatCredits(entry.amount)} Credits`, icon: entry.reveal?.icon ?? RARITY_ICON.CREDITS };
     case "CASH":
-      return { ...base, display: formatMYR(entry.amount), icon: entry.reveal?.icon ?? RARITY_ICON.CASH };
+      return { ...base, display: await fmtCash(entry.amount), icon: entry.reveal?.icon ?? RARITY_ICON.CASH };
     case "XP":
       return { ...base, display: `${toMinor(entry.amount, "CREDITS")} XP`, icon: entry.reveal?.icon ?? RARITY_ICON.XP };
     case "ITEM": {

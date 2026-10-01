@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { detectFiatDisplay, FIAT_COOKIE } from "@/lib/fiat-display.shared";
 
 const DEVICE_COOKIE = "lb_did";
 const REFERRAL_COOKIE = "lb_ref";
@@ -37,6 +38,20 @@ export function proxy(req: NextRequest) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 365 * 2,
+      path: "/",
+    });
+  }
+  if (!req.cookies.get(FIAT_COOKIE)) {
+    const fiat = detectFiatDisplay({
+      cookie: null,
+      country: req.headers.get("x-vercel-ip-country") ?? req.headers.get("cf-ipcountry"),
+      acceptLanguage: req.headers.get("accept-language"),
+    });
+    res.cookies.set(FIAT_COOKIE, fiat, {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 365,
       path: "/",
     });
   }

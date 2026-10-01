@@ -2,7 +2,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { cashRewards, deposits, paymentAccounts, profiles } from "@/db/schema";
 import { AppError, ForbiddenError, isUniqueViolation, NotFoundError } from "@/lib/errors";
-import { formatMYR, toDecimal, toMinor } from "@/lib/money";
+import { toDecimal, toMinor } from "@/lib/money";
+import { fmtCash } from "@/lib/format-money";
 import { audit } from "./audit";
 import { getConfig } from "./config";
 import { recomputeDepositLevel } from "./deposit-levels";
@@ -33,8 +34,8 @@ export async function createDeposit(
 ) {
   const cfg = await getConfig("deposit");
   const amount = toMinor(input.amount);
-  if (amount < toMinor(cfg.min)) throw new AppError(`Minimum deposit is ${formatMYR(cfg.min)}`);
-  if (amount > toMinor(cfg.max)) throw new AppError(`Maximum deposit is ${formatMYR(cfg.max)}`);
+  if (amount < toMinor(cfg.min)) throw new AppError(`Minimum deposit is ${await fmtCash(cfg.min)}`);
+  if (amount > toMinor(cfg.max)) throw new AppError(`Maximum deposit is ${await fmtCash(cfg.max)}`);
   if (cfg.proofRequired && !input.proofFileId) throw new AppError("Please upload your proof of transfer");
   if (!cfg.methods.includes(input.method)) throw new AppError("Unsupported deposit method");
   const [profile] = await db.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
@@ -59,7 +60,7 @@ export async function createDeposit(
         idempotencyKey: input.idempotencyKey,
       })
       .returning();
-    await notify(db, userId, "WALLET", "Deposit submitted", `Your ${formatMYR(row.amount)} deposit is pending review.`, "/app/wallet/transactions");
+    await notify(db, userId, "WALLET", "Deposit submitted", `Your ${await fmtCash(row.amount)} deposit is pending review.`, "/app/wallet/transactions");
     return row;
   } catch (err) {
     if (isUniqueViolation(err)) {
@@ -107,7 +108,7 @@ export async function approveDeposit(actor: Actor, depositId: string, note?: str
     await recomputeDepositLevel(tx, dep.userId);
     await processReferralRewards(tx, updated);
     await onDepositSignals(tx, updated);
-    await notify(tx, dep.userId, "WALLET", "Deposit approved", `${formatMYR(dep.amount)} has been added to your Cash wallet.`, "/app/wallet");
+    await notify(tx, dep.userId, "WALLET", "Deposit approved", `${await fmtCash(dep.amount)} has been added to your Cash wallet.`, "/app/wallet");
     await audit(tx, {
       actorId: actor.id,
       actorRole: actor.role,
@@ -131,7 +132,7 @@ export async function rejectDeposit(actor: Actor, depositId: string, reason: str
       .update(deposits)
       .set({ status: "REJECTED", reviewerId: actor.id, reviewedAt: new Date(), reviewNote: reason, updatedAt: new Date() })
       .where(eq(deposits.id, dep.id));
-    await notify(tx, dep.userId, "WALLET", "Deposit not approved", `Your ${formatMYR(dep.amount)} deposit could not be verified: ${reason}`, "/app/wallet/transactions");
+    await notify(tx, dep.userId, "WALLET", "Deposit not approved", `Your ${await fmtCash(dep.amount)} deposit could not be verified: ${reason}`, "/app/wallet/transactions");
     await audit(tx, { actorId: actor.id, actorRole: actor.role, action: "deposit.reject", entityType: "deposit", entityId: dep.id, before: { status: dep.status }, after: { status: "REJECTED" }, reason });
   });
 }
@@ -184,7 +185,7 @@ export async function reverseDeposit(actor: Actor, depositId: string, reason: st
       });
       await tx.update(cashRewards).set({ status: "REVERSED", heldReason: "Source deposit reversed", updatedAt: new Date() }).where(eq(cashRewards.id, r.id));
     }
-    await notify(tx, dep.userId, "WALLET", "Deposit reversed", `Your ${formatMYR(dep.amount)} deposit was reversed. Contact support if you have questions.`, "/app/wallet/transactions");
+    await notify(tx, dep.userId, "WALLET", "Deposit reversed", `Your ${await fmtCash(dep.amount)} deposit was reversed. Contact support if you have questions.`, "/app/wallet/transactions");
     await audit(tx, { actorId: actor.id, actorRole: actor.role, action: "deposit.reverse", entityType: "deposit", entityId: dep.id, before: { status: "APPROVED" }, after: { status: "REVERSED", reversedReferralRewards: related.length }, reason });
   });
 }

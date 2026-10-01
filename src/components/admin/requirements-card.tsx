@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { collections, items, mapAreas, requirements } from "@/db/schema";
 import { AdminCard, DataTable } from "./ui";
+import { humanize } from "@/components/shared/status-badge";
 
 export async function RequirementsCard({ ownerType, ownerId, back, description }: { ownerType: "AREA" | "VAULT"; ownerId: string; back: string; description?: string }) {
   const list = await db
@@ -35,7 +36,7 @@ export async function RequirementsCard({ ownerType, ownerId, back, description }
         empty="No requirements. Players can unlock this freely."
         columns={[
           { key: "l", header: "Label", cell: (x) => <Link href={`/admin/manage/requirements/${x.r.id}?back=${b}`} className="font-medium text-primary hover:underline">{x.r.label}</Link> },
-          { key: "t", header: "Type", cell: (x) => <span className="text-xs">{x.r.type.replace(/_/g, " ")}</span> },
+          { key: "t", header: "Type", cell: (x) => <span className="text-xs">{humanize(x.r.type)}</span> },
           { key: "target", header: "Target", cell: (x) => x.item ?? x.collection ?? x.area ?? "-" },
           { key: "q", header: "Qty", align: "right", cell: (x) => x.r.quantity },
           { key: "c", header: "Consumed", cell: (x) => (x.r.consume ? "Yes" : "No") },

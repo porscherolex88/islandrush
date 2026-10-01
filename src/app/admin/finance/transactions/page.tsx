@@ -6,13 +6,17 @@ import { AdminPage, DataTable, FilterBar, FilterInput, FilterSelect, Pagination,
 import { db } from "@/db";
 import { ledgerTransactions, ledgerTxTypeEnum, profiles } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
+import { getFiatDisplay } from "@/lib/fiat-display";
+import { formatCash } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 import { rows as sqlRows } from "@/server/admin/queries";
+import { humanize } from "@/components/shared/status-badge";
 
 export const metadata: Metadata = { title: "Transactions" };
 const PAGE = 50;
 
 export default async function TransactionsPage({ searchParams }: PageProps<"/admin/finance/transactions">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("finance.view");
   const sp = await searchParams;
   const page = pageOf(sp);
@@ -47,17 +51,17 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/adm
   type Row = (typeof data)[number];
   const columns: Column<Row>[] = [
     { key: "at", header: "When", cell: (r) => <span className="text-xs whitespace-nowrap">{formatDateTime(r.t.createdAt)}</span> },
-    { key: "type", header: "Type", cell: (r) => <Link href={`/admin/finance/ledger/${r.t.id}`} className="font-medium text-primary hover:underline">{r.t.type.replace(/_/g, " ")}</Link> },
+    { key: "type", header: "Type", cell: (r) => <Link href={`/admin/finance/ledger/${r.t.id}`} className="font-medium text-primary hover:underline">{humanize(r.t.type)}</Link> },
     { key: "user", header: "User", cell: (r) => (r.t.userId ? <UserLink id={r.t.userId} name={r.name} email={r.email} /> : "System") },
     { key: "desc", header: "Description", cell: (r) => <span className="line-clamp-1 text-xs">{r.t.description}</span> },
-    { key: "myr", header: "RM moved", align: "right", cell: (r) => (Number(r.myr) ? `RM${Number(r.myr).toLocaleString("en-MY", { minimumFractionDigits: 2 })}` : "-") },
+    { key: "myr", header: "Cash moved", align: "right", cell: (r) => (Number(r.myr) ? formatCash(Number(r.myr).toFixed(2), { currency: fiat }) : "-") },
     { key: "cr", header: "Credits moved", align: "right", cell: (r) => (Number(r.credits) ? Number(r.credits).toLocaleString("en-MY") : "-") },
     { key: "src", header: "Source", cell: (r) => <span className="text-xs text-muted-foreground">{r.t.sourceType ?? "-"}</span> },
   ];
   return (
     <AdminPage title="Transactions" description="Ledger transaction headers. Open one to see its balanced entries and related source record.">
       <ChartCard title="Transactions by type (30 days)">
-        <BarChart data={byType.map((t) => ({ label: t.type.replace(/_/g, " "), value: t.n }))} height={120} />
+        <BarChart data={byType.map((t) => ({ label: humanize(t.type), value: t.n }))} height={120} />
       </ChartCard>
       <FilterBar basePath="/admin/finance/transactions">
         <FilterSelect name="type" label="Type" value={type} options={ledgerTxTypeEnum.enumValues} />

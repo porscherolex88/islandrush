@@ -8,7 +8,7 @@ import { AdminCard, AdminPage, DataTable, StatGrid, StatsCard } from "@/componen
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
-import { mapAreas, maps, vaults } from "@/db/schema";
+import { bigMysteryBoxes, mapAreas, mapCheckpoints, maps, userCheckpoints, vaults } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { formatCredits } from "@/lib/money";
 import { one, rows } from "@/server/admin/queries";
@@ -23,6 +23,7 @@ export default async function MapPage({ params }: PageProps<"/admin/games/maps/[
   if (!map) notFound();
   const back = `/admin/games/maps/${id}`;
   const b = encodeURIComponent(back);
+  if (map.level !== null) return <AdventureMapAdmin map={map} back={back} />;
   const [areas, areaStats, mapVaults, totals] = await Promise.all([
     db.select().from(mapAreas).where(eq(mapAreas.mapId, id)).orderBy(asc(mapAreas.sortOrder)),
     rows<{ id: string; tiles: number; discoveries: number; players: number; unlocks: number }>(sql`
@@ -117,6 +118,78 @@ export default async function MapPage({ params }: PageProps<"/admin/games/maps/[
       </AdminCard>
       <AdminCard title="Map settings" description="Bump the content version when changing tile layout so historical discoveries stay interpretable.">
         <ResourceEditor resource="maps" id={id} back={back} />
+      </AdminCard>
+    </AdminPage>
+  );
+}
+
+async function AdventureMapAdmin({ map, back }: { map: typeof maps.$inferSelect; back: string }) {
+  const b = encodeURIComponent(back);
+  const [cps, [bb], progress, cpCounts] = await Promise.all([
+    db.select().from(mapCheckpoints).where(eq(mapCheckpoints.mapId, map.id)).orderBy(asc(mapCheckpoints.position)),
+    db.select().from(bigMysteryBoxes).where(eq(bigMysteryBoxes.mapId, map.id)).limit(1),
+    one<{ unlocked: number; completed: number }>(sql`
+      select count(*)::int as unlocked, count(completed_at)::int as completed from user_map_progress where map_id = ${map.id}`),
+    db
+      .select({ checkpointId: userCheckpoints.checkpointId, n: sql<number>`count(*)::int` })
+      .from(userCheckpoints)
+      .where(eq(userCheckpoints.mapId, map.id))
+      .groupBy(userCheckpoints.checkpointId),
+  ]);
+  const ordered = [...cps].sort((x, y) => Number(x.isFinal) - Number(y.isFinal) || x.position - y.position);
+  const reached = new Map(cpCounts.map((c) => [c.checkpointId, Number(c.n)]));
+  return (
+    <AdminPage title={`Map ${map.level}: ${map.name}`} description={`Unlocks at ${map.lootRequired} Loot. ${map.description}`} actions={<StatusBadge status={map.status} />}>
+      <StatGrid cols={4}>
+        <StatsCard label="Checkpoints" value={cps.length} hint={cps.some((c) => c.isFinal) ? "Has a final checkpoint" : "No final checkpoint"} tone={cps.some((c) => c.isFinal) ? "default" : "warning"} />
+        <StatsCard label="Players unlocked" value={progress.unlocked} />
+        <StatsCard label="Players completed" value={progress.completed} tone="success" />
+        <StatsCard label="Big Box odds (1/2/3)" value={bb ? `${bb.pieces1Pct}/${bb.pieces2Pct}/${bb.pieces3Pct}%` : "Missing"} tone={bb ? "default" : "warning"} href={bb ? `/admin/manage/bigBoxes/${bb.id}?back=${b}` : `/admin/manage/bigBoxes/new?mapId=${map.id}&back=${b}`} />
+      </StatGrid>
+      <AdminCard title="Layout preview" description="Checkpoint positions as players see them (X and Y from 0 to 100).">
+        <div className="relative mx-auto aspect-[3/4] w-full max-w-72 overflow-hidden rounded-xl border" style={{ background: `color-mix(in oklab, ${map.color} 16%, transparent)` }}>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden>
+            <polyline points={["50,96", ...ordered.map((c) => `${c.posX},${c.posY}`)].join(" ")} fill="none" stroke={map.color} strokeWidth="1.2" strokeDasharray="3 2" vectorEffect="non-scaling-stroke" />
+          </svg>
+          {ordered.map((c) => (
+            <Link
+              key={c.id}
+              href={`/admin/manage/checkpoints/${c.id}?back=${b}`}
+              className="absolute flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white shadow"
+              style={{ left: `${c.posX}%`, top: `${c.posY}%`, background: c.isFinal ? "#f59e0b" : map.color }}
+              title={c.name}
+            >
+              {c.isFinal ? "★" : c.position}
+            </Link>
+          ))}
+        </div>
+      </AdminCard>
+      <AdminCard
+        title="Checkpoints"
+        bodyClassName="p-0"
+        actions={
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/admin/manage/checkpoints/new?mapId=${map.id}&back=${b}`}>
+              <Plus /> Add checkpoint
+            </Link>
+          </Button>
+        }
+      >
+        <DataTable
+          rows={ordered}
+          rowKey={(c) => c.id}
+          empty="No checkpoints yet"
+          columns={[
+            { key: "o", header: "Order", cell: (c) => (c.isFinal ? "Final" : c.position) },
+            { key: "n", header: "Checkpoint", cell: (c) => <Link href={`/admin/manage/checkpoints/${c.id}?back=${b}`} className="font-medium text-primary hover:underline">{c.name}</Link> },
+            { key: "l", header: "Loot required", align: "right", cell: (c) => c.lootRequired },
+            { key: "r", header: "Players reached", align: "right", cell: (c) => reached.get(c.id) ?? 0 },
+            { key: "s", header: "Status", cell: (c) => <StatusBadge status={c.status} /> },
+          ]}
+        />
+      </AdminCard>
+      <AdminCard title="Map settings" description="Loot is a milestone: the unlock and checkpoint thresholds count total Loot collected for this level and nothing is consumed.">
+        <ResourceEditor resource="maps" id={map.id} back={back} />
       </AdminCard>
     </AdminPage>
   );

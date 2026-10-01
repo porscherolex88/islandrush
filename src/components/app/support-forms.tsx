@@ -54,7 +54,7 @@ export function NewTicketForm() {
         <Textarea id="body" value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} rows={5} maxLength={4000} required />
         <p className="text-xs text-muted-foreground">Include references like deposit or withdrawal amounts and dates. Never share your password.</p>
       </div>
-      <Button type="submit" size="xl" className="w-full" disabled={pending}>
+      <Button variant="gold" type="submit" size="pill" className="w-full" disabled={pending}>
         {pending && <Loader2 className="animate-spin" />}
         Send
       </Button>
@@ -78,7 +78,7 @@ export function TicketReplyForm({ ticketId, closed }: { ticketId: string; closed
         Reply
       </Label>
       <Textarea id="reply" value={body} onChange={(e) => setBody(e.target.value)} rows={3} placeholder="Write a reply..." maxLength={4000} required />
-      <Button type="submit" className="w-full" size="xl" disabled={pending || !body.trim()}>
+      <Button variant="gold" type="submit" className="w-full" size="pill" disabled={pending || !body.trim()}>
         {pending && <Loader2 className="animate-spin" />}
         Send reply
       </Button>

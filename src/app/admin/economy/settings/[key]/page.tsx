@@ -22,6 +22,15 @@ const PAGES: Partial<Record<ConfigKey, { title: string; permission: Permission; 
   limits: { title: "Game limits", permission: "economy.manage", help: { gameActionsPerMinute: "Rate limit per player", maxBoxOpensPerDay: "Empty for unlimited" } },
   referral: { title: "Referral configuration", permission: "referrals.manage", help: { levels: "1 to 3", qualifyingDepositMin: "RM", pendingHours: "Hours before referral rewards settle", velocityThresholdPerDay: "Qualifying referrals per day that trigger a risk flag" } },
   risk: { title: "Risk rules", permission: "risk.manage", help: { rapidSignupPerIpPerDay: "Signups per IP per day before flagging", largeDepositAmount: "RM amount that flags a deposit for review" } },
+  prize_wheel: {
+    title: "Final Prize Unlock",
+    permission: "games.manage",
+    help: {
+      active: "Turn off to pause all final unlocks. Completed puzzles stay complete.",
+      prizeUnlockPct: "Chance (%) the prize unlocks. Shown to players.",
+      alternativePct: "Chance (%) of the puzzle's alternative reward. Both must total exactly 100.",
+    },
+  },
   daily_defaults: { title: "Daily defaults", permission: "daily.manage", help: { freeDiscoveries: "Free map discoveries per day", streakGraceDays: "Missed days allowed before a streak resets", streakSpinMinDays: "Streak length that grants a bonus spin" } },
 };
 

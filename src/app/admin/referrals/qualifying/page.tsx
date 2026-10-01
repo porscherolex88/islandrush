@@ -4,7 +4,8 @@ import Link from "next/link";
 import { AdminPage, DataTable, FilterBar, FilterInput, Pagination, StatGrid, StatsCard, UserLink, pageOf, str } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { one, rows } from "@/server/admin/queries";
 import { getConfig } from "@/server/services/config";
@@ -13,6 +14,7 @@ export const metadata: Metadata = { title: "Qualifying deposits" };
 const PAGE = 50;
 
 export default async function QualifyingPage({ searchParams }: PageProps<"/admin/referrals/qualifying">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("referrals.view");
   const sp = await searchParams;
   const page = pageOf(sp);
@@ -64,11 +66,11 @@ export default async function QualifyingPage({ searchParams }: PageProps<"/admin
   const shown = list.slice(0, PAGE);
 
   return (
-    <AdminPage title="Qualifying deposits" description={`A referee's first approved deposit of at least ${formatMYR(cfg.qualifyingDepositMin)} pays rewards up to ${cfg.levels} levels.`}>
+    <AdminPage title="Qualifying deposits" description={`A referee's first approved deposit of at least ${formatCash(cfg.qualifyingDepositMin, { currency: fiat })} pays rewards up to ${cfg.levels} levels.`}>
       <StatGrid cols={3}>
         <StatsCard label="Qualifying deposits" value={summary.n} />
-        <StatsCard label="Qualifying volume" value={formatMYR(summary.volume)} />
-        <StatsCard label="Referral rewards (active)" value={formatMYR(summary.rewards)} href="/admin/referrals/rewards" />
+        <StatsCard label="Qualifying volume" value={formatCash(summary.volume, { currency: fiat })} />
+        <StatsCard label="Referral rewards (active)" value={formatCash(summary.rewards, { currency: fiat })} href="/admin/referrals/rewards" />
       </StatGrid>
       <FilterBar basePath="/admin/referrals/qualifying">
         <FilterInput name="q" label="Search" value={q} placeholder="Referee, referrer, reference" />
@@ -83,8 +85,8 @@ export default async function QualifyingPage({ searchParams }: PageProps<"/admin
           { key: "t", header: "Approved", cell: (r) => <Link href={`/admin/finance/deposits/${r.id}`} className="whitespace-nowrap text-primary hover:underline">{r.reviewed_at ? formatDateTime(r.reviewed_at) : "-"}</Link> },
           { key: "e", header: "Referee", cell: (r) => <UserLink id={r.referee_id} name={r.referee_name} email={r.referee_email} /> },
           { key: "r", header: "Direct referrer", cell: (r) => <UserLink id={r.referrer_id} name={r.referrer_name} email={r.referrer_email} /> },
-          { key: "a", header: "Deposit", align: "right", cell: (r) => formatMYR(r.amount) },
-          { key: "rw", header: "Rewards paid", align: "right", cell: (r) => `${formatMYR(r.rewards)} (${r.levels} lvl)` },
+          { key: "a", header: "Deposit", align: "right", cell: (r) => formatCash(r.amount, { currency: fiat }) },
+          { key: "rw", header: "Rewards paid", align: "right", cell: (r) => `${formatCash(r.rewards, { currency: fiat })} (${r.levels} lvl)` },
           { key: "h", header: "Held", align: "right", cell: (r) => (r.held ? <span className="text-amber-600">{r.held}</span> : "0") },
           { key: "s", header: "Deposit status", cell: (r) => <StatusBadge status={r.status} /> },
         ]}

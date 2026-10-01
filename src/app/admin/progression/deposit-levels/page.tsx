@@ -6,12 +6,14 @@ import { ChartCard, HBarList } from "@/components/admin/charts";
 import { AdminCard, AdminPage, DataTable } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { rows } from "@/server/admin/queries";
 
 export const metadata: Metadata = { title: "Deposit levels" };
 
 export default async function DepositLevelsPage() {
+  const fiat = await getFiatDisplay();
   await requireAdmin("progression.manage");
   const [levels, unassigned] = await Promise.all([
     rows<{ id: string; name: string; sort_order: number; threshold: string; color: string; benefits: string[]; can_withdraw: boolean; withdrawal_min: string | null; withdrawal_max_daily: string | null; players: number }>(sql`
@@ -47,8 +49,8 @@ export default async function DepositLevelsPage() {
                 </Link>
               ),
             },
-            { key: "t", header: "Lifetime deposits", align: "right", cell: (l) => `${formatMYR(l.threshold)}+` },
-            { key: "w", header: "Withdrawals", cell: (l) => (l.can_withdraw ? `Min ${l.withdrawal_min ? formatMYR(l.withdrawal_min) : "default"} · daily ${l.withdrawal_max_daily ? formatMYR(l.withdrawal_max_daily) : "default"}` : "Not allowed") },
+            { key: "t", header: "Lifetime deposits", align: "right", cell: (l) => `${formatCash(l.threshold, { currency: fiat })}+` },
+            { key: "w", header: "Withdrawals", cell: (l) => (l.can_withdraw ? `Min ${l.withdrawal_min ? formatCash(l.withdrawal_min, { currency: fiat }) : "default"} · daily ${l.withdrawal_max_daily ? formatCash(l.withdrawal_max_daily, { currency: fiat }) : "default"}` : "Not allowed") },
             { key: "b", header: "Benefits", cell: (l) => <span className="text-xs text-muted-foreground">{l.benefits.join(", ") || "-"}</span> },
             { key: "p", header: "Players", align: "right", cell: (l) => l.players },
           ]}

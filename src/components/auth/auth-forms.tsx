@@ -94,7 +94,7 @@ export function RegisterForm({ referralCode }: { referralCode?: string }) {
           name="referralCode"
           defaultValue={state.fields?.referralCode ?? referralCode ?? ""}
           maxLength={12}
-          className="h-12 font-mono tracking-widest uppercase"
+          className="h-12 font-mono tracking-widest"
           autoCapitalize="characters"
         />
       </div>

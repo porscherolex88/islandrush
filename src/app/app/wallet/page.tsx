@@ -2,6 +2,7 @@ import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, Banknote, Clock, Coins, H
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { headerPillButton } from "@/components/app/header-buttons";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
 import { Section } from "@/components/app/mobile-header";
 import { DepositLevelCard } from "@/components/app/progression";
@@ -9,7 +10,8 @@ import { TransactionList } from "@/components/app/transaction-list";
 import { EmptyState } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { ledgerActivity, pendingCashRewards } from "@/server/queries/wallet";
 import { settleDueRewards } from "@/server/services/cash-rewards";
@@ -25,7 +27,7 @@ const FLOW = ["Deposit", "Cash", "Credits", "Play", "Reward", "Pending", "Withdr
 function MoneyRow({ icon, label, meaning, value, tone }: { icon: ReactNode; label: string; meaning: string; value: string; tone: string }) {
   return (
     <div className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-3.5">
-      <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${tone}`}>{icon}</span>
+      <span className={`grid size-11 shrink-0 place-items-center rounded-full ${tone}`}>{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="font-semibold">{label}</p>
         <p className="text-sm text-muted-foreground">{meaning}</p>
@@ -36,6 +38,7 @@ function MoneyRow({ icon, label, meaning, value, tone }: { icon: ReactNode; labe
 }
 
 export default async function WalletPage() {
+  const fiat = await getFiatDisplay();
   const user = await requireUser();
   await settleDueRewards({ userId: user.id, limit: 50 });
   const [b, activity, pending, rate, level, wcfg, rcfg] = await Promise.all([
@@ -47,24 +50,23 @@ export default async function WalletPage() {
     getConfig("withdrawal"),
     getConfig("rewards"),
   ]);
-  const rateText = `${formatMYR(rate.cash).replace(/\.00$/, "")} = ${formatCredits(rate.creditsNumber)} Credits`;
+  const rateText = `${formatCash(rate.cash, { currency: fiat }).replace(/\.00$/, "")} = ${formatCredits(rate.creditsNumber)} Credits`;
 
   return (
     <div>
       <InnerPageHeader
         title="Wallet"
-        icon={<Wallet />}
         action={
-          <Link href="/app/wallet/transactions" className="flex h-11 items-center gap-1 rounded-full px-2 text-sm font-semibold text-primary hover:bg-brand-soft focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+          <Link href="/app/wallet/transactions" className={headerPillButton}>
             <History className="size-4" aria-hidden /> History
           </Link>
         }
       />
       <Section>
-        <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.33_0.07_222)_75%)] p-5 text-white shadow-lift">
+        <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.33_0.07_222)_75%)] p-5 text-white">
           <div aria-hidden className="absolute -top-16 -right-10 size-44 rounded-full bg-white/10" />
           <p className="relative text-sm font-semibold text-white/80">Withdrawable</p>
-          <p className="relative font-heading text-4xl font-extrabold tabular">{formatMYR(b.WITHDRAWABLE)}</p>
+          <p className="relative font-heading text-4xl font-extrabold tabular">{formatCash(b.WITHDRAWABLE, { currency: fiat })}</p>
           <p className="relative text-sm text-white/75">Available to withdraw to your bank</p>
           <div className="relative mt-4 grid grid-cols-3 gap-2">
             {[
@@ -83,11 +85,11 @@ export default async function WalletPage() {
 
       <Section title="Your money">
         <div className="space-y-2">
-          <MoneyRow icon={<Wallet className="size-5" />} tone="bg-brand-soft text-primary" label="Cash" meaning="Available to convert into Credits" value={formatMYR(b.CASH)} />
+          <MoneyRow icon={<Wallet className="size-5" />} tone="bg-brand-soft text-primary" label="Cash" meaning="Available to convert into Credits" value={formatCash(b.CASH, { currency: fiat })} />
           <MoneyRow icon={<Coins className="size-5" />} tone="bg-gold-soft text-gold-foreground" label="Credits" meaning={`Used to play. ${rateText}`} value={formatCredits(b.CREDITS)} />
-          <MoneyRow icon={<Clock className="size-5" />} tone="bg-surface text-muted-foreground" label="Pending" meaning={`Rewards under review, usually about ${rcfg.pendingHours} hours`} value={formatMYR(b.PENDING_REWARDS)} />
+          <MoneyRow icon={<Clock className="size-5" />} tone="bg-surface text-muted-foreground" label="Pending" meaning={`Rewards under review, usually about ${rcfg.pendingHours} hours`} value={formatCash(b.PENDING_REWARDS, { currency: fiat })} />
           {b.WITHDRAWAL_PENDING > 0n && (
-            <MoneyRow icon={<Landmark className="size-5" />} tone="bg-surface text-muted-foreground" label="Withdrawal in progress" meaning="Being sent to your bank" value={formatMYR(b.WITHDRAWAL_PENDING)} />
+            <MoneyRow icon={<Landmark className="size-5" />} tone="bg-surface text-muted-foreground" label="Withdrawal in progress" meaning="Being sent to your bank" value={formatCash(b.WITHDRAWAL_PENDING, { currency: fiat })} />
           )}
         </div>
       </Section>
@@ -121,7 +123,7 @@ export default async function WalletPage() {
                   <p className="text-xs text-muted-foreground">{r.status === "HELD" ? "Under review" : `Withdrawable after ${formatDateTime(r.settleAfter)}`}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold tabular">{formatMYR(r.amount)}</p>
+                  <p className="font-semibold tabular">{formatCash(r.amount, { currency: fiat })}</p>
                   <StatusBadge status={r.status} />
                 </div>
               </li>
@@ -132,7 +134,7 @@ export default async function WalletPage() {
 
       <Section title="Deposit Level">
         <div id="deposit-level" className="scroll-mt-20">
-          <DepositLevelCard {...level} platformMaxDaily={wcfg.maxDaily} />
+          <DepositLevelCard {...level} platformMaxDaily={wcfg.maxDaily} fiat={fiat} />
         </div>
       </Section>
 
@@ -145,7 +147,7 @@ export default async function WalletPage() {
         }
       >
         {activity.rows.length ? (
-          <TransactionList rows={activity.rows} />
+          <TransactionList rows={activity.rows} fiat={fiat} />
         ) : (
           <EmptyState icon={<Banknote className="size-8 text-primary" />} title="No activity yet" description="Deposits, conversions, games and rewards will appear here." />
         )}

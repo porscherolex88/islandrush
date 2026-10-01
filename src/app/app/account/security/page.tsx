@@ -1,4 +1,4 @@
-import { KeyRound, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { PasswordForm, SessionList, type SessionView } from "@/components/app/account-forms";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -27,7 +27,7 @@ export default async function SecurityPage() {
 
   return (
     <div>
-      <InnerPageHeader title="Security" subtitle="Password and signed-in devices" icon={<KeyRound />} />
+      <InnerPageHeader title="Security" subtitle="Password and signed-in devices" />
       <Section title="Change password">
         <Panel>
           <PasswordForm />

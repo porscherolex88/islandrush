@@ -6,8 +6,10 @@ import { AdminCard, AdminPage, DataTable, JsonBlock, KeyValue, UserLink } from "
 import { db } from "@/db";
 import { ledgerEntries, ledgerTransactions, profiles } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits, formatMYR } from "@/lib/money";
+import { formatCredits, formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
+import { humanize } from "@/components/shared/status-badge";
 
 export const metadata: Metadata = { title: "Ledger transaction" };
 
@@ -17,6 +19,7 @@ const SOURCE_LINKS: Record<string, (id: string) => string> = {
 };
 
 export default async function LedgerTxPage({ params }: PageProps<"/admin/finance/ledger/[id]">) {
+  const fiat = await getFiatDisplay();
   await requireAdmin("finance.view");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -34,7 +37,7 @@ export default async function LedgerTxPage({ params }: PageProps<"/admin/finance
   const sourceHref = tx.sourceType && tx.sourceId && SOURCE_LINKS[tx.sourceType]?.(tx.sourceId);
 
   return (
-    <AdminPage title={tx.type.replace(/_/g, " ")} description={tx.description}>
+    <AdminPage title={humanize(tx.type)} description={tx.description}>
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <AdminCard title="Entries" description={balanced ? "Balanced: entries sum to zero per currency" : "Unbalanced transaction, investigate immediately"} bodyClassName="p-0">
           <DataTable
@@ -43,8 +46,8 @@ export default async function LedgerTxPage({ params }: PageProps<"/admin/finance
             columns={[
               { key: "acct", header: "Account", cell: (r) => <code className="text-xs">{r.accountType}</code> },
               { key: "own", header: "Owner", cell: (r) => (r.userId ? "User" : "System") },
-              { key: "amt", header: "Amount", align: "right", cell: (r) => (r.currency === "CREDITS" ? `${formatCredits(r.amount, { sign: true })} Cr` : formatMYR(r.amount, { sign: true })) },
-              { key: "bal", header: "Balance after", align: "right", cell: (r) => (r.balanceAfter === null ? "-" : r.currency === "CREDITS" ? formatCredits(r.balanceAfter) : formatMYR(r.balanceAfter)) },
+              { key: "amt", header: "Amount", align: "right", cell: (r) => (r.currency === "CREDITS" ? `${formatCredits(r.amount, { sign: true })} Cr` : formatCash(r.amount, { currency: fiat, ...{ sign: true } })) },
+              { key: "bal", header: "Balance after", align: "right", cell: (r) => (r.balanceAfter === null ? "-" : r.currency === "CREDITS" ? formatCredits(r.balanceAfter) : formatCash(r.balanceAfter, { currency: fiat })) },
             ]}
           />
         </AdminCard>

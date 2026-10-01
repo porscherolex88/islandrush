@@ -2,7 +2,8 @@ import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { cashRewards, deposits, financialAccounts, ledgerEntries, ledgerTransactions, profiles, withdrawals } from "@/db/schema";
 import { AppError, NotFoundError } from "@/lib/errors";
-import { formatCredits, formatMYR, toDecimal, toMinor } from "@/lib/money";
+import { formatCredits, toDecimal, toMinor } from "@/lib/money";
+import { fmtCash } from "@/lib/format-money";
 import { audit } from "./audit";
 import { postTransaction, USER_ACCOUNT_CURRENCY, type UserAccountType } from "./ledger";
 import { notify } from "./notifications";
@@ -58,7 +59,7 @@ export async function createAdjustment(
       after: { userId: input.userId, account: input.account, direction: input.direction, amount: toDecimal(amount, currency), note: input.note },
       reason: input.reason,
     });
-    const display = currency === "MYR" ? formatMYR(signed, { sign: true }) : `${formatCredits(signed, { sign: true })} Credits`;
+    const display = currency === "MYR" ? await fmtCash(signed, { sign: true }) : `${formatCredits(signed, { sign: true })} Credits`;
     await notify(tx, input.userId, "WALLET", "Balance adjustment", `${display} ${input.account.toLowerCase()} adjustment: ${input.reason}`, "/app/wallet/transactions");
     return posted;
   });
@@ -129,7 +130,7 @@ export async function runReconciliation(): Promise<ReconCheck[]> {
     key: "pending_rewards",
     label: "Pending reward records match Pending Rewards balances",
     ok: toMinor(pendingRewards.total) === pendingBal,
-    detail: `Records ${formatMYR(pendingRewards.total)} / Balances ${formatMYR(pendingBal)}`,
+    detail: `Records ${await fmtCash(pendingRewards.total)} / Balances ${await fmtCash(pendingBal)}`,
   });
 
   const [openW] = await db
@@ -141,7 +142,7 @@ export async function runReconciliation(): Promise<ReconCheck[]> {
     key: "withdrawals_pending",
     label: "Open withdrawals match Withdrawal Pending balances",
     ok: toMinor(openW.total) === wpBal,
-    detail: `Withdrawals ${formatMYR(openW.total)} / Balances ${formatMYR(wpBal)}`,
+    detail: `Withdrawals ${await fmtCash(openW.total)} / Balances ${await fmtCash(wpBal)}`,
   });
 
   const [approvedDeposits] = await db
@@ -157,7 +158,7 @@ export async function runReconciliation(): Promise<ReconCheck[]> {
     key: "deposits",
     label: "Approved deposits match deposit ledger postings",
     ok: toMinor(approvedDeposits.total) === toMinor(depositLedger.total),
-    detail: `Deposits ${formatMYR(approvedDeposits.total)} / Ledger ${formatMYR(depositLedger.total)}`,
+    detail: `Deposits ${await fmtCash(approvedDeposits.total)} / Ledger ${await fmtCash(depositLedger.total)}`,
   });
 
   return checks;

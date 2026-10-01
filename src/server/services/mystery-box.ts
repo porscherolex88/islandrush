@@ -6,17 +6,20 @@ import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
 import { checkAchievements } from "./achievements";
 import { getConfig } from "./config";
 import { today, trackMission } from "./daily";
+import { boxLockReason, recordEvent } from "./adventure-core";
 import { assertWithinSpendLimit, lockPlayer } from "./guards";
 import { getBalances, postTransaction } from "./ledger";
-import { grantReward, pickPoolEntry, type RewardResult } from "./rewards";
+import { grantPool, grantReward, pickPoolEntry, type RewardResult } from "./rewards";
 import { awardXp } from "./xp";
 
 export type BoxPlayResult = {
   playId: string;
   boxId: string;
+  level: number | null;
   selectedIndex: number;
   creditsSpent: number;
   reward: RewardResult;
+  loot: RewardResult[];
   xp: number;
   creditsBalance: string;
   replayed: boolean;
@@ -33,9 +36,11 @@ async function existingPlay(userId: string, idempotencyKey: string): Promise<Box
   return {
     playId: play.id,
     boxId: play.boxId,
+    level: play.level,
     selectedIndex: play.selectedIndex,
     creditsSpent: play.creditsSpent,
     reward: play.reward as RewardResult,
+    loot: play.loot as RewardResult[],
     xp: play.xpAwarded,
     creditsBalance: balances.CREDITS.toString(),
     replayed: true,
@@ -63,6 +68,8 @@ export async function playMysteryBox(
       const profile = await lockPlayer(tx, userId);
       const [box] = await tx.select().from(mysteryBoxes).where(eq(mysteryBoxes.id, input.boxId)).limit(1);
       if (!box || box.status !== "PUBLISHED") throw new NotFoundError("This Mystery Box is not available");
+      const locked = await boxLockReason(tx, userId, box);
+      if (locked) throw new AppError(locked, "BOX_LOCKED", 403);
 
       const day = await today(tx);
       const limits = await getConfig("limits", tx);
@@ -112,6 +119,18 @@ export async function playMysteryBox(
         sourceId: playId,
         key: `box:${userId}:${input.idempotencyKey}`,
       });
+      const loot = await grantPool(tx, userId, box.lootPoolId, {
+        sourceType: "mystery_box_play",
+        sourceId: playId,
+        key: `box:${userId}:${input.idempotencyKey}:loot`,
+      });
+      const configSnapshot = {
+        priceCredits: box.priceCredits,
+        rewardPoolId: box.rewardPoolId,
+        lootPoolId: box.lootPoolId,
+        requiresMapLevel: box.requiresMapLevel,
+        boxUpdatedAt: box.updatedAt.toISOString(),
+      };
 
       await tx.insert(mysteryBoxPlays).values({
         id: playId,
@@ -121,10 +140,20 @@ export async function playMysteryBox(
         creditsSpent: box.priceCredits,
         poolEntryId: entry.id,
         reward,
+        loot,
+        level: box.level,
+        configSnapshot,
         idempotencyKey: input.idempotencyKey,
         ledgerTransactionId: spend.transactionId,
         appDay: day,
       });
+
+      if (box.level !== null) {
+        const base = { userId, level: box.level, refType: "mystery_box_play", refId: playId, config: configSnapshot };
+        await recordEvent(tx, { ...base, type: "MYSTERY_BOX_PURCHASE", actionId: playId, result: { creditsSpent: box.priceCredits }, ledgerTransactionId: spend.transactionId });
+        await recordEvent(tx, { ...base, type: "MYSTERY_BOX_REWARD", actionId: playId, result: { reward } });
+        if (loot.length) await recordEvent(tx, { ...base, type: "LOOT_REWARD", actionId: playId, result: { loot } });
+      }
 
       const xp = await awardXp(tx, userId, "BOX_OPEN", {
         key: `xp:box:${playId}`,
@@ -139,9 +168,11 @@ export async function playMysteryBox(
       return {
         playId,
         boxId: box.id,
+        level: box.level,
         selectedIndex: input.selectedIndex,
         creditsSpent: box.priceCredits,
         reward,
+        loot,
         xp,
         creditsBalance: balances.CREDITS.toString(),
         replayed: false,
@@ -175,6 +206,7 @@ export async function boxOdds(poolId: string) {
     label: e.label,
     rarity: itemRarity ?? e.rarity,
     type: e.rewardType,
+    amount: e.amount,
     icon: itemIcon ?? e.reveal?.icon ?? TYPE_ICON[e.rewardType],
     pct: (e.weight / total) * 100,
   }));
@@ -192,6 +224,8 @@ export async function playHistory(userId: string, limit = 30, offset = 0) {
       createdAt: mysteryBoxPlays.createdAt,
       creditsSpent: mysteryBoxPlays.creditsSpent,
       reward: mysteryBoxPlays.reward,
+      loot: mysteryBoxPlays.loot,
+      level: mysteryBoxPlays.level,
       selectedIndex: mysteryBoxPlays.selectedIndex,
       xp: mysteryBoxPlays.xpAwarded,
       boxName: mysteryBoxes.name,

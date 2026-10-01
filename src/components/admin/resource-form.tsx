@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { FieldDef, RelationKey } from "@/lib/admin/resource-fields";
 import { cn } from "@/lib/utils";
 import { deleteResourceAction, saveResourceAction } from "@/server/actions/admin/resources";
+import { humanize } from "@/components/shared/status-badge";
 
 type Option = { value: string; label: string };
 type Values = Record<string, unknown>;
@@ -121,7 +122,7 @@ export function ResourceForm({
                       className="h-9 rounded-md border bg-background px-2.5 text-sm"
                     >
                       {(!f.required || f.type === "relation") && <option value="">{f.required ? "Select..." : "None"}</option>}
-                      {(f.type === "select" ? (f.options ?? []).map((o) => ({ value: o, label: o.replace(/_/g, " ") })) : options[f.relation!] ?? []).map((o) => (
+                      {(f.type === "select" ? (f.options ?? []).map((o) => ({ value: o, label: humanize(o) })) : options[f.relation!] ?? []).map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
                         </option>

@@ -5,11 +5,12 @@ import { notFound } from "next/navigation";
 import { ActionButton, TextActionForm } from "@/components/admin/actions";
 import { CompleteWithdrawalButton } from "@/components/admin/finance-forms";
 import { AdminCard, AdminPage, DataTable, KeyValue, UserLink } from "@/components/admin/ui";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadge , humanize } from "@/components/shared/status-badge";
 import { db } from "@/db";
 import { cashRewards, depositLevels, profiles, riskFlags, withdrawalAccounts, withdrawals } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatMYR } from "@/lib/money";
+import { formatCash } from "@/lib/money";
+import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { saveInternalNoteAction, withdrawalAction } from "@/server/actions/admin/ops";
 import { getWithdrawalEligibility } from "@/server/services/withdrawals";
@@ -17,6 +18,7 @@ import { getWithdrawalEligibility } from "@/server/services/withdrawals";
 export const metadata: Metadata = { title: "Withdrawal" };
 
 export default async function WithdrawalDetailPage({ params }: PageProps<"/admin/finance/withdrawals/[id]">) {
+  const fiat = await getFiatDisplay();
   const ctx = await requireAdmin("finance.view");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -32,7 +34,7 @@ export default async function WithdrawalDetailPage({ params }: PageProps<"/admin
     db.select().from(withdrawals).where(and(eq(withdrawals.userId, user.id), ne(withdrawals.id, w.id))).orderBy(desc(withdrawals.createdAt)).limit(6),
   ]);
   const canManage = ctx.can("withdrawals.manage");
-  const amount = formatMYR(w.amount);
+  const amount = formatCash(w.amount, { currency: fiat });
   const reject = (
     <ActionButton action={withdrawalAction} args={[w.id, "reject"]} variant="outline" success="Withdrawal rejected, funds returned" confirm={{ title: "Reject this withdrawal?", description: "Funds go back to the user's Withdrawable balance. The reason is included in their notification.", reasonLabel: "Reason shown to user", destructive: true, confirmLabel: "Reject" }}>
       Reject
@@ -80,7 +82,7 @@ export default async function WithdrawalDetailPage({ params }: PageProps<"/admin
               {flags.map((f, i) => (
                 <Link key={f.id} href={`/admin/risk/flags/${f.id}`} className="underline">
                   {i > 0 ? ", " : ""}
-                  {f.type.replace(/_/g, " ").toLowerCase()}
+                  {humanize(f.type).toLowerCase()}
                 </Link>
               ))}
             </p>
@@ -122,10 +124,10 @@ export default async function WithdrawalDetailPage({ params }: PageProps<"/admin
               cols={3}
               items={[
                 ["Deposit level", row.level ?? "None"],
-                ["Current withdrawable", formatMYR(elig.available)],
+                ["Current withdrawable", formatCash(elig.available, { currency: fiat })],
                 ["Verification", user.verificationStatus + (user.verificationRequired ? " (required)" : "")],
-                ["Minimum", formatMYR(elig.min)],
-                ["Remaining limit", formatMYR(elig.max)],
+                ["Minimum", formatCash(elig.min, { currency: fiat })],
+                ["Remaining limit", formatCash(elig.max, { currency: fiat })],
                 ["Would need review", elig.requiresReview ? "Yes" : "No"],
               ]}
             />
@@ -143,17 +145,17 @@ export default async function WithdrawalDetailPage({ params }: PageProps<"/admin
               rowKey={(r) => `${r.source}-${r.status}`}
               empty="No cash rewards. Withdrawable funds come from adjustments only."
               columns={[
-                { key: "s", header: "Source", cell: (r) => r.source.replace(/_/g, " ") },
+                { key: "s", header: "Source", cell: (r) => humanize(r.source) },
                 { key: "st", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
                 { key: "n", header: "Count", align: "right", cell: (r) => r.n },
-                { key: "t", header: "Total", align: "right", cell: (r) => formatMYR(r.total) },
+                { key: "t", header: "Total", align: "right", cell: (r) => formatCash(r.total, { currency: fiat }) },
               ]}
             />
             {Object.keys(w.sourceBreakdown).length > 0 && (
               <div className="border-t p-4 text-xs text-muted-foreground">
                 At request time:{" "}
                 {Object.entries(w.sourceBreakdown)
-                  .map(([k, v]) => `${k.replace(/_/g, " ").toLowerCase()} ${formatMYR(v)}`)
+                  .map(([k, v]) => `${humanize(k).toLowerCase()} ${formatCash(v, { currency: fiat })}`)
                   .join(" · ")}
               </div>
             )}
@@ -163,7 +165,7 @@ export default async function WithdrawalDetailPage({ params }: PageProps<"/admin
           <AdminCard title="User">
             <UserLink id={user.id} name={user.name} email={user.email} />
             <div className="mt-3">
-              <KeyValue items={[["Status", <StatusBadge key="s" status={user.status} />], ["Total deposits", formatMYR(user.totalDeposits)], ["Joined", formatDateTime(user.createdAt)]]} />
+              <KeyValue items={[["Status", <StatusBadge key="s" status={user.status} />], ["Total deposits", formatCash(user.totalDeposits, { currency: fiat })], ["Joined", formatDateTime(user.createdAt)]]} />
             </div>
           </AdminCard>
           {canManage && (
@@ -178,7 +180,7 @@ export default async function WithdrawalDetailPage({ params }: PageProps<"/admin
               empty="First withdrawal"
               columns={[
                 { key: "at", header: "When", cell: (r) => <Link href={`/admin/finance/withdrawals/${r.id}`} className="text-xs text-primary hover:underline">{formatDateTime(r.createdAt)}</Link> },
-                { key: "a", header: "Amount", align: "right", cell: (r) => formatMYR(r.amount) },
+                { key: "a", header: "Amount", align: "right", cell: (r) => formatCash(r.amount, { currency: fiat }) },
                 { key: "s", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
               ]}
             />
