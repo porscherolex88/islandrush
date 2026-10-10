@@ -15,7 +15,7 @@ export function levelForTotal(levels: (typeof depositLevels.$inferSelect)[], tot
   return current;
 }
 
-/** Recomputes Deposit Level from qualifying cumulative deposits. Deposit Level is independent of XP Level. */
+/** Recomputes Deposit Level from qualifying cumulative deposits. */
 export async function recomputeDepositLevel(tx: DbOrTx, userId: string) {
   const [profile] = await tx.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
   if (!profile) return null;

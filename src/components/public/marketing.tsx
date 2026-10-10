@@ -69,12 +69,12 @@ export function Steps({ steps }: { steps: { title: string; body: string }[] }) {
   );
 }
 
-export function CtaBand({ title = "Your island is waiting", description = "Create a free account and claim your first daily spin today." }: { title?: string; description?: string }) {
+export function CtaBand({ title = "Your adventure is waiting", description = "Create a free account and claim your first daily spin today." }: { title?: string; description?: string }) {
   return (
     <section className="py-14 sm:py-20">
       <Container>
         <div className="relative overflow-hidden rounded-2xl px-6 py-12 text-center text-white sm:px-12">
-          <Image src="/illustrations/island-map.webp" alt="" fill sizes="(min-width: 1024px) 1100px, 100vw" className="object-cover" />
+          <Image src="/illustrations/adventure/map-1.webp" alt="" fill sizes="(min-width: 1024px) 1100px, 100vw" className="object-cover" />
           <div aria-hidden className="absolute inset-0 bg-[oklch(0.25_0.06_222/0.78)]" />
           <h2 className="relative text-3xl font-bold sm:text-4xl">{title}</h2>
           <p className="relative mx-auto mt-3 max-w-xl text-white/85">{description}</p>

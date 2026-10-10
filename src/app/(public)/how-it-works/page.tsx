@@ -44,11 +44,11 @@ export default async function HowItWorksPage() {
       </SectionBlock>
       <SectionBlock title="Two ways to level up">
         <div className="grid gap-5 md:grid-cols-2">
-          <FeatureCard emoji="⭐" title="XP levels">
-            Earn XP by playing, completing missions, discovering tiles and finishing collections. Higher levels unlock badges and bragging rights.
+          <FeatureCard emoji="🗺️" title="Adventure levels">
+            Open Mystery Boxes to collect Loot, reach checkpoints and finish each map. Every map you complete moves you up an Adventure Level, up to 10.
           </FeatureCard>
           <FeatureCard emoji="💎" title="Deposit levels">
-            Separate from XP, Deposit Levels are based on your total approved deposits and come with their own benefits.
+            Deposit Levels are based on your total approved deposits and come with their own benefits.
           </FeatureCard>
         </div>
       </SectionBlock>

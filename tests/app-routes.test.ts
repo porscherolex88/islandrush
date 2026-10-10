@@ -3,18 +3,17 @@ import { isRootRoute, parentRoute, rootSection, routeLabel } from "@/lib/app-rou
 
 describe("app route hierarchy", () => {
   it("treats only the five bottom-nav pages as roots", () => {
-    for (const r of ["/app", "/app/market", "/app/daily", "/app/progress", "/app/wallet", "/app/market/"]) expect(isRootRoute(r)).toBe(true);
-    for (const r of ["/app/play", "/app/account", "/app/play/vault", "/app/account/profile", "/app/collections"]) expect(isRootRoute(r)).toBe(false);
+    for (const r of ["/app", "/app/market", "/app/play", "/app/progress", "/app/wallet", "/app/market/"]) expect(isRootRoute(r)).toBe(true);
+    for (const r of ["/app/daily", "/app/account", "/app/play/map", "/app/account/profile", "/app/collections"]) expect(isRootRoute(r)).toBe(false);
   });
 
   it("maps inner pages to their logical parent", () => {
-    expect(parentRoute("/app/play")).toBe("/app");
+    expect(parentRoute("/app/daily")).toBe("/app");
     expect(parentRoute("/app/play/mystery-box")).toBe("/app/play");
     expect(parentRoute("/app/play/mystery-box/history")).toBe("/app/play/mystery-box");
     expect(parentRoute("/app/play/map")).toBe("/app/play");
-    expect(parentRoute("/app/play/vault")).toBe("/app/play");
-    expect(parentRoute("/app/collections")).toBe("/app/play");
-    expect(parentRoute("/app/collections/lost-island-relics")).toBe("/app/collections");
+    expect(parentRoute("/app/play/prizes")).toBe("/app/play");
+    expect(parentRoute("/app/collections")).toBe("/app/progress");
     expect(parentRoute("/app/wallet/convert")).toBe("/app/wallet");
     expect(parentRoute("/app/wallet/withdraw")).toBe("/app/wallet");
     expect(parentRoute("/app/referrals")).toBe("/app/account");
@@ -33,11 +32,16 @@ describe("app route hierarchy", () => {
 
   it("assigns every page to the bottom-nav section of its logical parent", () => {
     expect(rootSection("/app")).toBe("/app");
-    expect(rootSection("/app/play/mystery-box/history")).toBe("/app");
-    expect(rootSection("/app/collections/lost-island-relics")).toBe("/app");
-    expect(rootSection("/app/daily/spin")).toBe("/app/daily");
+    expect(rootSection("/app/daily")).toBe("/app");
+    expect(rootSection("/app/daily/spin")).toBe("/app");
+    expect(rootSection("/app/play/mystery-box/history")).toBe("/app/play");
+    expect(rootSection("/app/play/map")).toBe("/app/play");
+    expect(rootSection("/app/play/prizes")).toBe("/app/play");
+    expect(rootSection("/app/collections")).toBe("/app/progress");
     expect(rootSection("/app/progress/achievements")).toBe("/app/progress");
     expect(rootSection("/app/wallet/deposit")).toBe("/app/wallet");
+    expect(rootSection("/app/wallet/transactions")).toBe("/app/wallet");
+    expect(rootSection("/app/account/withdrawal-accounts")).toBe("/app/wallet");
     expect(rootSection("/app/referrals")).toBe("/app");
     expect(rootSection("/app/notifications")).toBe("/app");
     expect(rootSection("/app/account/support/abc")).toBe("/app");
@@ -48,5 +52,6 @@ describe("app route hierarchy", () => {
     expect(routeLabel("/app/wallet")).toBe("Wallet");
     expect(routeLabel("/app/play")).toBe("Play");
     expect(routeLabel("/app/market")).toBe("Market");
+    expect(routeLabel("/app")).toBe("Home");
   });
 });

@@ -1,4 +1,4 @@
-import { CalendarCheck, LogOut, Settings, Star } from "lucide-react";
+import { CalendarCheck, LogOut, Settings } from "lucide-react";
 import type { ComponentProps } from "react";
 import Link from "next/link";
 import type { StatusBadge } from "@/components/shared/status-badge";
@@ -13,17 +13,17 @@ import { DrawerClose } from "./side-drawer";
 export function AppDrawer({
   name,
   email,
-  level,
   joined,
   verificationStatus,
   isAdmin,
+  unread,
 }: {
   name: string;
   email: string;
-  level: number;
   joined: Date;
   verificationStatus: ComponentProps<typeof StatusBadge>["status"];
   isAdmin: boolean;
+  unread: number;
 }) {
   return (
     <div className="flex min-h-full flex-col pb-[env(safe-area-inset-bottom)]">
@@ -55,9 +55,6 @@ export function AppDrawer({
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-3 pb-4">
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-gold-soft px-3 text-xs font-bold whitespace-nowrap text-gold-foreground">
-              <Star className="size-3.5" aria-hidden /> Level {level}
-            </span>
             <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-surface px-3 text-xs font-semibold whitespace-nowrap text-muted-foreground">
               <CalendarCheck className="size-3.5" aria-hidden /> Joined {joined.toLocaleDateString("en-MY", { month: "short", year: "numeric" })}
             </span>
@@ -66,7 +63,7 @@ export function AppDrawer({
       </div>
 
       <nav aria-label="Menu">
-        <AccountMenu verificationStatus={verificationStatus} unread={0} isAdmin={isAdmin} hide={["wallet", "personal", "settings"]} />
+        <AccountMenu verificationStatus={verificationStatus} unread={unread} isAdmin={isAdmin} />
       </nav>
 
       <Section className="mt-auto pt-6 pb-4">

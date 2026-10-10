@@ -82,7 +82,7 @@ describe("Mystery Box", () => {
   });
 
   it("is idempotent: a retried request never charges twice", async () => {
-    const pool = await makePool("WEIGHTED", [{ label: "x", rewardType: "XP", amount: "5" }]);
+    const pool = await makePool("WEIGHTED", [{ label: "x", rewardType: "CREDITS", amount: "5" }]);
     const box = await makeBox(pool.id, 1000);
     const u = await makeUser();
     await giveCredits(u.id, 5000);
@@ -92,7 +92,7 @@ describe("Mystery Box", () => {
       playMysteryBox(u.id, { boxId: box.id, selectedIndex: 1, idempotencyKey: key }),
     ]);
     expect(a.playId).toBe(b.playId);
-    expect((await getBalances(u.id)).CREDITS).toBe(4000n);
+    expect((await getBalances(u.id)).CREDITS).toBe(4005n);
   });
 
   it("validates the 3x3 selection and availability limits", async () => {

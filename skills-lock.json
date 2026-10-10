@@ -1,6 +1,24 @@
 {
   "version": 1,
   "skills": {
+    "3d-website-architect": {
+      "source": "deveshpunjabi/3d-website-skill",
+      "sourceType": "github",
+      "skillPath": "skills/3d-website-architect/SKILL.md",
+      "computedHash": "061eca688790764e15022cdc0eed852a4d4797420f3959f49581f977815de9ca"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576"
+    },
+    "frontend-motion-design-codegen": {
+      "source": "DexZane/motioncraft-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "83dbd40a3a668bab200b8de46fe81ee4ccdd83cae5e02a90792f12839be2f67f"
+    },
     "neon": {
       "source": "neondatabase/agent-skills",
       "sourceType": "github",

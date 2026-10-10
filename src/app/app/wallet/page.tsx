@@ -115,7 +115,7 @@ export default async function WalletPage() {
             <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
               <li>1. Your approved deposit becomes Cash.</li>
               <li>2. Convert Cash into Credits to play. Credits cannot be turned back into Cash.</li>
-              <li>3. Cash rewards you win wait in Pending for a short review.</li>
+              <li>3. Cash rewards you win are under review in Pending before becoming available to withdraw.</li>
               <li>4. After review they become Withdrawable, and you can send them to your bank.</li>
             </ul>
           </div>

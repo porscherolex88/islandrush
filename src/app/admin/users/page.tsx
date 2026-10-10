@@ -32,8 +32,6 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
   if (ver) conds.push(eq(profiles.verificationStatus, ver as "VERIFIED"));
   const lvl = str(sp.depositLevel);
   if (lvl) conds.push(eq(profiles.depositLevelId, lvl));
-  const xpMin = Number(str(sp.xpMin));
-  if (xpMin > 0) conds.push(gte(profiles.xpLevel, xpMin));
   const from = str(sp.from);
   if (from) conds.push(gte(profiles.createdAt, new Date(`${from}T00:00:00+08:00`)));
   const to = str(sp.to);
@@ -47,7 +45,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
   if (activity === "withdrawers") conds.push(sql`exists (select 1 from withdrawals w where w.user_id = ${profiles.id})`);
   if (activity === "referrers") conds.push(sql`exists (select 1 from profiles c where c.referred_by_id = ${profiles.id})`);
 
-  const sortMap = { createdAt: profiles.createdAt, totalDeposits: profiles.totalDeposits, xpTotal: profiles.xpTotal, lastSeenAt: profiles.lastSeenAt, name: profiles.name } as const;
+  const sortMap = { createdAt: profiles.createdAt, totalDeposits: profiles.totalDeposits, lastSeenAt: profiles.lastSeenAt, name: profiles.name } as const;
   const sortKey = (str(sp.sort) ?? "createdAt") as keyof typeof sortMap;
   const col = sortMap[sortKey] ?? profiles.createdAt;
   const order = str(sp.dir) === "asc" ? asc(col) : desc(col);
@@ -61,7 +59,6 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         role: profiles.role,
         status: profiles.status,
         verificationStatus: profiles.verificationStatus,
-        xpLevel: profiles.xpLevel,
         totalDeposits: profiles.totalDeposits,
         referralCode: profiles.referralCode,
         rewardsOnHold: profiles.rewardsOnHold,
@@ -97,7 +94,6 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
     },
     { key: "ver", header: "Verification", cell: (r) => <StatusBadge status={r.verificationStatus} /> },
     { key: "level", header: "Deposit level", cell: (r) => r.level ?? "-" },
-    { key: "xp", header: "XP level", sortKey: "xpTotal", align: "right", cell: (r) => r.xpLevel },
     { key: "dep", header: "Total deposits", sortKey: "totalDeposits", align: "right", cell: (r) => formatCash(r.totalDeposits, { currency: fiat }) },
     { key: "code", header: "Referral code", cell: (r) => <code className="text-xs">{r.referralCode}</code> },
     { key: "joined", header: "Joined", sortKey: "createdAt", cell: (r) => <span className="text-xs whitespace-nowrap">{formatDate(r.createdAt)}</span> },
@@ -112,7 +108,6 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         <FilterSelect name="role" label="Role" value={role} options={ROLES} />
         <FilterSelect name="verification" label="Verification" value={ver} options={["UNVERIFIED", "PENDING", "VERIFIED", "REJECTED"]} />
         <FilterSelect name="depositLevel" label="Deposit level" value={lvl} options={levels} />
-        <FilterInput name="xpMin" label="Min XP level" type="number" value={str(sp.xpMin)} className="w-28" />
         <FilterSelect name="risk" label="Risk" value={risk} options={[{ value: "flagged", label: "Open flags" }, { value: "hold", label: "Rewards on hold" }]} />
         <FilterSelect
           name="activity"

@@ -31,7 +31,7 @@ const TABS = [
   { key: "vaults", label: "Vaults" },
   { key: "collections", label: "Collections" },
   { key: "inventory", label: "Inventory" },
-  { key: "xp", label: "XP" },
+  { key: "achievements", label: "Achievements" },
   { key: "referrals", label: "Referrals", perm: "referrals.view" },
   { key: "notifications", label: "Notifications" },
   { key: "support", label: "Support", perm: "support.view" },
@@ -133,8 +133,6 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
               <KeyValue
                 cols={3}
                 items={[
-                  ["XP level", `Level ${u.xpLevel}`],
-                  ["Total XP", u.xpTotal.toLocaleString()],
                   ["Deposit level", row.level ?? "None"],
                   ["Total deposits", formatCash(u.totalDeposits, { currency: fiat })],
                   ["Current streak", `${row.streak ?? 0} days`],
@@ -200,7 +198,7 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       {tab === "vaults" && <T.VaultsTab userId={u.id} />}
       {tab === "collections" && <T.CollectionsTab userId={u.id} />}
       {tab === "inventory" && <T.InventoryTab userId={u.id} />}
-      {tab === "xp" && <T.XpTab userId={u.id} />}
+      {tab === "achievements" && <T.AchievementsTab userId={u.id} />}
       {tab === "referrals" && <T.ReferralsTab userId={u.id} referredById={u.referredById} />}
       {tab === "notifications" && <T.NotificationsTab userId={u.id} />}
       {tab === "support" && <T.SupportTab userId={u.id} />}

@@ -8,10 +8,9 @@ import { weightedPick } from "@/lib/rng";
 import { getConfig } from "./config";
 import { grantItem } from "./inventory";
 import { postTransaction, type RewardSource } from "./ledger";
-import { awardXp } from "./xp";
 
 export type Rarity = "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY";
-export type RewardType = "CREDITS" | "CASH" | "XP" | "ITEM" | "AREA_UNLOCK";
+export type RewardType = "CREDITS" | "CASH" | "ITEM" | "AREA_UNLOCK";
 
 export type RewardResult = {
   entryId: string | null;
@@ -33,7 +32,7 @@ export type PoolEntry = typeof rewardPoolEntries.$inferSelect;
 export type GrantContext = {
   sourceType: string;
   sourceId: string;
-  /** Unique, deterministic key for this grant; used for ledger/XP idempotency. */
+  /** Unique, deterministic key for this grant; used for ledger idempotency. */
   key: string;
   rewardSource?: RewardSource;
 };
@@ -41,7 +40,6 @@ export type GrantContext = {
 const RARITY_ICON: Record<RewardType, string> = {
   CREDITS: "🪙",
   CASH: "💵",
-  XP: "⭐",
   ITEM: "🎁",
   AREA_UNLOCK: "🗺️",
 };
@@ -90,8 +88,6 @@ export async function describeEntry(tx: Tx, entry: PoolEntry): Promise<RewardRes
       return { ...base, display: `${formatCredits(entry.amount)} Credits`, icon: entry.reveal?.icon ?? RARITY_ICON.CREDITS };
     case "CASH":
       return { ...base, display: await fmtCash(entry.amount), icon: entry.reveal?.icon ?? RARITY_ICON.CASH };
-    case "XP":
-      return { ...base, display: `${toMinor(entry.amount, "CREDITS")} XP`, icon: entry.reveal?.icon ?? RARITY_ICON.XP };
     case "ITEM": {
       const [item] = entry.itemId ? await tx.select().from(items).where(eq(items.id, entry.itemId)).limit(1) : [];
       const qty = Number(toMinor(entry.amount || "1", "CREDITS")) || 1;
@@ -116,7 +112,7 @@ export async function describeEntry(tx: Tx, entry: PoolEntry): Promise<RewardRes
   }
 }
 
-/** Applies a reward to the user. Every effect is recorded (ledger, XP, inventory events). */
+/** Applies a reward to the user. Every effect is recorded (ledger, inventory events). */
 export async function grantReward(tx: Tx, userId: string, entry: PoolEntry, ctx: GrantContext): Promise<RewardResult> {
   const result = await describeEntry(tx, entry);
   switch (entry.rewardType) {
@@ -148,13 +144,6 @@ export async function grantReward(tx: Tx, userId: string, entry: PoolEntry, ctx:
         sourceId: ctx.sourceId,
         key: ctx.key,
         description: entry.label,
-      });
-      break;
-    case "XP":
-      await awardXp(tx, userId, ctx.sourceType.toUpperCase(), {
-        sourceId: ctx.sourceId,
-        key: `${ctx.key}:xp`,
-        amount: Number(toMinor(entry.amount, "CREDITS")),
       });
       break;
     case "ITEM": {

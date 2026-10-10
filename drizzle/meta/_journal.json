@@ -43,6 +43,13 @@
       "when": 1790842639604,
       "tag": "0005_cloudy_slapstick",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790944155384,
+      "tag": "0006_remove_xp",
+      "breakpoints": true
     }
   ]
 }

@@ -11,8 +11,6 @@ function amountLabel(e: EntryStat, fiat: FiatDisplay) {
       return `${formatCredits(Math.round(Number(e.amount)))} Credits`;
     case "CASH":
       return formatCash(e.amount, { currency: fiat });
-    case "XP":
-      return `${Math.round(Number(e.amount))} XP`;
     case "ITEM":
       return `${Math.max(1, Math.round(Number(e.amount)))}x ${e.itemName ?? "item"}`;
     case "AREA_UNLOCK":

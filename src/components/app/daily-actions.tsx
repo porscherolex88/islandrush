@@ -17,29 +17,6 @@ import { ART } from "./art";
 import { OddsSheet } from "./odds-sheet";
 import { RewardChip, RewardReveal } from "./reward-reveal";
 
-export function CheckInButton({ claimed, streak, compact }: { claimed: boolean; streak: number; compact?: boolean }) {
-  const [reveal, setReveal] = useState<{ rewards: RewardResult[]; title: string; xp: number } | null>(null);
-  const { run, pending } = useAction(claimLoginAction, {
-    onSuccess: (d) => {
-      if (d.milestoneRewards.length) {
-        const m = d.milestoneRewards[d.milestoneRewards.length - 1];
-        setReveal({ rewards: d.milestoneRewards.flatMap((x) => x.rewards), title: `${m.days}-day streak: ${m.title}`, xp: d.xp });
-      } else {
-        toast.success(`Checked in! ${d.streak}-day streak${d.xp ? `, +${d.xp} XP` : ""}`);
-      }
-    },
-  });
-  return (
-    <>
-      <Button onClick={() => run()} disabled={claimed || pending} size="pill" variant={claimed ? "secondary" : "gold"} className={cn("w-full", claimed && "bg-emerald-100 text-emerald-800 disabled:opacity-100")}>
-        {pending ? <Loader2 className="animate-spin" /> : claimed ? <Check /> : null}
-        {compact ? (claimed ? "Checked in" : "Check in") : claimed ? `Checked in today · ${streak}-day streak` : "Check in to keep your streak"}
-      </Button>
-      <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title={reveal?.title} rewards={reveal?.rewards ?? []} xp={reveal?.xp} />
-    </>
-  );
-}
-
 export function CheckInCard({ claimed, streak }: { claimed: boolean; streak: number }) {
   return (
     <div className="relative isolate flex flex-col overflow-hidden rounded-2xl border border-orange-200 bg-[linear-gradient(160deg,oklch(0.98_0.03_75),oklch(0.93_0.07_60))] p-3">
@@ -58,6 +35,29 @@ export function CheckInCard({ claimed, streak }: { claimed: boolean; streak: num
   );
 }
 
+export function CheckInButton({ claimed, streak, compact }: { claimed: boolean; streak: number; compact?: boolean }) {
+  const [reveal, setReveal] = useState<{ rewards: RewardResult[]; title: string } | null>(null);
+  const { run, pending } = useAction(claimLoginAction, {
+    onSuccess: (d) => {
+      if (d.milestoneRewards.length) {
+        const m = d.milestoneRewards[d.milestoneRewards.length - 1];
+        setReveal({ rewards: d.milestoneRewards.flatMap((x) => x.rewards), title: `${m.days}-day streak: ${m.title}` });
+      } else {
+        toast.success(`Checked in! ${d.streak}-day streak`);
+      }
+    },
+  });
+  return (
+    <>
+      <Button onClick={() => run()} disabled={claimed || pending} size="pill" variant={claimed ? "secondary" : "gold"} className={cn("w-full", claimed && "bg-emerald-100 text-emerald-800 disabled:opacity-100")}>
+        {pending ? <Loader2 className="animate-spin" /> : claimed ? <Check /> : null}
+        {compact ? (claimed ? "Checked in" : "Check in") : claimed ? `Checked in today · ${streak}-day streak` : "Check in to keep your streak"}
+      </Button>
+      <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title={reveal?.title} rewards={reveal?.rewards ?? []} />
+    </>
+  );
+}
+
 /** Rounds SVG coordinates so server and browser render identical attribute strings. */
 const px = (n: number) => Math.round(n * 1000) / 1000;
 
@@ -67,7 +67,7 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
   const reduce = useReducedMotion();
   const router = useRouter();
   const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState<{ reward: RewardResult; xp: number } | null>(null);
+  const [result, setResult] = useState<RewardResult | null>(null);
   const [revealOpen, setRevealOpen] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const segs = entries.slice(0, 10);
@@ -77,7 +77,7 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
     onSuccess: (d) => {
       const idx = Math.max(0, segs.findIndex((e) => e.id === d.entryId));
       const target = 360 * 6 + (360 - (idx * seg + seg / 2));
-      setResult({ reward: d.reward, xp: d.xp });
+      setResult(d.reward);
       setSpinning(true);
       setRotation(target);
       if (reduce) {
@@ -147,7 +147,7 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Today&apos;s spin</p>
             <div className="mt-1 flex justify-center">
-              <RewardChip reward={(result?.reward ?? spun)!} className="text-sm" />
+              <RewardChip reward={(result ?? spun)!} className="text-sm" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">Your next free spin unlocks tomorrow.</p>
           </div>
@@ -166,15 +166,14 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
           router.refresh();
         }}
         title="Daily Spin"
-        rewards={result ? [result.reward] : []}
-        xp={result?.xp}
+        rewards={result ? [result] : []}
       />
     </div>
   );
 }
 
 export function MissionBonusButton({ done, total, claimed }: { done: number; total: number; claimed: boolean }) {
-  const [reveal, setReveal] = useState<{ rewards: RewardResult[]; xp: number } | null>(null);
+  const [reveal, setReveal] = useState<{ rewards: RewardResult[] } | null>(null);
   const { run, pending } = useAction(claimMissionBonusAction, { onSuccess: (d) => setReveal(d) });
   const ready = done >= total && total > 0;
   return (
@@ -183,13 +182,13 @@ export function MissionBonusButton({ done, total, claimed }: { done: number; tot
         {pending ? <Loader2 className="animate-spin" /> : claimed ? <Check /> : <Gift />}
         {claimed ? "Mission reward claimed" : ready ? "Claim mission reward" : `Finish all ${total} missions for a bonus`}
       </Button>
-      <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title="All missions complete" rewards={reveal?.rewards ?? []} xp={reveal?.xp} />
+      <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title="All missions complete" rewards={reveal?.rewards ?? []} />
     </>
   );
 }
 
 export function MysteryEventCard({ event, claim }: { event: { title: string; description: string; icon: string; costCredits: number } | null; claim: RewardResult | null }) {
-  const [reveal, setReveal] = useState<{ reward: RewardResult; xp: number } | null>(null);
+  const [reveal, setReveal] = useState<{ reward: RewardResult } | null>(null);
   const { run, pending } = useAction(claimEventAction, { onSuccess: (d) => setReveal(d) });
   if (!event) {
     return <p className="rounded-3xl border border-dashed p-5 text-center text-sm text-muted-foreground">No mystery today. Check back tomorrow.</p>;
@@ -217,7 +216,7 @@ export function MysteryEventCard({ event, claim }: { event: { title: string; des
           )}
         </div>
       </div>
-      <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title={event.title} rewards={reveal ? [reveal.reward] : []} xp={reveal?.xp} />
+      <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title={event.title} rewards={reveal ? [reveal.reward] : []} />
     </div>
   );
 }

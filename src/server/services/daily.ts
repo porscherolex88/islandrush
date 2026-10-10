@@ -20,7 +20,6 @@ import { getConfig } from "./config";
 import { postTransaction } from "./ledger";
 import { notify } from "./notifications";
 import { grantPool, grantReward, pickPoolEntry, type RewardResult } from "./rewards";
-import { awardXp } from "./xp";
 
 export type MissionAction = (typeof missionDefinitions.$inferSelect)["action"];
 export type MissionDef = typeof missionDefinitions.$inferSelect;
@@ -105,7 +104,6 @@ export async function trackMission(tx: Tx, userId: string, action: MissionAction
         set: { progress: next, completedAt: completed ? new Date() : null, updatedAt: new Date() },
       });
     if (completed) {
-      await awardXp(tx, userId, "MISSION_COMPLETE", { key: `xp:mission:${userId}:${day}:${mission.id}`, sourceId: mission.id });
       await notify(tx, userId, "MISSION", `${mission.icon} Mission complete`, mission.title, "/app/daily");
     }
   }
@@ -136,8 +134,7 @@ export async function claimDailyLogin(userId: string) {
       .set({ current, longest, lastClaimDay: day, runStartDay, updatedAt: new Date() })
       .where(eq(userStreaks.userId, userId));
 
-    const xp = await awardXp(tx, userId, "DAILY_LOGIN", { key: `xp:login:${userId}:${day}` });
-    await tx.update(dailyLogins).set({ streakAfter: current, xpAwarded: xp }).where(eq(dailyLogins.id, inserted[0].id));
+    await tx.update(dailyLogins).set({ streakAfter: current }).where(eq(dailyLogins.id, inserted[0].id));
 
     const milestoneRewards: { title: string; days: number; rewards: RewardResult[] }[] = [];
     const milestones = await tx
@@ -157,14 +154,13 @@ export async function claimDailyLogin(userId: string) {
         key: `streak:${userId}:${m.id}:${runStartDay}`,
       });
       await tx.update(streakMilestoneClaims).set({ rewards }).where(eq(streakMilestoneClaims.id, claim[0].id));
-      await awardXp(tx, userId, "STREAK_MILESTONE", { key: `xp:streak:${userId}:${m.id}:${runStartDay}`, sourceId: m.id });
       await notify(tx, userId, "REWARD", `🔥 ${m.days}-day streak!`, `${m.title}: ${rewards.map((r) => r.display).join(", ") || "Milestone reached"}`, "/app/daily");
       milestoneRewards.push({ title: m.title, days: m.days, rewards });
     }
 
     await trackMission(tx, userId, "DAILY_LOGIN");
     await checkAchievements(tx, userId, "STREAK_DAYS");
-    return { streak: current, longest, xp, milestoneRewards };
+    return { streak: current, longest, milestoneRewards };
   });
 }
 
@@ -185,9 +181,8 @@ export async function spinDaily(userId: string) {
       const entry = await pickPoolEntry(tx, poolId);
       const reward = await grantReward(tx, userId, entry, { sourceType: "daily_spin", sourceId: spin.id, key: `spin:${userId}:${day}` });
       await tx.update(dailySpins).set({ reward, poolEntryId: entry.id }).where(eq(dailySpins.id, spin.id));
-      const xp = await awardXp(tx, userId, "DAILY_SPIN", { key: `xp:spin:${userId}:${day}`, sourceId: spin.id });
       await trackMission(tx, userId, "DAILY_SPIN");
-      return { reward, xp, boosted: Boolean(boosted), entryId: entry.id };
+      return { reward, boosted: Boolean(boosted), entryId: entry.id };
     });
   } catch (err) {
     if (isUniqueViolation(err)) throw new AppError("You've already used today's spin.", "ALREADY_SPUN");
@@ -213,9 +208,8 @@ export async function claimMissionBonus(userId: string) {
       key: `missions:${userId}:${day}`,
     });
     await tx.update(missionBonusClaims).set({ rewards }).where(eq(missionBonusClaims.id, inserted[0].id));
-    const xp = await awardXp(tx, userId, "MISSIONS_ALL", { key: `xp:missions-all:${userId}:${day}` });
     await notify(tx, userId, "MISSION", "🎯 All daily missions complete", rewards.map((r) => r.display).join(", ") || "Great work today!", "/app/daily");
-    return { rewards, xp };
+    return { rewards };
   });
 }
 
@@ -249,9 +243,8 @@ export async function claimDailyEvent(userId: string) {
       const entry = await pickPoolEntry(tx, plan.event.poolId);
       const reward = await grantReward(tx, userId, entry, { sourceType: "daily_event", sourceId: inserted[0].id, key: `event:${userId}:${day}` });
       await tx.update(dailyEventClaims).set({ reward }).where(eq(dailyEventClaims.id, inserted[0].id));
-      const xp = await awardXp(tx, userId, "DAILY_EVENT", { key: `xp:event:${userId}:${day}` });
       await trackMission(tx, userId, "DAILY_EVENT");
-      return { reward, xp };
+      return { reward };
     });
   } catch (err) {
     if (isUniqueViolation(err)) throw new AppError("You've already explored today's event", "ALREADY_CLAIMED");
@@ -304,4 +297,17 @@ export async function getDailyState(userId: string) {
     milestones: milestones.map((m) => ({ id: m.id, days: m.days, title: m.title, reached: currentStreak >= m.days })),
     nextMilestone: milestones.find((m) => m.days > currentStreak) ?? null,
   };
+}
+
+export type DailyState = Awaited<ReturnType<typeof getDailyState>>;
+
+/** Today's Daily activities and whether each is done; the single source for every "X of Y completed" count. */
+export function dailyChecklist(state: DailyState) {
+  const items = [
+    { key: "checkin", label: "Check-in", done: state.loginClaimed },
+    ...(state.spinAvailable ? [{ key: "spin", label: "Daily Spin", done: Boolean(state.spin) }] : []),
+    ...(state.missions.length ? [{ key: "missions", label: "Daily Missions", done: state.missionsDone >= state.missions.length }] : []),
+    ...(state.event ? [{ key: "mystery", label: "Daily Mystery", done: Boolean(state.eventClaim) }] : []),
+  ];
+  return { items, done: items.filter((i) => i.done).length, total: items.length };
 }

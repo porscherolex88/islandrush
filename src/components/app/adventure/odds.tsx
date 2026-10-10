@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, Coins, Gift, Info, Star } from "lucide-react";
+import { Banknote, Coins, Gift, Info } from "lucide-react";
 import type { ReactNode } from "react";
 import { useFormatCash } from "@/components/providers/fiat-currency-provider";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -21,7 +21,7 @@ export function useOddLabel() {
 export function RewardGlyph({ type, icon, rarity, size = "sm" }: { type: string; icon: string; rarity?: string | null; size?: "sm" | "md" | "lg" }) {
   const dims = { sm: "size-9 [&_svg]:size-4.5", md: "size-12 [&_svg]:size-6", lg: "size-16 [&_svg]:size-8" }[size];
   if (type === "ITEM") return <LootToken icon={icon} rarity={rarity} size={size} />;
-  const Icon = type === "CREDITS" ? Coins : type === "CASH" ? Banknote : type === "XP" ? Star : Gift;
+  const Icon = type === "CREDITS" ? Coins : type === "CASH" ? Banknote : Gift;
   const tone = type === "CASH" ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-amber-50 text-amber-700 ring-amber-200";
   return (
     <span className={cn("grid shrink-0 place-items-center rounded-2xl ring-2", tone, dims)} aria-hidden>

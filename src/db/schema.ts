@@ -96,7 +96,7 @@ export const withdrawalStatusEnum = pgEnum("withdrawal_status", [
 export const cashRewardStatusEnum = pgEnum("cash_reward_status", ["PENDING", "HELD", "SETTLED", "REVERSED"]);
 export const rarityEnum = pgEnum("rarity", ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"]);
 export const itemKindEnum = pgEnum("item_kind", ["COLLECTIBLE", "SPECIAL", "KEY", "FRAGMENT", "COSMETIC", "LOOT"]);
-export const rewardTypeEnum = pgEnum("reward_type", ["CREDITS", "CASH", "XP", "ITEM", "AREA_UNLOCK"]);
+export const rewardTypeEnum = pgEnum("reward_type", ["CREDITS", "CASH", "ITEM", "AREA_UNLOCK"]);
 export const poolModeEnum = pgEnum("pool_mode", ["WEIGHTED", "ALL"]);
 export const contentStatusEnum = pgEnum("content_status", ["DRAFT", "PUBLISHED", "ARCHIVED"]);
 export const requirementTypeEnum = pgEnum("requirement_type", [
@@ -105,7 +105,6 @@ export const requirementTypeEnum = pgEnum("requirement_type", [
   "COLLECTION_PROGRESS",
   "AREA_UNLOCKED",
   "AREA_TILES",
-  "XP_LEVEL",
 ]);
 export const requirementOwnerEnum = pgEnum("requirement_owner", ["AREA", "VAULT"]);
 export const missionActionEnum = pgEnum("mission_action", [
@@ -125,7 +124,6 @@ export const achievementConditionEnum = pgEnum("achievement_condition", [
   "COLLECTIONS_COMPLETED",
   "VAULTS_UNLOCKED",
   "STREAK_DAYS",
-  "XP_LEVEL",
   "ITEMS_COLLECTED",
 ]);
 export const riskTypeEnum = pgEnum("risk_type", [
@@ -204,8 +202,6 @@ export const profiles = pgTable(
     referralCode: text("referral_code").notNull(),
     referredById: text("referred_by_id"),
     rewardsOnHold: boolean("rewards_on_hold").notNull().default(false),
-    xpTotal: integer("xp_total").notNull().default(0),
-    xpLevel: integer("xp_level").notNull().default(1),
     depositLevelId: uuid("deposit_level_id"),
     totalDeposits: money("total_deposits").notNull().default("0"),
     notificationPrefs: jsonb("notification_prefs")
@@ -758,7 +754,6 @@ export const mysteryBoxes = pgTable(
     dailyLimitPerUser: integer("daily_limit_per_user"),
     totalLimit: integer("total_limit"),
     theme: jsonb("theme").$type<{ color: string; accent: string }>().notNull().default({ color: "#7c3aed", accent: "#f59e0b" }),
-    xpReward: integer("xp_reward"),
     /** Adventure level (1-10). Boxes without a level are legacy and hidden from the adventure. */
     level: integer("level"),
     /** Map level that must be completed before this box can be opened. Null = available immediately. */
@@ -792,7 +787,6 @@ export const mysteryBoxPlays = pgTable(
     creditsSpent: credits("credits_spent").notNull(),
     poolEntryId: uuid("pool_entry_id").references(() => rewardPoolEntries.id),
     reward: jsonb("reward").$type<Record<string, unknown>>().notNull(),
-    xpAwarded: integer("xp_awarded").notNull().default(0),
     idempotencyKey: text("idempotency_key").notNull(),
     ledgerTransactionId: uuid("ledger_transaction_id").references(() => ledgerTransactions.id),
     appDay: date("app_day").notNull(),
@@ -1331,7 +1325,6 @@ export const dailyLogins = pgTable(
       .references(() => profiles.id),
     day: date("day").notNull(),
     streakAfter: integer("streak_after").notNull(),
-    xpAwarded: integer("xp_awarded").notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("dl_user_day_uq").on(t.userId, t.day)],
@@ -1443,42 +1436,6 @@ export const streakMilestoneClaims = pgTable(
 /* ----------------------------------------------------------------------------
  * Progression
  * ------------------------------------------------------------------------- */
-
-export const xpRules = pgTable("xp_rules", {
-  source: text("source").primaryKey(),
-  label: text("label").notNull(),
-  amount: integer("amount").notNull().default(0),
-  active: boolean("active").notNull().default(true),
-  updatedAt: updatedAt(),
-});
-
-export const xpLevels = pgTable(
-  "xp_levels",
-  {
-    level: integer("level").primaryKey(),
-    title: text("title").notNull(),
-    xpRequired: integer("xp_required").notNull(),
-    rewardPoolId: uuid("reward_pool_id").references(() => rewardPools.id),
-    updatedAt: updatedAt(),
-  },
-  (t) => [uniqueIndex("xp_levels_required_uq").on(t.xpRequired)],
-);
-
-export const xpTransactions = pgTable(
-  "xp_transactions",
-  {
-    id: id(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id),
-    amount: integer("amount").notNull(),
-    source: text("source").notNull(),
-    sourceId: text("source_id"),
-    idempotencyKey: text("idempotency_key").notNull(),
-    createdAt: createdAt(),
-  },
-  (t) => [uniqueIndex("xpt_idem_uq").on(t.idempotencyKey), index("xpt_user_idx").on(t.userId, t.createdAt)],
-);
 
 export const depositLevels = pgTable(
   "deposit_levels",

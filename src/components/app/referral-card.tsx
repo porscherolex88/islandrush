@@ -8,7 +8,7 @@ import { CopyButton } from "./copy-button";
 /** Referral code and link with copy and native share. */
 export function ReferralCard({ code, link }: { code: string; link: string }) {
   async function share() {
-    const data = { title: "Join me on LootBox", text: `Explore Lost Island with me on LootBox. Use my code ${code} when you sign up.`, url: link };
+    const data = { title: "Join me on LootBox", text: `Join my adventure on LootBox. Use my code ${code} when you sign up.`, url: link };
     if (navigator.share) {
       try {
         await navigator.share(data);

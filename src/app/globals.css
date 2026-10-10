@@ -225,6 +225,33 @@
   animation: glow-pulse 2.4s ease-in-out infinite;
 }
 
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+}
+
+@utility animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
 /* Soft dark scrim that keeps white text readable on top of illustrations. */
 @utility art-scrim {
   background-image: linear-gradient(90deg, rgb(6 30 40 / 0.85) 0%, rgb(6 30 40 / 0.55) 45%, rgb(6 30 40 / 0) 80%);
@@ -241,5 +268,12 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* A frozen marquee would hide most of its items, so let it scroll by hand instead. */
+  .animate-marquee {
+    animation: none !important;
+  }
+  [role="region"]:has(> .animate-marquee) {
+    overflow-x: auto;
   }
 }

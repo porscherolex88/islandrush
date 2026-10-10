@@ -14,8 +14,8 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <Image src="/illustrations/island-map.webp" alt="" fill priority sizes="50vw" className="object-cover" />
         <div aria-hidden className="art-scrim-b absolute inset-0" />
         <p className="relative text-sm font-bold text-amber-200">Explore · Discover · Collect · Unlock</p>
-        <p className="relative mt-2 font-heading text-4xl leading-tight font-bold">Every day on Lost Island brings something new.</p>
-        <p className="relative mt-3 max-w-md text-white/85">Explore the island map, discover hidden treasures, complete your collection book and unlock the Ancient Vault.</p>
+        <p className="relative mt-2 font-heading text-4xl leading-tight font-bold">Every day brings a new adventure.</p>
+        <p className="relative mt-3 max-w-md text-white/85">Open Mystery Boxes for Loot, reach every checkpoint, complete prize puzzles and move up ten Adventure Levels.</p>
       </aside>
     </div>
   );

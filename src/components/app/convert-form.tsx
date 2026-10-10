@@ -19,10 +19,10 @@ function safeMinor(v: string) {
   }
 }
 
-export function ConvertForm({ cash, rateCash, rateCredits }: { cash: string; rateCash: string; rateCredits: number }) {
+export function ConvertForm({ cash, rateCash, rateCredits, initialAmount = "" }: { cash: string; rateCash: string; rateCredits: number; initialAmount?: string }) {
   const fmt = useFormatCash();
   const fiat = useFiatCurrency();
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(initialAmount);
   const keyRef = useRef(newKey());
   const cashMinor = toMinor(cash);
   const minor = safeMinor(amount);

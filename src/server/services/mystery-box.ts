@@ -10,7 +10,6 @@ import { boxLockReason, recordEvent } from "./adventure-core";
 import { assertWithinSpendLimit, lockPlayer } from "./guards";
 import { getBalances, postTransaction } from "./ledger";
 import { grantPool, grantReward, pickPoolEntry, type RewardResult } from "./rewards";
-import { awardXp } from "./xp";
 
 export type BoxPlayResult = {
   playId: string;
@@ -20,7 +19,6 @@ export type BoxPlayResult = {
   creditsSpent: number;
   reward: RewardResult;
   loot: RewardResult[];
-  xp: number;
   creditsBalance: string;
   replayed: boolean;
 };
@@ -41,7 +39,6 @@ async function existingPlay(userId: string, idempotencyKey: string): Promise<Box
     creditsSpent: play.creditsSpent,
     reward: play.reward as RewardResult,
     loot: play.loot as RewardResult[],
-    xp: play.xpAwarded,
     creditsBalance: balances.CREDITS.toString(),
     replayed: true,
   };
@@ -155,12 +152,6 @@ export async function playMysteryBox(
         if (loot.length) await recordEvent(tx, { ...base, type: "LOOT_REWARD", actionId: playId, result: { loot } });
       }
 
-      const xp = await awardXp(tx, userId, "BOX_OPEN", {
-        key: `xp:box:${playId}`,
-        sourceId: playId,
-        amount: box.xpReward ?? undefined,
-      });
-      if (xp) await tx.update(mysteryBoxPlays).set({ xpAwarded: xp }).where(eq(mysteryBoxPlays.id, playId));
       await trackMission(tx, userId, "OPEN_BOX");
       await checkAchievements(tx, userId, "BOXES_OPENED");
 
@@ -173,7 +164,6 @@ export async function playMysteryBox(
         creditsSpent: box.priceCredits,
         reward,
         loot,
-        xp,
         creditsBalance: balances.CREDITS.toString(),
         replayed: false,
       };
@@ -215,7 +205,7 @@ export async function boxOdds(poolId: string) {
 export const poolOdds = boxOdds;
 export type PoolOdds = Awaited<ReturnType<typeof boxOdds>>;
 
-const TYPE_ICON: Record<string, string> = { CREDITS: "🪙", CASH: "💵", XP: "⭐", ITEM: "🎁", AREA_UNLOCK: "🗺️" };
+const TYPE_ICON: Record<string, string> = { CREDITS: "🪙", CASH: "💵", ITEM: "🎁", AREA_UNLOCK: "🗺️" };
 
 export async function playHistory(userId: string, limit = 30, offset = 0) {
   return db
@@ -227,7 +217,6 @@ export async function playHistory(userId: string, limit = 30, offset = 0) {
       loot: mysteryBoxPlays.loot,
       level: mysteryBoxPlays.level,
       selectedIndex: mysteryBoxPlays.selectedIndex,
-      xp: mysteryBoxPlays.xpAwarded,
       boxName: mysteryBoxes.name,
     })
     .from(mysteryBoxPlays)

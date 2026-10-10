@@ -24,14 +24,16 @@ export function Section({
   action,
   children,
   className,
+  id,
 }: {
   title?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
-    <section className={cn("px-4 py-2.5", className)}>
+    <section id={id} className={cn("px-4 py-2.5", className)}>
       {(title || action) && (
         <div className="mb-2 flex items-center justify-between gap-2">
           {title && <h2 className="flex items-center gap-2 font-heading text-lg font-bold">{title}</h2>}

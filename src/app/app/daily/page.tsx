@@ -1,16 +1,12 @@
+import { CalendarClock, Gift } from "lucide-react";
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { ART, mapArt } from "@/components/app/art";
-import { buttonVariants } from "@/components/ui/button";
 import { CheckInButton, MissionBonusButton, MysteryEventCard, SpinWheel } from "@/components/app/daily-actions";
 import { MissionCard, StreakCard } from "@/components/app/daily-cards";
 import { Panel, Section } from "@/components/app/mobile-header";
 import { DailyHeader } from "@/components/app/root-page-header";
 import { requireUser } from "@/lib/auth/session";
-import { getAdventureState } from "@/server/services/adventure";
 import { getConfig, getTimezone } from "@/server/services/config";
-import { getDailyPlan, getDailyState } from "@/server/services/daily";
+import { dailyChecklist, getDailyPlan, getDailyState } from "@/server/services/daily";
 import { poolOdds } from "@/server/services/mystery-box";
 
 export const metadata: Metadata = { title: "Daily" };
@@ -18,20 +14,17 @@ export const metadata: Metadata = { title: "Daily" };
 export default async function DailyPage() {
   const user = await requireUser();
   const state = await getDailyState(user.id);
-  const [plan, defaults, tz, adventure] = await Promise.all([getDailyPlan(state.day), getConfig("daily_defaults"), getTimezone(), getAdventureState(user.id)]);
+  const [plan, defaults, tz] = await Promise.all([getDailyPlan(state.day), getConfig("daily_defaults"), getTimezone()]);
   const boosted = Boolean(defaults.streakSpinPoolId && state.streak.current >= defaults.streakSpinMinDays);
   const spinPool = boosted ? defaults.streakSpinPoolId : plan.spinPoolId;
   const odds = spinPool ? await poolOdds(spinPool) : [];
-  const today = [
-    state.loginClaimed,
-    ...(state.spinAvailable ? [Boolean(state.spin)] : []),
-    ...(state.missions.length ? [state.missionsDone >= state.missions.length] : []),
-    ...(state.event ? [Boolean(state.eventClaim)] : []),
-  ];
+  const { done, total } = dailyChecklist(state);
+  const tomorrowStreak = state.streak.current + (state.loginClaimed ? 1 : 2);
+  const milestone = state.nextMilestone;
 
   return (
     <div>
-      <DailyHeader timeZone={tz} streak={state.streak.current} done={today.filter(Boolean).length} total={today.length} />
+      <DailyHeader timeZone={tz} streak={state.streak.current} done={done} total={total} />
 
       <Section>
         <StreakCard
@@ -52,10 +45,10 @@ export default async function DailyPage() {
       </Section>
 
       <Section
-        title="Today's Missions"
+        title="Daily Missions"
         action={
           <span className="rounded-full bg-brand-soft px-3 py-1 text-sm font-bold text-primary tabular">
-            {state.missionsDone} / {state.missions.length} completed
+            {state.missionsDone} / {state.missions.length}
           </span>
         }
       >
@@ -67,25 +60,31 @@ export default async function DailyPage() {
         </div>
       </Section>
 
-      <Section title="Today's Mystery">
+      <Section title="Daily Mystery">
         <div id="event" className="scroll-mt-20">
           <MysteryEventCard event={state.event} claim={state.eventClaim} />
         </div>
       </Section>
 
-      <Section title="Your Adventure">
-        <Link href={adventure.nextStep.href} className="group relative isolate flex min-h-28 items-center gap-4 overflow-hidden rounded-3xl p-4 text-white">
-          <Image src={adventure.currentMap ? mapArt(adventure.currentMap.level, adventure.currentMap.artwork) : ART.island} alt="" fill sizes="(max-width: 430px) 100vw, 430px" className="-z-10 object-cover" />
-          <span aria-hidden className="art-scrim absolute inset-0 -z-10" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs font-bold tracking-wide text-amber-200 uppercase tabular">
-              Level {adventure.currentLevel}/{adventure.totalLevels}
-            </span>
-            <span className="block font-heading text-xl leading-tight font-extrabold">{adventure.nextStep.title}</span>
-            <span className="block truncate text-sm text-white/85">{adventure.nextStep.detail}</span>
+      <Section title="Tomorrow" className="pb-6">
+        <div className="flex items-start gap-3 rounded-2xl border border-dashed bg-surface/60 p-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-card text-primary ring-1 ring-border">
+            <CalendarClock className="size-5" aria-hidden />
           </span>
-          <span className={buttonVariants({ variant: "gold", size: "pill" })}>Go</span>
-        </Link>
+          <div className="min-w-0 text-sm">
+            <p className="font-bold">
+              {state.loginClaimed ? "Check in for day " : "Check in today, then tomorrow is day "}
+              <span className="tabular">{tomorrowStreak}</span> of your streak
+            </p>
+            <p className="mt-0.5 text-muted-foreground">A fresh spin, three new missions and a new mystery arrive every day.</p>
+            {milestone && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-gold-foreground">
+                <Gift className="size-3.5" aria-hidden />
+                {milestone.title} at a {milestone.days}-day streak
+              </p>
+            )}
+          </div>
+        </div>
       </Section>
     </div>
   );

@@ -1,5 +1,5 @@
 /** The five bottom-navigation roots. Every other /app route is an inner page. */
-export const ROOT_ROUTES = ["/app", "/app/market", "/app/daily", "/app/progress", "/app/wallet"] as const;
+export const ROOT_ROUTES = ["/app", "/app/market", "/app/play", "/app/progress", "/app/wallet"] as const;
 
 export type RootRoute = (typeof ROOT_ROUTES)[number];
 
@@ -9,11 +9,11 @@ const LABELS: Record<string, string> = {
   "/app/play": "Play",
   "/app/daily": "Daily",
   "/app/progress": "Progress",
-  "/app/account": "Settings",
+  "/app/account": "Account",
   "/app/account/withdrawal-accounts": "Bank accounts",
   "/app/play/mystery-box": "Mystery Box",
   "/app/play/map": "Adventure Map",
-  "/app/play/prizes": "Prizes",
+  "/app/play/prizes": "Puzzles & Prizes",
   "/app/collections": "Collections",
   "/app/wallet": "Wallet",
   "/app/referrals": "Referrals",
@@ -27,13 +27,11 @@ const LABELS: Record<string, string> = {
  */
 const PARENTS: [pattern: string, parent: string][] = [
   ["/app/play/mystery-box/history", "/app/play/mystery-box"],
-  ["/app/play/mystery-box", "/app/play"],
-  ["/app/play/map", "/app/play"],
-  ["/app/play/prizes", "/app/play"],
-  ["/app/play/vault", "/app/play"],
-  ["/app/play", "/app"],
+  ["/app/play/*", "/app/play"],
+  ["/app/daily/*", "/app/daily"],
+  ["/app/daily", "/app"],
   ["/app/collections/*", "/app/collections"],
-  ["/app/collections", "/app/play"],
+  ["/app/collections", "/app/progress"],
   ["/app/wallet/*", "/app/wallet"],
   ["/app/referrals", "/app/account"],
   ["/app/notifications", "/app"],

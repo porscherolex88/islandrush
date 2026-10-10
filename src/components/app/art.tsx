@@ -9,15 +9,10 @@ import { cn } from "@/lib/utils";
 export const ART = {
   crate: "/illustrations/crate.webp",
   crateOpen: "/illustrations/crate-open.webp",
-  boxHub: "/illustrations/box-hub.webp",
   island: "/illustrations/island-map.webp",
-  vault: "/illustrations/vault-door.webp",
-  temple: "/illustrations/temple.webp",
   tidePool: "/illustrations/tide-pool.webp",
-  beach: "/illustrations/region-beach.webp",
-  jungle: "/illustrations/region-jungle.webp",
-  ruins: "/illustrations/region-ruins.webp",
   bigBox: "/illustrations/adventure/big-box.webp",
+  boxHub: "/illustrations/box-hub.webp",
 } as const;
 
 /** Default illustrated map for an adventure level, used when a map has no custom artwork. */
@@ -25,16 +20,6 @@ export function mapArt(level: number, artwork?: string | null) {
   if (artwork) return artwork;
   const n = ((Math.max(1, level) - 1) % 10) + 1;
   return `/illustrations/adventure/map-${n}.webp`;
-}
-
-/** Picks region artwork from an area slug or name, falling back to the island map. */
-export function regionArt(key: string) {
-  const k = key.toLowerCase();
-  if (k.includes("beach") || k.includes("shore")) return ART.beach;
-  if (k.includes("jungle") || k.includes("forest")) return ART.jungle;
-  if (k.includes("ruin")) return ART.ruins;
-  if (k.includes("temple")) return ART.temple;
-  return ART.island;
 }
 
 /**
@@ -91,14 +76,6 @@ export function ArtCard({
   );
 }
 
-export function ArtChip({ children, done }: { children: ReactNode; done?: boolean }) {
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur", done ? "bg-emerald-400/25 text-emerald-100" : "bg-white/15 text-white")}>
-      {children}
-    </span>
-  );
-}
-
 /**
  * Item token: the item's glyph set in a rarity-coloured medallion. Missing items render
  * as a dark silhouette so players can see what they are still looking for.
@@ -136,31 +113,6 @@ export function Token({
         <span className="absolute -right-1.5 -bottom-1.5 rounded-full bg-foreground px-1.5 text-[10px] leading-4 font-bold text-background">×{quantity}</span>
       )}
     </span>
-  );
-}
-
-/** A label with its plain-language meaning directly underneath, for money and game terms. */
-export function Term({ label, meaning, className }: { label: ReactNode; meaning: ReactNode; className?: string }) {
-  return (
-    <div className={className}>
-      <p className="text-sm font-semibold">{label}</p>
-      <p className="text-xs text-muted-foreground">{meaning}</p>
-    </div>
-  );
-}
-
-export function ProgressRing({ value, size = 88, stroke = 8, className, children, color = "var(--gold)" }: { value: number; size?: number; stroke?: number; className?: string; children?: ReactNode; color?: string }) {
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const pct = Math.max(0, Math.min(100, value));
-  return (
-    <div className={cn("relative grid place-items-center", className)} style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90" aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c - (pct / 100) * c} className="transition-[stroke-dashoffset] duration-700" />
-      </svg>
-      <div className="absolute inset-0 grid place-items-center">{children}</div>
-    </div>
   );
 }
 

@@ -398,7 +398,7 @@ export function AdventureMap({
       >
         {map.state === "locked" ? (
           <>
-            <PanelHead icon={<Lock className="size-6" aria-hidden />} eyebrow={`Map ${map.level}`} title="Locked" text={`Complete Map ${map.prerequisiteLevel} to reach ${map.name}.`} />
+            <PanelHead icon={<Lock className="size-6" aria-hidden />} eyebrow={`Map ${map.level}`} title="Locked" text={`Complete Adventure Level ${map.prerequisiteLevel} to reach ${map.name}.`} />
             {prevLevel !== null && (
               <Button size="pill" variant="outline" className="h-12 w-full text-base" onClick={() => go(-1)}>
                 <ChevronLeft className="size-4" aria-hidden /> Back to Map {prevLevel}
@@ -549,7 +549,7 @@ export function AdventureMap({
             <p className="text-sm text-white/75">You now have {bigBox.totalPieces} in total.</p>
             {bigBox.completedPuzzles.length > 0 && (
               <p className="mt-3 rounded-2xl bg-amber-300/20 p-3 text-sm font-semibold text-amber-100">
-                {bigBox.completedPuzzles.map((p) => `Level ${p.level} puzzle complete`).join(" · ")}. One final step to unlock {bigBox.completedPuzzles[0].prizeName}.
+                {bigBox.completedPuzzles.map((p) => `Adventure Level ${p.level} puzzle complete`).join(" · ")}. One final step to unlock {bigBox.completedPuzzles[0].prizeName}.
               </p>
             )}
             <div className="mt-5 grid gap-2">

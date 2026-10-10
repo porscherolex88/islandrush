@@ -15,8 +15,6 @@ import {
   rewardPoolEntries,
   rewardPools,
   vaults,
-  xpLevels,
-  xpRules,
 } from "@/db/schema";
 import { approveDeposit, createDeposit } from "@/server/services/deposits";
 import { ensureProfile } from "@/server/services/profiles";
@@ -128,29 +126,6 @@ export async function makeVault(rewardPoolId?: string) {
 }
 
 export async function seedProgression() {
-  await db
-    .insert(xpRules)
-    .values([
-      { source: "DAILY_LOGIN", label: "Daily login", amount: 10 },
-      { source: "DAILY_SPIN", label: "Daily spin", amount: 5 },
-      { source: "BOX_OPEN", label: "Box open", amount: 20 },
-      { source: "TILE_DISCOVER", label: "Tile discover", amount: 15 },
-      { source: "MISSION_COMPLETE", label: "Mission", amount: 10 },
-      { source: "MISSIONS_ALL", label: "All missions", amount: 25 },
-      { source: "COLLECTION_COMPLETE", label: "Collection", amount: 100 },
-      { source: "VAULT_UNLOCK", label: "Vault", amount: 250 },
-      { source: "AREA_UNLOCK", label: "Area", amount: 50 },
-      { source: "STREAK_MILESTONE", label: "Streak", amount: 30 },
-    ])
-    .onConflictDoNothing();
-  await db
-    .insert(xpLevels)
-    .values([
-      { level: 1, title: "Castaway", xpRequired: 0 },
-      { level: 2, title: "Beachcomber", xpRequired: 50 },
-      { level: 3, title: "Explorer", xpRequired: 150 },
-    ])
-    .onConflictDoNothing();
   await db
     .insert(depositLevels)
     .values([

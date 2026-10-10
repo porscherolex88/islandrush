@@ -33,7 +33,6 @@ export default async function PoolPage({ params }: PageProps<"/admin/economy/poo
       db.select({ id: s.collections.id, name: s.collections.name }).from(s.collections).where(eq(s.collections.completionRewardPoolId, id)).then((r) => r.map((x) => ({ ...x, kind: "Collection completion", href: `/admin/collections/${x.id}` }))),
       db.select({ id: s.streakMilestones.id, name: s.streakMilestones.title }).from(s.streakMilestones).where(eq(s.streakMilestones.rewardPoolId, id)).then((r) => r.map((x) => ({ ...x, kind: "Streak milestone", href: `/admin/manage/streakMilestones/${x.id}` }))),
       db.select({ id: s.achievements.id, name: s.achievements.name }).from(s.achievements).where(eq(s.achievements.rewardPoolId, id)).then((r) => r.map((x) => ({ ...x, kind: "Achievement", href: `/admin/manage/achievements/${x.id}` }))),
-      db.select({ id: sql<string>`${s.xpLevels.level}::text`, name: s.xpLevels.title }).from(s.xpLevels).where(eq(s.xpLevels.rewardPoolId, id)).then((r) => r.map((x) => ({ ...x, kind: "XP level", href: `/admin/manage/xpLevels/${x.id}` }))),
       db
         .select({ id: s.dailySchedules.id, name: sql<string>`${s.dailySchedules.day}::text` })
         .from(s.dailySchedules)

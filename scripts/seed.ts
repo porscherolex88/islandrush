@@ -47,7 +47,6 @@ async function main() {
     rarity,
   });
   const cash = (amount: string, weight: number, rarity: E["rarity"] = "RARE"): E => ({ label: `RM${amount} reward`, rewardType: "CASH", amount, weight, rarity });
-  const xp = (amount: number, weight: number): E => ({ label: `${amount} XP`, rewardType: "XP", amount: String(amount), weight, rarity: "COMMON" });
   const give = (slug: string, weight: number, qty = 1, label?: string): E => ({
     label: label ?? slug,
     rewardType: "ITEM",
@@ -143,7 +142,6 @@ async function main() {
       cash("10.00", 40, "UNCOMMON"),
       give("seashell-charm", 150, 1, "Seashell Charm"),
       give("map-fragment", 120, 1, "Ancient Map Fragment"),
-      xp(80, 150),
     ]);
     await db.insert(s.mysteryBoxes).values({
       slug: "starter-box",
@@ -157,7 +155,7 @@ async function main() {
 
     /* Map ----------------------------------------------------------------- */
     const [map] = await db.insert(s.maps).values({ slug: "lost-island", name: "Lost Island", description: "A permanent island world. Explore every area and reach the Ancient Vault." }).returning();
-    const beachPool = await pool("Beach discoveries", "WEIGHTED", [credits(500, 30), credits(1500, 15, "UNCOMMON"), xp(60, 15), give("seashell-charm", 14, 1, "Seashell Charm"), give("golden-coin", 10, 1, "Golden Coin"), give("pirate-spyglass", 7, 1, "Pirate Spyglass"), give("map-fragment", 14, 1, "Ancient Map Fragment")]);
+    const beachPool = await pool("Beach discoveries", "WEIGHTED", [credits(500, 30), credits(1500, 15, "UNCOMMON"), give("seashell-charm", 14, 1, "Seashell Charm"), give("golden-coin", 10, 1, "Golden Coin"), give("pirate-spyglass", 7, 1, "Pirate Spyglass"), give("map-fragment", 14, 1, "Ancient Map Fragment")]);
     const junglePool = await pool("Jungle discoveries", "WEIGHTED", [credits(1000, 25), credits(3000, 10, "UNCOMMON"), give("explorers-scroll", 12, 1, "Explorer's Scroll"), give("ancient-compass", 10, 1, "Ancient Compass"), give("jade-mask", 6, 1, "Jade Mask"), give("map-fragment", 14, 1, "Ancient Map Fragment"), give("temple-key", 5, 1, "Temple Key"), cash("20.00", 4)]);
     const ruinsPool = await pool("Ancient Ruins discoveries", "WEIGHTED", [credits(2000, 20), give("emerald-idol", 10, 1, "Emerald Idol"), give("coral-crown", 6, 1, "Coral Crown"), give("sun-medallion", 6, 1, "Sun Medallion"), give("seal-fragment", 14, 1, "Vault Seal Fragment"), give("temple-key", 8, 1, "Temple Key"), cash("50.00", 4)]);
     const templePool = await pool("Temple discoveries", "WEIGHTED", [give("golden-scarab", 14, 1, "Golden Scarab"), give("obsidian-blade", 11, 1, "Obsidian Blade"), give("ruby-chalice", 11, 1, "Ruby Chalice"), give("moonstone", 8, 1, "Moonstone"), give("serpent-totem", 5, 1, "Serpent Totem"), give("seal-fragment", 14, 1, "Vault Seal Fragment"), give("vault-key", 6, 1, "Vault Key"), cash("100.00", 3, "EPIC")]);
@@ -194,10 +192,10 @@ async function main() {
     ]);
 
     /* Daily ---------------------------------------------------------------- */
-    const spinPool = await pool("Daily Spin", "WEIGHTED", [credits(200, 30), credits(500, 22), credits(1000, 12, "UNCOMMON"), xp(50, 15), give("map-fragment", 8, 1, "Ancient Map Fragment"), give("seal-fragment", 5, 1, "Vault Seal Fragment"), give("temple-key", 2, 1, "Temple Key"), cash("5.00", 6, "UNCOMMON")]);
+    const spinPool = await pool("Daily Spin", "WEIGHTED", [credits(200, 30), credits(500, 22), credits(1000, 12, "UNCOMMON"), give("map-fragment", 8, 1, "Ancient Map Fragment"), give("seal-fragment", 5, 1, "Vault Seal Fragment"), give("temple-key", 2, 1, "Temple Key"), cash("5.00", 6, "UNCOMMON")]);
     const streakSpinPool = await pool("Daily Spin (7+ day streak)", "WEIGHTED", [credits(500, 25), credits(1500, 20, "UNCOMMON"), credits(3000, 8, "RARE"), give("map-fragment", 10, 1, "Ancient Map Fragment"), give("seal-fragment", 8, 1, "Vault Seal Fragment"), give("temple-key", 4, 1, "Temple Key"), give("vault-key", 2, 1, "Vault Key"), cash("10.00", 8, "UNCOMMON")]);
-    const bonusPool = await pool("Daily missions bonus", "ALL", [credits(2000, 1, "UNCOMMON"), xp(50, 1)]);
-    const eventPool = await pool("Daily Mystery Event", "WEIGHTED", [credits(800, 30), give("map-fragment", 20, 1, "Ancient Map Fragment"), give("seal-fragment", 12, 1, "Vault Seal Fragment"), give("golden-coin", 15, 1, "Golden Coin"), xp(100, 15)]);
+    const bonusPool = await pool("Daily missions bonus", "ALL", [credits(2000, 1, "UNCOMMON")]);
+    const eventPool = await pool("Daily Mystery Event", "WEIGHTED", [credits(800, 30), give("map-fragment", 20, 1, "Ancient Map Fragment"), give("seal-fragment", 12, 1, "Vault Seal Fragment"), give("golden-coin", 15, 1, "Golden Coin")]);
 
     await db.insert(s.missionDefinitions).values([
       { key: "daily_login", title: "Check in today", action: "DAILY_LOGIN", target: 1, icon: "👋" },
@@ -260,32 +258,6 @@ async function main() {
     ]).onConflictDoNothing();
 
     /* Progression ---------------------------------------------------------- */
-    await db.insert(s.xpRules).values([
-      { source: "DAILY_LOGIN", label: "Daily check-in", amount: 20 },
-      { source: "DAILY_SPIN", label: "Daily Spin", amount: 10 },
-      { source: "BOX_OPEN", label: "Open a Mystery Box", amount: 40 },
-      { source: "TILE_DISCOVER", label: "Discover a map tile", amount: 25 },
-      { source: "AREA_UNLOCK", label: "Unlock an area", amount: 150 },
-      { source: "MISSION_COMPLETE", label: "Complete a mission", amount: 20 },
-      { source: "MISSIONS_ALL", label: "Complete all daily missions", amount: 60 },
-      { source: "STREAK_MILESTONE", label: "Reach a streak milestone", amount: 100 },
-      { source: "COLLECTION_COMPLETE", label: "Complete a collection", amount: 300 },
-      { source: "VAULT_UNLOCK", label: "Open a Vault", amount: 1000 },
-      { source: "DAILY_EVENT", label: "Explore the Daily Mystery Event", amount: 20 },
-    ]);
-    const lvlPool = async (level: number, amount: number) => (await pool(`Level ${level} reward`, "ALL", [credits(amount, 1, "RARE")])).id;
-    await db.insert(s.xpLevels).values([
-      { level: 1, title: "Castaway", xpRequired: 0 },
-      { level: 2, title: "Beachcomber", xpRequired: 100 },
-      { level: 3, title: "Explorer", xpRequired: 300, rewardPoolId: await lvlPool(3, 1000) },
-      { level: 4, title: "Pathfinder", xpRequired: 700 },
-      { level: 5, title: "Treasure Hunter", xpRequired: 1500, rewardPoolId: await lvlPool(5, 3000) },
-      { level: 6, title: "Relic Seeker", xpRequired: 3000 },
-      { level: 7, title: "Temple Raider", xpRequired: 6000 },
-      { level: 8, title: "Vault Master", xpRequired: 12000, rewardPoolId: await lvlPool(8, 8000) },
-      { level: 9, title: "Island Legend", xpRequired: 25000 },
-      { level: 10, title: "Mythic", xpRequired: 50000, rewardPoolId: await lvlPool(10, 20000) },
-    ]);
     await db.insert(s.depositLevels).values([
       { name: "Starter", sortOrder: 0, threshold: "0", color: "#94a3b8", benefits: ["Full access to all games", "Daily Spin and missions"], withdrawalMaxDaily: "2000.00" },
       { name: "Bronze", sortOrder: 1, threshold: "500", color: "#b45309", benefits: ["Higher daily withdrawal limit"], withdrawalMaxDaily: "5000.00" },
@@ -306,7 +278,6 @@ async function main() {
       { key: "vault_1", name: "Vault Breaker", description: "Open a Vault", condition: "VAULTS_UNLOCKED", threshold: 1, badgeName: "Vault Breaker", badgeIcon: "🏛️" },
       { key: "streak_7", name: "On Fire", description: "Reach a 7-day streak", condition: "STREAK_DAYS", threshold: 7, badgeName: "On Fire", badgeIcon: "🔥" },
       { key: "streak_30", name: "Devoted", description: "Reach a 30-day streak", condition: "STREAK_DAYS", threshold: 30, badgeName: "Devoted", badgeIcon: "💎" },
-      { key: "level_5", name: "Rising Star", description: "Reach XP Level 5", condition: "XP_LEVEL", threshold: 5, badgeName: "Rising Star", badgeIcon: "⭐" },
       { key: "items_15", name: "Hoarder", description: "Collect 15 different items", condition: "ITEMS_COLLECTED", threshold: 15, badgeName: "Hoarder", badgeIcon: "🎒" },
     ]);
 
@@ -333,7 +304,7 @@ async function main() {
       { key: "referral_reward", type: "REFERRAL", title: "Referral reward earned", body: "{{amount}} is pending from a level {{level}} referral." },
     ]);
     await db.insert(s.banners).values([
-      { kind: "BANNER", title: "The Temple is waiting", body: "Collect 8 relics, the Ancient Map and a Temple Key to open it.", link: "/app/play/map", status: "PUBLISHED" },
+      { kind: "BANNER", title: "A prize waits at the end of every map", body: "Collect Loot, reach checkpoints and open the Big Mystery Box to find puzzle pieces.", link: "/app/play/map", status: "PUBLISHED" },
       { kind: "ANNOUNCEMENT", title: "Welcome to LootBox", body: "Every day brings a new spin, three missions and a mystery event.", status: "PUBLISHED" },
     ]);
     await db.insert(s.faqs).values([

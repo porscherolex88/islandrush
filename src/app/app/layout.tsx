@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/session";
 import { isAdminRole } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/time";
 import { getConfig } from "@/server/services/config";
+import { unreadCount } from "@/server/services/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function UserAppLayout({ children }: LayoutProps<"/app">) {
   }
 
   return (
-    <AppShell banner={banner} drawer={<AppDrawer name={user.name} email={user.email} level={user.xpLevel} joined={user.createdAt} verificationStatus={user.verificationStatus} isAdmin={isAdminRole(user.role)} />}>
+    <AppShell banner={banner} drawer={<AppDrawer name={user.name} email={user.email} joined={user.createdAt} verificationStatus={user.verificationStatus} isAdmin={isAdminRole(user.role)} unread={await unreadCount(user.id)} />}>
       {children}
     </AppShell>
   );

@@ -81,8 +81,6 @@ export const ADMIN_NAV: NavGroup[] = [
     label: "Progression",
     icon: "TrendingUp",
     children: [
-      { label: "XP Rules", href: m("xpRules"), permission: "progression.manage" },
-      { label: "XP Levels", href: "/admin/progression/xp-levels", permission: "progression.manage" },
       { label: "Deposit Levels", href: "/admin/progression/deposit-levels", permission: "progression.manage" },
       { label: "Achievements", href: m("achievements"), permission: "progression.manage" },
       { label: "Badges", href: "/admin/progression/badges", permission: "progression.manage" },

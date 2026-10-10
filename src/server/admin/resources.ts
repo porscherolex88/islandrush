@@ -26,8 +26,6 @@ export const RESOURCE_TABLES: Record<ResourceKey, PgTable> = {
   streakMilestones: s.streakMilestones,
   collections: s.collections,
   items: s.items,
-  xpRules: s.xpRules,
-  xpLevels: s.xpLevels,
   depositLevels: s.depositLevels,
   achievements: s.achievements,
   referralLevels: s.referralLevels,
@@ -133,10 +131,8 @@ const VALIDATORS: Partial<Record<ResourceKey, (v: Values) => void>> = {
     if (v.rewardType === "ITEM" && !v.itemId) throw new AppError("Choose an item for ITEM rewards");
     if (v.rewardType === "AREA_UNLOCK" && !v.areaId) throw new AppError("Choose an area for AREA_UNLOCK rewards");
     if (Number(v.weight) < 0) throw new AppError("Weight cannot be negative");
-    if (["CREDITS", "CASH", "XP"].includes(String(v.rewardType)) && Number(v.amount) <= 0) throw new AppError("Amount must be greater than zero");
-    if (v.rewardType === "CREDITS" || v.rewardType === "XP") {
-      if (!Number.isInteger(Number(v.amount))) throw new AppError("Credits and XP amounts must be whole numbers");
-    }
+    if (["CREDITS", "CASH"].includes(String(v.rewardType)) && Number(v.amount) <= 0) throw new AppError("Amount must be greater than zero");
+    if (v.rewardType === "CREDITS" && !Number.isInteger(Number(v.amount))) throw new AppError("Credits amounts must be whole numbers");
   },
   boxes: (v) => {
     if (Number(v.priceCredits) <= 0) throw new AppError("Price must be greater than zero");

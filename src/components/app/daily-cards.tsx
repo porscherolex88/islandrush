@@ -1,10 +1,40 @@
-import { Check, ChevronRight, Flame, Gift } from "lucide-react";
+import { Check, Flame, Gift } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Token } from "./art";
+
+const WHEEL = "bg-[conic-gradient(#f6c453_0_12.5%,#13798a_0_25%,#fbe3a1_0_37.5%,#0b4f5c_0_50%,#f2b134_0_62.5%,#1a8fa1_0_75%,#fdf0c8_0_87.5%,#0f5e6e_0)]";
+
+/** Home's half-width Daily Spin card; pairs with CheckInCard. */
+export function SpinCard({ spun, available }: { spun: boolean; available: boolean }) {
+  return (
+    <Link
+      href="/app/daily#spin"
+      className="group relative isolate flex flex-col overflow-hidden rounded-2xl bg-[linear-gradient(160deg,oklch(0.45_0.08_205),oklch(0.27_0.05_228))] p-3 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
+    >
+      <span aria-hidden className={cn("absolute -top-6 -right-6 -z-10 size-24 rounded-full opacity-20 transition-transform duration-700 group-hover:rotate-45", WHEEL)} />
+      <span className={cn("relative grid size-11 place-items-center rounded-full inset-ring-2 inset-ring-white/90 shadow-sm shadow-black/30", WHEEL)} aria-hidden>
+        <span className="size-3 rounded-full bg-white ring-2 ring-amber-300" />
+      </span>
+      <p className="mt-3 font-heading text-lg leading-tight font-extrabold">Daily Spin</p>
+      <p className="mt-1 mb-3 text-sm text-white/75">{spun ? "Spun today. Back tomorrow!" : available ? "Your free spin is ready." : "No spin today."}</p>
+      <span
+        className={cn(
+          buttonVariants({ variant: spun ? "secondary" : "gold", size: "pill" }),
+          "mt-auto w-full",
+          spun ? "bg-white/15 text-white" : "group-hover:brightness-105",
+          !spun && !available && "opacity-60",
+        )}
+      >
+        {spun ? <Check aria-hidden /> : null}
+        {spun ? "Done" : "Spin now"}
+      </span>
+    </Link>
+  );
+}
 
 export type MissionView = { id: string; title: string; icon: string; target: number; progress: number; completed: boolean };
 
@@ -112,56 +142,5 @@ export function StreakCard({
 
       {action && <div className="mt-4">{action}</div>}
     </div>
-  );
-}
-
-const WHEEL = "bg-[conic-gradient(#f6c453_0_12.5%,#13798a_0_25%,#fbe3a1_0_37.5%,#0b4f5c_0_50%,#f2b134_0_62.5%,#1a8fa1_0_75%,#fdf0c8_0_87.5%,#0f5e6e_0)]";
-
-/** Home's half-width Daily Spin card; pairs with CheckInCard. */
-export function SpinCard({ spun, available }: { spun: boolean; available: boolean }) {
-  return (
-    <Link
-      href="/app/daily#spin"
-      className="group relative isolate flex flex-col overflow-hidden rounded-2xl bg-[linear-gradient(160deg,oklch(0.45_0.08_205),oklch(0.27_0.05_228))] p-3 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
-    >
-      <span aria-hidden className={cn("absolute -top-6 -right-6 -z-10 size-24 rounded-full opacity-20 transition-transform duration-700 group-hover:rotate-45", WHEEL)} />
-      <span className={cn("relative grid size-11 place-items-center rounded-full inset-ring-2 inset-ring-white/90 shadow-sm shadow-black/30", WHEEL)} aria-hidden>
-        <span className="size-3 rounded-full bg-white ring-2 ring-amber-300" />
-      </span>
-      <p className="mt-3 font-heading text-lg leading-tight font-extrabold">Daily Spin</p>
-      <p className="mt-1 mb-3 text-sm text-white/75">{spun ? "Spun today. Back tomorrow!" : available ? "Your free spin is ready." : "No spin today."}</p>
-      <span
-        className={cn(
-          buttonVariants({ variant: spun ? "secondary" : "gold", size: "pill" }),
-          "mt-auto w-full",
-          spun ? "bg-white/15 text-white" : "group-hover:brightness-105",
-          !spun && !available && "opacity-60",
-        )}
-      >
-        {spun ? <Check aria-hidden /> : null}
-        {spun ? "Done" : "Spin now"}
-      </span>
-    </Link>
-  );
-}
-
-export function TodayRow({ href, icon, title, meta, done, cta }: { href: string; icon: ReactNode; title: string; meta: string; done?: boolean; cta?: string }) {
-  return (
-    <Link href={href} className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-3 transition-colors hover:bg-surface">
-      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-soft text-primary">{icon}</div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="truncate text-xs text-muted-foreground">{meta}</p>
-      </div>
-      {done ? (
-        <span className="grid size-7 place-items-center rounded-full bg-success text-white" aria-label="Done">
-          <Check className="size-4" />
-        </span>
-      ) : cta ? (
-        <span className={buttonVariants({ variant: "gold", size: "pill" })}>{cta}</span>
-      ) : (
-        <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-      )}
-    </Link>
   );
 }

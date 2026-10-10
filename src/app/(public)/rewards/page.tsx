@@ -4,7 +4,7 @@ import { formatCash } from "@/lib/money";
 import { getFiatDisplay } from "@/lib/fiat-display";
 import { publicRewardFacts } from "@/server/queries/public";
 
-export const metadata: Metadata = { title: "Rewards", description: "Credits, collection items, keys, Special Items and Cash rewards." };
+export const metadata: Metadata = { title: "Rewards", description: "Credits, Loot, puzzle pieces, prizes and Cash rewards." };
 export const revalidate = 300;
 
 export default async function RewardsPage() {
@@ -12,23 +12,20 @@ export default async function RewardsPage() {
   const { levels, rewards, withdrawal } = await publicRewardFacts();
   return (
     <>
-      <PageHero eyebrow="Rewards" title="What you can win" description="Every box, tile and vault can reveal something useful. Some rewards help you play, others you can withdraw." />
+      <PageHero eyebrow="Rewards" title="What you can win" description="Every box, checkpoint and puzzle can reveal something useful. Some rewards help you play, others you can withdraw." />
       <SectionBlock>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <FeatureCard emoji="🪙" title="Credits">
             Bonus Credits go straight to your balance so you can keep playing.
           </FeatureCard>
-          <FeatureCard emoji="🏺" title="Collection items">
-            Relics, shells and artifacts that fill collections. Complete a collection for a bonus reward.
+          <FeatureCard emoji="🧭" title="Loot">
+            Map-specific finds from every Mystery Box. Loot is never used up: it keeps counting toward that map&apos;s checkpoints.
           </FeatureCard>
-          <FeatureCard emoji="🧩" title="Fragments">
-            Pieces of something bigger. Five Ancient Map Fragments make the Ancient Map.
+          <FeatureCard emoji="🧩" title="Puzzle pieces">
+            Found in the Big Mystery Box at the end of each map. Complete a puzzle to reach its prize unlock.
           </FeatureCard>
-          <FeatureCard emoji="🔑" title="Keys">
-            Open Special Areas on the map and unlock vaults.
-          </FeatureCard>
-          <FeatureCard emoji="💎" title="Special Items">
-            Rare finds with a special purpose, like the Ancient Map or Temple Key.
+          <FeatureCard emoji="🏆" title="Prizes">
+            Each Adventure Level has its own prize tier. Higher levels lead to bigger prizes.
           </FeatureCard>
           <FeatureCard emoji="💵" title="Cash rewards">
             Real Cash rewards that settle into your withdrawable balance after {rewards.pendingHours} hours.
@@ -50,7 +47,7 @@ export default async function RewardsPage() {
         </div>
       </SectionBlock>
       {levels.length > 0 && (
-        <SectionBlock title="Deposit levels" description="Based on your total approved deposits. Separate from XP levels.">
+        <SectionBlock title="Deposit levels" description="Based on your total approved deposits.">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {levels.map((l) => (
               <div key={l.name} className="rounded-3xl border bg-card p-5" style={{ borderTopColor: l.color, borderTopWidth: 4 }}>

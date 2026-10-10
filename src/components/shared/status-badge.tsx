@@ -45,7 +45,7 @@ const STATUS_TONE: Record<string, Tone> = {
   NORMAL: "neutral",
 };
 
-const KEEP_CASE: Record<string, string> = { xp: "XP", ip: "IP", myr: "MYR", sys: "System", duitnow: "DuitNow", l1: "L1", l2: "L2", l3: "L3" };
+const KEEP_CASE: Record<string, string> = { ip: "IP", myr: "MYR", sys: "System", duitnow: "DuitNow", l1: "L1", l2: "L2", l3: "L3" };
 
 /** Turns enum values like SUPER_ADMIN into sentence case ("Super admin"), keeping real acronyms. */
 export function humanize(value: string) {

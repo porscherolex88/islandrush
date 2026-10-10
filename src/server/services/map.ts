@@ -9,7 +9,6 @@ import { getBalances, postTransaction } from "./ledger";
 import { notify } from "./notifications";
 import { consumeRequirements, evaluateRequirements, isAreaAccessible, type RequirementStatus } from "./requirements";
 import { grantPool, grantReward, pickPoolEntry, type RewardResult } from "./rewards";
-import { awardXp } from "./xp";
 
 export async function getPrimaryMap() {
   const [map] = await db.select().from(maps).where(eq(maps.status, "PUBLISHED")).orderBy(asc(maps.createdAt)).limit(1);
@@ -87,7 +86,6 @@ export type DiscoveryResult = {
   reward: RewardResult;
   creditsSpent: number;
   usedFreeDiscovery: boolean;
-  xp: number;
   areaCompleted: boolean;
   creditsBalance: string;
   replayed: boolean;
@@ -108,7 +106,6 @@ export async function discoverTile(userId: string, tileId: string): Promise<Disc
       reward: d.reward as RewardResult,
       creditsSpent: d.creditsSpent,
       usedFreeDiscovery: d.usedFreeDiscovery,
-      xp: 0,
       areaCompleted: false,
       creditsBalance: b.CREDITS.toString(),
       replayed: true,
@@ -176,7 +173,6 @@ export async function discoverTile(userId: string, tileId: string): Promise<Disc
         appDay: day,
       });
 
-      const xp = await awardXp(tx, userId, "TILE_DISCOVER", { key: `xp:tile:${userId}:${tile.id}`, sourceId: discoveryId });
       await trackMission(tx, userId, "DISCOVER_TILE");
       await checkAchievements(tx, userId, "TILES_DISCOVERED");
 
@@ -199,7 +195,6 @@ export async function discoverTile(userId: string, tileId: string): Promise<Disc
         reward,
         creditsSpent: spent,
         usedFreeDiscovery: usedFree,
-        xp,
         areaCompleted,
         creditsBalance: b.CREDITS.toString(),
         replayed: false,
@@ -232,11 +227,10 @@ export async function unlockArea(userId: string, areaId: string) {
         sourceId: area.id,
         key: `area:${userId}:${area.id}`,
       });
-      const xp = await awardXp(tx, userId, "AREA_UNLOCK", { key: `xp:area:${userId}:${area.id}`, sourceId: area.id });
       await trackMission(tx, userId, "UNLOCK_AREA");
       await checkAchievements(tx, userId, "AREAS_UNLOCKED");
       await notify(tx, userId, "REWARD", `${area.icon} ${area.name} unlocked`, area.isSpecial ? "A Special Area has opened on your map." : "A new area has opened on your map.", "/app/play/map");
-      return { area, rewards, xp };
+      return { area, rewards };
     });
   } catch (err) {
     if (isUniqueViolation(err)) throw new AppError("This area is already unlocked", "ALREADY_UNLOCKED");

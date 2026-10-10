@@ -59,7 +59,9 @@ function formatUsdMinor(usdMinor: bigint, opts: { sign?: boolean } = {}): string
 export function myrMinorToUsdMinor(myrMinor: bigint, rateMyrPerUsd = usdMyrRate()): bigint {
   const rateSen = BigInt(Math.round(rateMyrPerUsd * 100));
   if (rateSen <= 0n) throw new Error("Invalid USD/MYR rate");
-  return (myrMinor * 100n + rateSen / 2n) / rateSen;
+  const abs = myrMinor < 0n ? -myrMinor : myrMinor;
+  const usd = (abs * 100n + rateSen / 2n) / rateSen;
+  return myrMinor < 0n ? -usd : usd;
 }
 
 /** Formats a stored MYR amount for display in USD or MYR. */

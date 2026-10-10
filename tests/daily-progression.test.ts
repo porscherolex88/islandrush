@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/db";
-import { achievements, profiles, streakMilestones, userAchievements, userStreaks, xpTransactions } from "@/db/schema";
+import { achievements, profiles, streakMilestones, userAchievements, userStreaks } from "@/db/schema";
 import { addDays } from "@/lib/time";
 import { createAdjustment } from "@/server/services/admin-finance";
 import {
@@ -42,7 +42,7 @@ beforeAll(async () => {
   await ensureAdminActor();
   spinPoolId = (await makePool("WEIGHTED", [{ label: "200 Credits", rewardType: "CREDITS", amount: "200" }])).id;
   bonusPoolId = (await makePool("ALL", [{ label: "Bonus", rewardType: "CREDITS", amount: "1000" }])).id;
-  const eventPool = await makePool("WEIGHTED", [{ label: "Event XP", rewardType: "XP", amount: "40" }]);
+  const eventPool = await makePool("WEIGHTED", [{ label: "Event Credits", rewardType: "CREDITS", amount: "40" }]);
   await setConfigRaw("daily_defaults", {
     spinPoolId,
     missionBonusPoolId: bonusPoolId,
@@ -98,7 +98,7 @@ describe("daily mystery event", () => {
   it("can be explored once per day", async () => {
     const u = await makeUser();
     const r = await claimDailyEvent(u.id);
-    expect(r.reward.type).toBe("XP");
+    expect(r.reward.type).toBe("CREDITS");
     await expect(claimDailyEvent(u.id)).rejects.toThrow(/already/);
   });
 });
@@ -125,29 +125,21 @@ describe("streaks", () => {
   });
 });
 
-describe("XP and levels", () => {
-  it("awards XP idempotently, levels up and unlocks achievements", async () => {
-    await db.insert(achievements).values({ key: uid("ach"), name: "Rising Star", description: "Reach level 2", condition: "XP_LEVEL", threshold: 2, badgeName: "Star" });
+describe("achievements", () => {
+  it("unlocks once the condition is met", async () => {
+    await db.insert(achievements).values({ key: uid("ach"), name: "Box Opener", description: "Open 2 boxes", condition: "BOXES_OPENED", threshold: 2, badgeName: "Opener" });
     const u = await makeUser();
-    await claimDailyLogin(u.id); // 10 XP
     const pool = await makePool("WEIGHTED", [{ label: "x", rewardType: "CREDITS", amount: "1" }]);
     const box = await makeBox(pool.id, 10);
     await createAdjustment(admin, { userId: u.id, account: "CREDITS", direction: "CREDIT", amount: "100", reason: "Test credits", note: "", idempotencyKey: uid() });
-    for (let i = 0; i < 2; i++) await playMysteryBox(u.id, { boxId: box.id, selectedIndex: i, idempotencyKey: uid() }); // 40 XP
-    const [p] = await db.select().from(profiles).where(eq(profiles.id, u.id));
-    expect(p.xpTotal).toBeGreaterThanOrEqual(50);
-    expect(p.xpLevel).toBe(2);
+    for (let i = 0; i < 2; i++) await playMysteryBox(u.id, { boxId: box.id, selectedIndex: i, idempotencyKey: uid() });
     const earned = await db.select().from(userAchievements).where(eq(userAchievements.userId, u.id));
     expect(earned.length).toBeGreaterThanOrEqual(1);
-    const xps = await db.select().from(xpTransactions).where(eq(xpTransactions.userId, u.id));
-    expect(new Set(xps.map((x) => x.idempotencyKey)).size).toBe(xps.length);
-    // XP never touches the wallet.
-    expect((await getBalances(u.id)).CASH).toBe(0n);
   });
 });
 
 describe("Deposit Level", () => {
-  it("is computed from cumulative approved deposits, independent of XP", async () => {
+  it("is computed from cumulative approved deposits", async () => {
     const levels = await listDepositLevels();
     expect(levelForTotal(levels, "0")?.name).toBe("Starter");
     expect(levelForTotal(levels, "750.00")?.name).toBe("Bronze");
@@ -157,6 +149,5 @@ describe("Deposit Level", () => {
     const [p] = await db.select().from(profiles).where(eq(profiles.id, u.id));
     const lvl = levels.find((l) => l.id === p.depositLevelId);
     expect(lvl?.name).toBe("Bronze");
-    expect(p.xpLevel).toBe(1);
   });
 });

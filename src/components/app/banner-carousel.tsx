@@ -75,17 +75,19 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
     const el = track.current;
     const slide = el?.children[i] as HTMLElement | undefined;
     if (!el || !slide) return;
-    el.scrollTo({ left: slide.offsetLeft - el.offsetLeft - 16, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    el.scrollTo({ left: slide.offsetLeft - 16, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   }, []);
 
   const onScroll = useCallback(() => {
     const el = track.current;
     if (!el) return;
     const slides = Array.from(el.children) as HTMLElement[];
+    // The last slide can't scroll fully to the start edge, so the end of the track counts as the last slide.
+    if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 2) return setActive(slides.length - 1);
     let nearest = 0;
     let best = Infinity;
     slides.forEach((s, i) => {
-      const d = Math.abs(s.offsetLeft - el.offsetLeft - 16 - el.scrollLeft);
+      const d = Math.abs(s.offsetLeft - 16 - el.scrollLeft);
       if (d < best) {
         best = d;
         nearest = i;
@@ -133,10 +135,10 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
         onPointerDown={() => setInteractedAt(Date.now())}
         onTouchStart={() => setInteractedAt(Date.now())}
         aria-live={autoplay ? "off" : "polite"}
-        className="flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {banners.map((b, i) => (
-          <div key={b.id} className="w-[86%] shrink-0 snap-start">
+          <div key={b.id} className="w-[86%] shrink-0 snap-start last:snap-end">
             <Slide banner={b} index={i} count={count} />
           </div>
         ))}

@@ -115,7 +115,6 @@ export default async function EconomyPage({ searchParams }: PageProps<"/admin/ec
               ["Reward pools and odds", "/admin/manage/pools"],
               ["Vault requirements", "/admin/manage/vaults"],
               ["Daily reward values", "/admin/economy/settings/daily_defaults"],
-              ["XP values", "/admin/manage/xpRules"],
               ["Withdrawal limits", "/admin/economy/settings/withdrawal"],
               ["Deposit rules", "/admin/economy/settings/deposit"],
               ["Deposit Level thresholds", "/admin/progression/deposit-levels"],

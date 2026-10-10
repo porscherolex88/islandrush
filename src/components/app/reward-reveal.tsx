@@ -46,7 +46,6 @@ type Props = {
   onClose: () => void;
   title?: string;
   rewards: RewardResult[];
-  xp?: number;
   note?: ReactNode;
   primaryAction?: { label: string; onClick: () => void };
   /** Label for the main dismiss button when there is no primary action. */
@@ -57,7 +56,7 @@ type Props = {
  * Full-screen reward celebration. Animation is decorative only: the result is always
  * rendered as text and announced to assistive technology.
  */
-export function RewardReveal({ open, onClose, title = "You found", rewards, xp, note, primaryAction, collectLabel = "Collect reward" }: Props) {
+export function RewardReveal({ open, onClose, title = "You found", rewards, note, primaryAction, collectLabel = "Collect reward" }: Props) {
   const reduce = useReducedMotion();
   const closeRef = useRef<HTMLButtonElement>(null);
   const top = rewards.reduce<RewardResult | null>((best, r) => {
@@ -142,11 +141,6 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, xp, 
                   </p>
                 </motion.div>
               ))}
-              {xp ? (
-                <motion.p initial={reduce ? false : { opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="mx-auto mt-2 w-fit rounded-full bg-white/15 px-3 py-1 text-sm font-bold">
-                  +{xp} XP
-                </motion.p>
-              ) : null}
               {note && <div className="pt-2 text-sm text-white/80">{note}</div>}
             </div>
             <div className="relative mt-6 grid gap-2">

@@ -33,7 +33,6 @@ import { postTransaction } from "./ledger";
 import { boxOdds, type PoolOdds } from "./mystery-box";
 import { notify } from "./notifications";
 import { createCashReward } from "./rewards";
-import { awardXp } from "./xp";
 
 /* ----------------------------------------------------------------------------
  * Read model
@@ -390,16 +389,16 @@ export type AdventureState = Awaited<ReturnType<typeof getAdventureState>>;
 
 function nextStepFor(mapViews: AdventureMapView[], puzzleViews: PuzzleView[], current: AdventureMapView | null): NextStep {
   const claim = puzzleViews.find((p) => p.claim?.status === "UNLOCKED");
-  if (claim) return { kind: "claim", title: `Claim your Level ${claim.level} prize`, detail: claim.prize.name, href: "/app/play/prizes" };
+  if (claim) return { kind: "claim", title: `Claim your Adventure Level ${claim.level} prize`, detail: claim.prize.name, href: "/app/play/prizes" };
   const spin = puzzleViews.find((p) => p.canSpin);
-  if (spin) return { kind: "wheel", title: "Final unlock ready", detail: `Level ${spin.level} puzzle complete: ${spin.prize.name}`, href: "/app/play/prizes" };
+  if (spin) return { kind: "wheel", title: "Final unlock ready", detail: `Adventure Level ${spin.level} puzzle complete: ${spin.prize.name}`, href: "/app/play/prizes" };
   const box = mapViews.find((m) => m.bigBox?.state === "available");
   if (box) return { kind: "bigbox", title: "Open your Big Mystery Box", detail: `Found at the end of ${box.name}`, href: `/app/play/map?level=${box.level}` };
   if (!current) return { kind: "done", title: "Your adventure is being prepared", detail: "Check back soon.", href: "/app/play" };
   const href = `/app/play/map?level=${current.level}`;
   switch (current.state) {
     case "locked":
-      return { kind: "map", title: `Complete Map ${current.prerequisiteLevel}`, detail: `to open Map ${current.level}: ${current.name}`, href };
+      return { kind: "map", title: `Complete Adventure Level ${current.prerequisiteLevel}`, detail: `to open ${current.name}`, href };
     case "collecting": {
       const need = current.lootRequired - current.lootCollected;
       return { kind: "loot", title: `Collect ${need} more Loot`, detail: `to unlock Map ${current.level}: ${current.name}`, href: `/app/play/mystery-box?level=${current.level}` };
@@ -410,7 +409,7 @@ function nextStepFor(mapViews: AdventureMapView[], puzzleViews: PuzzleView[], cu
       const next = current.checkpoints.find((c) => c.isNext);
       if (!next) return { kind: "checkpoint", title: `Explore ${current.name}`, detail: "Reach the final checkpoint", href };
       if (next.state === "available") return { kind: "checkpoint", title: "Your chest is full", detail: next.isFinal ? `Collect it to reach ${next.name} and unlock puzzles` : `Collect it and move up to ${next.name}`, href };
-      return { kind: "loot", title: `Fill the chest with ${next.lootRequired - current.lootCollected} more Loot`, detail: `to move up to ${next.name}`, href: `/app/play/mystery-box?level=${current.level}` };
+      return { kind: "loot", title: `Collect ${next.lootRequired - current.lootCollected} more Loot`, detail: `to move up to ${next.name}`, href: `/app/play/mystery-box?level=${current.level}` };
     }
     case "completed":
       return { kind: "done", title: "Adventure complete", detail: "Every map has been explored.", href: "/app/play/prizes" };
@@ -461,7 +460,6 @@ export async function unlockMap(userId: string, mapId: string) {
         config: { lootRequired: map.lootRequired, mapVersion: map.version },
         result: { lootCollected: loot },
       });
-      await awardXp(tx, userId, "MAP_UNLOCK", { key: `xp:${actionId}`, sourceId: map.id });
       await trackMission(tx, userId, "UNLOCK_AREA");
       await notify(tx, userId, "REWARD", `Map ${map.level} unlocked`, `${map.name} is open. Start exploring its checkpoints.`, `/app/play/map?level=${map.level}`);
       return { mapId: map.id, level: map.level, name: map.name, replayed: false };
@@ -565,7 +563,6 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
         config: { lootRequired: cp.lootRequired, position: cp.position, isFinal: cp.isFinal },
         result: { lootCollected: loot },
       });
-      await awardXp(tx, userId, "CHECKPOINT_UNLOCK", { key: `xp:${actionId}`, sourceId: cp.id });
       await trackMission(tx, userId, "DISCOVER_TILE");
 
       let completion: MapCompletion | null = null;
@@ -604,7 +601,6 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
             config: { mapVersion: map.version },
             result: completion,
           });
-          await awardXp(tx, userId, "MAP_COMPLETE", { key: `xp:map-complete:${userId}:${map.id}`, sourceId: map.id });
           await notify(
             tx,
             userId,

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Home, Store, TrendingUp, Wallet } from "lucide-react";
+import { Compass, Home, Store, TrendingUp, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isRootRoute, rootSection, type RootRoute } from "@/lib/app-routes";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const TABS: { href: RootRoute; label: string; icon: typeof Home }[] = [
   { href: "/app", label: "Home", icon: Home },
   { href: "/app/market", label: "Market", icon: Store },
-  { href: "/app/daily", label: "Daily", icon: CalendarCheck },
+  { href: "/app/play", label: "Play", icon: Compass },
   { href: "/app/progress", label: "Progress", icon: TrendingUp },
   { href: "/app/wallet", label: "Wallet", icon: Wallet },
 ];

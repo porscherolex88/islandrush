@@ -169,7 +169,7 @@ export async function WithdrawalsTab({ userId }: { userId: string }) {
 
 export async function BoxesTab({ userId }: { userId: string }) {
   const rows = await db
-    .select({ id: s.mysteryBoxPlays.id, createdAt: s.mysteryBoxPlays.createdAt, box: s.mysteryBoxes.name, idx: s.mysteryBoxPlays.selectedIndex, spent: s.mysteryBoxPlays.creditsSpent, reward: s.mysteryBoxPlays.reward, xp: s.mysteryBoxPlays.xpAwarded })
+    .select({ id: s.mysteryBoxPlays.id, createdAt: s.mysteryBoxPlays.createdAt, box: s.mysteryBoxes.name, idx: s.mysteryBoxPlays.selectedIndex, spent: s.mysteryBoxPlays.creditsSpent, reward: s.mysteryBoxPlays.reward })
     .from(s.mysteryBoxPlays)
     .innerJoin(s.mysteryBoxes, eq(s.mysteryBoxes.id, s.mysteryBoxPlays.boxId))
     .where(eq(s.mysteryBoxPlays.userId, userId))
@@ -186,7 +186,6 @@ export async function BoxesTab({ userId }: { userId: string }) {
         { key: "idx", header: "Picked", cell: (r) => `#${r.idx + 1}` },
         { key: "sp", header: "Credits", align: "right", cell: (r) => formatCredits(r.spent) },
         { key: "rw", header: "Reward", cell: (r) => rewardLabel(r.reward) },
-        { key: "xp", header: "XP", align: "right", cell: (r) => r.xp },
       ]}
     />
   );
@@ -286,29 +285,25 @@ export async function InventoryTab({ userId }: { userId: string }) {
   );
 }
 
-export async function XpTab({ userId }: { userId: string }) {
-  const [tx, ach] = await Promise.all([
-    db.select().from(s.xpTransactions).where(eq(s.xpTransactions.userId, userId)).orderBy(desc(s.xpTransactions.createdAt)).limit(100),
-    db.select({ id: s.userAchievements.id, name: s.achievements.name, badge: s.achievements.badgeIcon, createdAt: s.userAchievements.createdAt }).from(s.userAchievements).innerJoin(s.achievements, eq(s.achievements.id, s.userAchievements.achievementId)).where(eq(s.userAchievements.userId, userId)),
-  ]);
+export async function AchievementsTab({ userId }: { userId: string }) {
+  const ach = await db
+    .select({ id: s.userAchievements.id, name: s.achievements.name, badge: s.achievements.badgeIcon, createdAt: s.userAchievements.createdAt })
+    .from(s.userAchievements)
+    .innerJoin(s.achievements, eq(s.achievements.id, s.userAchievements.achievementId))
+    .where(eq(s.userAchievements.userId, userId));
   return (
-    <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-      <AdminCard title="XP history" bodyClassName="p-0">
-        <DataTable rows={tx} rowKey={(r) => r.id} empty="No XP yet" columns={[{ key: "at", header: "When", cell: (r) => dt(r.createdAt) }, { key: "s", header: "Source", cell: (r) => humanize(r.source) }, { key: "a", header: "XP", align: "right", cell: (r) => `+${r.amount}` }]} />
-      </AdminCard>
-      <AdminCard title="Achievements">
-        {ach.length === 0 ? <p className="text-sm text-muted-foreground">None yet</p> : (
-          <ul className="space-y-2 text-sm">
-            {ach.map((a) => (
-              <li key={a.id} className="flex justify-between">
-                <span>{a.badge} {a.name}</span>
-                <span className="text-xs text-muted-foreground">{formatDateTime(a.createdAt)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AdminCard>
-    </div>
+    <AdminCard title="Achievements">
+      {ach.length === 0 ? <p className="text-sm text-muted-foreground">None yet</p> : (
+        <ul className="space-y-2 text-sm">
+          {ach.map((a) => (
+            <li key={a.id} className="flex justify-between">
+              <span>{a.badge} {a.name}</span>
+              <span className="text-xs text-muted-foreground">{formatDateTime(a.createdAt)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </AdminCard>
   );
 }
 

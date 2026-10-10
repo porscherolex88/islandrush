@@ -6,7 +6,6 @@ import { checkAchievements } from "./achievements";
 import { trackMission } from "./daily";
 import { notify } from "./notifications";
 import { grantPool, type RewardResult } from "./rewards";
-import { awardXp } from "./xp";
 
 type Ctx = { sourceType: string; sourceId?: string; reason: string; skipMission?: boolean };
 
@@ -134,7 +133,6 @@ export async function checkCollectionCompletion(tx: Tx, userId: string, collecti
     key: `collection:${userId}:${col.id}`,
   });
   await tx.update(collectionCompletions).set({ rewards }).where(eq(collectionCompletions.id, inserted[0].id));
-  await awardXp(tx, userId, "COLLECTION_COMPLETE", { key: `xp:collection:${userId}:${col.id}`, sourceId: col.id });
   await notify(
     tx,
     userId,

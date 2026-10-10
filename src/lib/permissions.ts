@@ -15,7 +15,7 @@ export const PERMISSIONS = {
   "games.manage": "Configure Mystery Boxes, Maps and Vaults",
   "collections.manage": "Configure collections and items",
   "daily.manage": "Configure daily content",
-  "progression.manage": "Configure XP, Deposit Levels and achievements",
+  "progression.manage": "Configure Deposit Levels and achievements",
   "referrals.view": "View referral trees and rewards",
   "referrals.manage": "Configure referral policy",
   "risk.view": "View risk signals",

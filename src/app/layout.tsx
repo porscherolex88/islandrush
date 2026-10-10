@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://lootbox-porscherolex88s-projects.vercel.app"),
   title: { default: "LootBox: Play, discover, collect", template: "%s | LootBox" },
   description:
-    "LootBox is a rewards adventure. Open Mystery Boxes, explore the Mystery Map, unlock the Vault, complete collections and build your daily streak.",
+    "LootBox is a rewards adventure. Open Mystery Boxes, collect Loot, explore the Mystery Map, complete puzzles for prizes and build your daily streak.",
   applicationName: "LootBox",
 };
 

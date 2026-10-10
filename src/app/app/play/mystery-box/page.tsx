@@ -11,13 +11,14 @@ import { EmptyState } from "@/components/shared/states";
 import { requireUser } from "@/lib/auth/session";
 import { adventureBoxOdds, getAdventureState } from "@/server/services/adventure";
 import { isFeatureEnabled } from "@/server/services/config";
+import { getRate } from "@/server/services/conversion";
 import { getBalances } from "@/server/services/ledger";
 
 export const metadata: Metadata = { title: "Mystery Box" };
 
 export default async function MysteryBoxPage({ searchParams }: PageProps<"/app/play/mystery-box">) {
   const user = await requireUser();
-  const [s, balances, enabled, sp] = await Promise.all([getAdventureState(user.id), getBalances(user.id), isFeatureEnabled("mystery_box"), searchParams]);
+  const [s, balances, enabled, sp, rate] = await Promise.all([getAdventureState(user.id), getBalances(user.id), isFeatureEnabled("mystery_box"), searchParams, getRate()]);
   const level = levelParam(sp.level, s.currentBox?.level ?? 1, s.boxes.length);
   const box = s.boxes.find((b) => b.level === level) ?? null;
   const map = s.maps.find((m) => m.level === level) ?? null;
@@ -28,7 +29,7 @@ export default async function MysteryBoxPage({ searchParams }: PageProps<"/app/p
     <div>
       <InnerPageHeader
         title="Mystery Box"
-        subtitle={box ? `Level ${box.level} of ${s.boxes.length}` : undefined}
+        subtitle={box ? `Adventure Level ${box.level} of ${s.boxes.length}` : undefined}
         action={
           <>
             <Link href="/app/play/mystery-box/history" className={headerIconButton} aria-label="Mystery Box History">
@@ -52,7 +53,17 @@ export default async function MysteryBoxPage({ searchParams }: PageProps<"/app/p
             <LevelTrack levels={boxTrack(s)} active={box.level} hrefFor={(l) => `/app/play/mystery-box?level=${l}`} label="Mystery Box levels" />
           </Section>
           <Section>
-            <BoxShop key={box.id} box={box} map={map} credits={Number(balances.CREDITS)} odds={odds} enabled={enabled} nextHref={next ? `/app/play/mystery-box?level=${next.level}` : null} />
+            <BoxShop
+              key={box.id}
+              box={box}
+              map={map}
+              credits={Number(balances.CREDITS)}
+              cashMinor={balances.CASH.toString()}
+              rate={{ cashMinor: rate.cashMinor.toString(), credits: rate.creditsNumber }}
+              odds={odds}
+              enabled={enabled}
+              nextHref={next ? `/app/play/mystery-box?level=${next.level}` : null}
+            />
           </Section>
         </>
       )}

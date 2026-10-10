@@ -7,7 +7,6 @@ import { lockPlayer } from "./guards";
 import { notify } from "./notifications";
 import { consumeRequirements, evaluateRequirements } from "./requirements";
 import { grantPool } from "./rewards";
-import { awardXp } from "./xp";
 
 export async function getVaultStates(userId: string) {
   const list = await db.select().from(vaults).where(eq(vaults.status, "PUBLISHED")).orderBy(asc(vaults.sortOrder));
@@ -52,10 +51,9 @@ export async function unlockVault(userId: string, vaultId: string) {
         key: `vault:${userId}:${vault.id}`,
       });
       await tx.update(vaultUnlocks).set({ consumed, rewards }).where(eq(vaultUnlocks.id, unlock.id));
-      const xp = await awardXp(tx, userId, "VAULT_UNLOCK", { key: `xp:vault:${userId}:${vault.id}`, sourceId: unlock.id });
       await checkAchievements(tx, userId, "VAULTS_UNLOCKED");
       await notify(tx, userId, "REWARD", `${vault.icon} ${vault.name} opened!`, rewards.map((r) => r.display).join(", ") || "The Vault is yours.", "/app/play/vault");
-      return { vault, rewards, xp, consumed };
+      return { vault, rewards, consumed };
     });
   } catch (err) {
     if (isUniqueViolation(err)) throw new AppError("You've already opened this Vault", "ALREADY_UNLOCKED");

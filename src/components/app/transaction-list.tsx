@@ -31,9 +31,19 @@ const TYPE: Record<string, { icon: LucideIcon; label: string; tone: string }> = 
 
 const HIDE_DETAIL = new Set(["DEPOSIT", "SETTLEMENT", "CONVERSION"]);
 
+/** Ledger descriptions are immutable; internal codes and test markers are stripped only for display. */
+function sanitize(description: string) {
+  return description
+    .replace(/\s*\((?:demo|test|seed)\)/gi, "")
+    .replace(/\s*\((?:[A-Z]+(?:_[A-Z]+)*|[a-z]+(?:_[a-z]+)+)\)$/, "")
+    .trim();
+}
+
 function detail(type: string, description: string, label: string) {
   if (HIDE_DETAIL.has(type)) return null;
-  const clean = description.replace(/\s*\((?:[A-Z]+(?:_[A-Z]+)*|[a-z]+(?:_[a-z]+)+|demo)\)$/, "").trim();
+  const clean = sanitize(description);
+  // A description that only restates the amount ("RM100.00 Cash Reward", "2,000 Credits") duplicates the amount column, possibly in another currency.
+  if (/^(RM\s?[\d,.]+|[\d,]+ Credits)( Cash Reward)?$/i.test(clean)) return null;
   return clean && clean !== label ? clean : null;
 }
 
@@ -45,7 +55,7 @@ export function TransactionList({ rows, fiat }: { rows: ActivityRow[]; fiat: Fia
   return (
     <ul className="divide-y rounded-2xl border bg-card">
       {rows.map((r) => {
-        const t = TYPE[r.type] ?? { icon: Banknote, label: r.description, tone: "bg-surface text-muted-foreground" };
+        const t = TYPE[r.type] ?? { icon: Banknote, label: sanitize(r.description), tone: "bg-surface text-muted-foreground" };
         const Icon = t.icon;
         const sub = detail(r.type, r.description, t.label);
         return (

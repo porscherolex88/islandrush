@@ -62,7 +62,7 @@ export function UpcomingPrize({ puzzle }: { puzzle: PuzzleView }) {
     <li className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-2.5">
       <PrizeImage src={p.prize.image} kind={p.prize.kind} className="size-11 shrink-0 [&_svg]:size-5" />
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-bold text-primary">Level {p.level}</p>
+        <p className="text-[11px] font-bold text-primary">Adventure Level {p.level}</p>
         <p className="truncate text-sm font-semibold">{p.prize.name}</p>
       </div>
       <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground tabular">
@@ -106,7 +106,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
       <div className="flex gap-3 p-4">
         <PrizeImage src={p.prize.image} kind={p.prize.kind} className="size-20 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-primary">Level {p.level} prize</p>
+          <p className="text-xs font-bold text-primary">Adventure Level {p.level} prize</p>
           <h3 className="font-heading text-lg leading-tight font-extrabold">{p.prize.name}</h3>
           {p.prize.kind !== "PHYSICAL" && p.prize.display !== p.prize.name && <p className="text-sm font-semibold">{p.prize.display}</p>}
           {p.prize.estimatedValue && <p className="text-xs text-muted-foreground">Estimated value {p.prize.estimatedValue}</p>}
@@ -173,7 +173,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
         ) : (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Lock className="size-4 shrink-0" aria-hidden />
-            {missing > 0 ? `Find ${missing} more ${missing === 1 ? "piece" : "pieces"} in Big Mystery Boxes.` : `Complete Map ${p.level} to finish this puzzle.`}
+            {missing > 0 ? `Find ${missing} more ${missing === 1 ? "piece" : "pieces"} in Big Mystery Boxes.` : `Finish the Adventure Level ${p.level} map to complete this puzzle.`}
           </p>
         )}
       </div>
@@ -187,7 +187,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
                   <X className="size-5" />
                 </button>
               )}
-              <p className="text-xs font-bold text-primary">Level {p.level} · Final Prize Unlock</p>
+              <p className="text-xs font-bold text-primary">Adventure Level {p.level} · Final Prize Unlock</p>
               <h2 id={`wheel-${p.id}`} className="font-heading text-xl font-extrabold">
                 {p.prize.name}
               </h2>
@@ -210,7 +210,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
                   <p className="font-heading text-lg font-extrabold">{result.outcome === "PRIZE" ? `Unlocked: ${result.prizeName}` : `You received ${result.alternativeDisplay}`}</p>
                 )}
                 {result && settled && result.outcome === "ALTERNATIVE" && p.alternative.type === "CASH" && (
-                  <p className="text-xs text-muted-foreground">Cash rewards become withdrawable after the normal review period.</p>
+                  <p className="text-xs text-muted-foreground">Cash rewards are under review before becoming available to withdraw.</p>
                 )}
               </div>
               <div className="mt-4 grid gap-2">
@@ -268,7 +268,7 @@ function ClaimSheet({ open, onOpenChange, claimId, puzzle }: { open: boolean; on
             {physical
               ? "Tell us where to deliver your prize. Our team reviews every physical prize claim before delivery."
               : puzzle.prize.kind === "CASH"
-                ? "The cash is added to your pending rewards and becomes withdrawable after the normal review period."
+                ? "The cash is added to your Pending Rewards. Cash rewards are under review before becoming available to withdraw."
                 : "The Credits are added to your balance straight away."}
           </SheetDescription>
         </SheetHeader>

@@ -6,7 +6,6 @@ import {
   collectionCompletions,
   inventory,
   mysteryBoxPlays,
-  profiles,
   tileDiscoveries,
   userAchievements,
   userStreaks,
@@ -37,10 +36,6 @@ export async function metricFor(tx: DbOrTx, userId: string, condition: Achieveme
     case "STREAK_DAYS": {
       const [s] = await tx.select().from(userStreaks).where(eq(userStreaks.userId, userId)).limit(1);
       return s?.longest ?? 0;
-    }
-    case "XP_LEVEL": {
-      const [p] = await tx.select({ l: profiles.xpLevel }).from(profiles).where(eq(profiles.id, userId)).limit(1);
-      return p?.l ?? 1;
     }
     case "ITEMS_COLLECTED": {
       const [row] = await tx

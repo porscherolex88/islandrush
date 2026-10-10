@@ -1,4 +1,4 @@
-import { BadgeCheck, Bell, HeartHandshake, KeyRound, Landmark, LogOut, UserRound } from "lucide-react";
+import { BadgeCheck, Bell, HeartHandshake, KeyRound, LifeBuoy, LogOut, UserRound, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
 import { MenuCard, MenuRow } from "@/components/app/menu-row";
@@ -7,34 +7,27 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
 import { signOutAction } from "@/server/actions/auth";
 
-export const metadata: Metadata = { title: "Settings" };
+export const metadata: Metadata = { title: "Account" };
 
-export default async function SettingsPage() {
+export default async function AccountPage() {
   const user = await requireUser();
 
   return (
     <div>
-      <InnerPageHeader title="Settings" subtitle={user.email} />
+      <InnerPageHeader title="Account" subtitle={user.email} />
       <Section title="Account">
         <MenuCard>
           <MenuRow href="/app/account/profile" icon={UserRound} label="Profile" />
           <MenuRow href="/app/account/verification" icon={BadgeCheck} label="Verification" meta={<StatusBadge status={user.verificationStatus} />} />
           <MenuRow href="/app/account/security" icon={KeyRound} label="Security" />
-        </MenuCard>
-      </Section>
-      <Section title="Notifications">
-        <MenuCard>
           <MenuRow href="/app/account/notifications" icon={Bell} label="Notification settings" />
+          <MenuRow href="/app/account/responsible-play" icon={HeartHandshake} label="Responsible Play and limits" />
+          <MenuRow href="/app/account/support" icon={LifeBuoy} label="Help and support" />
         </MenuCard>
       </Section>
-      <Section title="Play">
+      <Section title="Rewards">
         <MenuCard>
-          <MenuRow href="/app/account/responsible-play" icon={HeartHandshake} label="Responsible play and limits" />
-        </MenuCard>
-      </Section>
-      <Section title="Payments">
-        <MenuCard>
-          <MenuRow href="/app/account/withdrawal-accounts" icon={Landmark} label="Bank accounts" />
+          <MenuRow href="/app/referrals" icon={Users} label="Referrals" />
         </MenuCard>
       </Section>
       <Section>

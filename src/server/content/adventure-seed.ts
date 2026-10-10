@@ -193,14 +193,6 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
     });
   }
 
-  await db
-    .insert(s.xpRules)
-    .values([
-      { source: "MAP_UNLOCK", label: "Unlock an adventure map", amount: 100 },
-      { source: "CHECKPOINT_UNLOCK", label: "Discover a map checkpoint", amount: 40 },
-      { source: "MAP_COMPLETE", label: "Complete an adventure map", amount: 250 },
-    ])
-    .onConflictDoNothing();
   await db.insert(s.featureFlags).values({ key: "prize_wheel", enabled: true, description: "Final Prize Unlock" }).onConflictDoNothing();
   await db.insert(s.appConfig).values({ key: "prize_wheel", value: { active: true, prizeUnlockPct: 90, alternativePct: 10 } }).onConflictDoNothing();
   await db

@@ -1,4 +1,4 @@
-import { ChevronRight, Map as MapIcon, Puzzle, Target, Users } from "lucide-react";
+import { ChevronRight, Map as MapIcon, Puzzle, Sparkles, Target, Users } from "lucide-react";
 import Link from "next/link";
 import { ArtCard, ART, StatRow, mapArt } from "@/components/app/art";
 import { BannerCarousel } from "@/components/app/banner-carousel";
@@ -13,24 +13,20 @@ import { settleDueRewards } from "@/server/services/cash-rewards";
 import { getTimezone } from "@/server/services/config";
 import { getDailyState } from "@/server/services/daily";
 import { getAdventureState } from "@/server/services/adventure";
-import { levelProgress } from "@/server/services/xp";
-import { db } from "@/db";
 
 export default async function HomePage({ searchParams }: PageProps<"/app">) {
   const user = await requireUser();
   await settleDueRewards({ userId: user.id, limit: 50 });
-  const [daily, adventure, tz, banners, sp, xp] = await Promise.all([
+  const [daily, adventure, tz, banners, sp] = await Promise.all([
     getDailyState(user.id),
     getAdventureState(user.id),
     getTimezone(),
     activeBanners(),
     searchParams,
-    levelProgress(db, user.xpTotal, user.xpLevel),
   ]);
   const firstName = user.name.split(" ")[0];
   const map = adventure.currentMap;
   const box = adventure.currentBox;
-  const showMystery = Boolean(daily.event && !daily.eventClaim);
 
   return (
     <div className="pb-4">
@@ -39,9 +35,6 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
         name={user.name}
         greeting={greeting(new Date(), tz)}
         streak={daily.streak.current}
-        level={user.xpLevel}
-        title={xp.current?.title ?? "Explorer"}
-        pct={xp.pct}
       />
       <div className="mt-3 space-y-3">
         {sp.welcome && (
@@ -52,29 +45,20 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
           </div>
         )}
 
-        <Section className="py-0">
-          {showMystery && daily.event ? (
+        {map && (
+          <Section className="py-0">
             <ArtCard
-              href="/app/play"
-              art={ART.tidePool}
-              title={daily.event.title}
-              body="Something washed ashore today."
-              cta="Explore"
+              href="/app/play/map"
+              art={mapArt(map.level, map.artwork)}
+              eyebrow={`Adventure Level ${adventure.currentLevel} of ${adventure.totalLevels}`}
+              title={map.name}
+              body={map.state === "completed" ? "Map complete." : `Next: ${adventure.nextStep.title}`}
+              cta="Explore map"
               top
               priority
             />
-          ) : (
-            <ArtCard
-              href={map ? `/app/play/map?level=${map.level}` : "/app/play"}
-              art={map ? mapArt(map.level, map.artwork) : ART.island}
-              eyebrow={`Your adventure · Level ${adventure.currentLevel}/${adventure.totalLevels}`}
-              title={adventure.nextStep.title}
-              body={adventure.nextStep.detail}
-              cta="Open map"
-              priority
-            />
-          )}
-        </Section>
+          </Section>
+        )}
 
         <BannerCarousel banners={banners.map(({ id, title, body, link }) => ({ id: String(id), title, body: body ?? null, link: link ?? null }))} />
 
@@ -84,9 +68,11 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
               <CheckInCard claimed={daily.loginClaimed} streak={daily.streak.current} />
               <SpinCard spun={Boolean(daily.spin)} available={daily.spinAvailable} />
             </div>
-            <StatRow href="/app/daily#missions" icon={<Target className="size-5" />} label="Missions" value={`${daily.missionsDone}/${daily.missions.length}`} done={daily.bonusClaimed} />
-            {adventure.maps.length > 0 && (
-              <StatRow href="/app/play" icon={<MapIcon className="size-5" />} label="Maps completed" value={`${adventure.completedMaps}/${adventure.maps.length}`} done={adventure.completedMaps === adventure.maps.length} />
+            {daily.missions.length > 0 && (
+              <StatRow href="/app/daily#missions" icon={<Target className="size-5" />} label="Missions" value={`${daily.missionsDone}/${daily.missions.length}`} done={daily.missionsDone >= daily.missions.length} />
+            )}
+            {daily.event && (
+              <StatRow href="/app/daily#event" icon={<Sparkles className="size-5" />} label={`Daily Mystery: ${daily.event.title}`} value={daily.eventClaim ? "Done" : "Explore"} done={Boolean(daily.eventClaim)} />
             )}
           </div>
         </Section>
@@ -94,11 +80,11 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
         <Section className="pt-3 pb-0" title="Continue your journey">
           <div className="grid grid-cols-2 gap-3">
             {map && (
-              <Link href={`/app/play/map?level=${map.level}`} className="group relative isolate flex min-h-36 flex-col justify-end overflow-hidden rounded-2xl p-3 text-white">
+              <Link href="/app/play/map" className="group relative isolate flex min-h-36 flex-col justify-end overflow-hidden rounded-2xl p-3 text-white">
                 <span aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${mapArt(map.level, map.artwork)})` }} />
                 <span aria-hidden className="art-scrim-b absolute inset-0 -z-10" />
                 <span className="flex items-center gap-1 text-xs font-semibold text-white/85">
-                  <MapIcon className="size-3.5" aria-hidden /> Map {map.level}
+                  <MapIcon className="size-3.5" aria-hidden /> Adventure Level {map.level}
                 </span>
                 <span className="font-heading text-xl font-extrabold tabular">
                   {map.state === "exploring" || map.state === "completed" ? `${map.checkpointsDone}/${map.checkpoints.length}` : `${Math.min(map.lootCollected, map.lootRequired)}/${map.lootRequired}`}
@@ -107,7 +93,7 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
               </Link>
             )}
             <Link href="/app/play/prizes" className="group relative isolate flex min-h-36 flex-col justify-end overflow-hidden rounded-2xl p-3 text-white">
-              <span aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${ART.vault})` }} />
+              <span aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${ART.bigBox})` }} />
               <span aria-hidden className="art-scrim-b absolute inset-0 -z-10" />
               <span className="flex items-center gap-1 text-xs font-semibold text-white/85">
                 <Puzzle className="size-3.5" aria-hidden /> Prizes
@@ -121,7 +107,7 @@ export default async function HomePage({ searchParams }: PageProps<"/app">) {
             <span aria-hidden className="art-scrim absolute inset-0 -z-10" />
             <span className="flex-1">
               <span className="block font-heading text-lg font-extrabold">{box ? box.name : "Mystery Box"}</span>
-              <span className="text-xs text-white/85">{box ? `Level ${box.level} · collect Loot to unlock maps` : "Collect Loot to unlock maps"}</span>
+              <span className="text-xs text-white/85">{box ? `Adventure Level ${box.level}. Open it to collect Loot.` : "Open it to collect Loot."}</span>
             </span>
             <ChevronRight className="size-5" aria-hidden />
           </Link>

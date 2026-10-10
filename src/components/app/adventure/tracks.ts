@@ -1,5 +1,12 @@
-import type { AdventureState } from "@/server/services/adventure";
+import type { AdventureMapView, AdventureState } from "@/server/services/adventure";
 import type { TrackLevel } from "./level-track";
+
+/** Loot progress toward the map's next milestone: unlocking the map, then each checkpoint chest. */
+export function mapLootGoal(map: AdventureMapView) {
+  const target = map.state === "exploring" ? map.nextLootTarget : map.lootRequired;
+  const label = map.state === "exploring" ? "Loot for the next checkpoint" : map.state === "completed" ? `${map.name} Loot` : `Loot to unlock ${map.name}`;
+  return { have: map.lootCollected, target, label };
+}
 
 export function boxTrack(s: AdventureState): TrackLevel[] {
   return s.boxes.map((b) => ({

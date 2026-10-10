@@ -7,15 +7,17 @@ import { Section } from "@/components/app/mobile-header";
 import { EmptyState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
-import { toDecimal } from "@/lib/money";
+import { toDecimal, toMinor } from "@/lib/money";
 import { getRate } from "@/server/services/conversion";
 import { getBalances } from "@/server/services/ledger";
 
 export const metadata: Metadata = { title: "Convert to Credits" };
 
-export default async function ConvertPage() {
+export default async function ConvertPage({ searchParams }: PageProps<"/app/wallet/convert">) {
   const user = await requireUser();
-  const [b, rate] = await Promise.all([getBalances(user.id), getRate()]);
+  const [b, rate, sp] = await Promise.all([getBalances(user.id), getRate(), searchParams]);
+  const requested = typeof sp.amount === "string" && /^\d+(\.\d{1,2})?$/.test(sp.amount) ? sp.amount : "";
+  const initialAmount = requested && toMinor(requested) > 0n && toMinor(requested) <= b.CASH ? requested : "";
   return (
     <div>
       <InnerPageHeader title="Convert to Credits" subtitle="Turn Cash into Credits to play" />
@@ -32,7 +34,7 @@ export default async function ConvertPage() {
             }
           />
         ) : (
-          <ConvertForm cash={toDecimal(b.CASH)} rateCash={rate.cash} rateCredits={rate.creditsNumber} />
+          <ConvertForm cash={toDecimal(b.CASH)} rateCash={rate.cash} rateCredits={rate.creditsNumber} initialAmount={initialAmount} />
         )}
       </Section>
     </div>

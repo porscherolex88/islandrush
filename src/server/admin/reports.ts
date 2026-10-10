@@ -231,23 +231,6 @@ export const REPORTS: ReportDef[] = [
       from profiles p left join deposit_levels l on l.id = p.deposit_level_id
       where p.role = 'USER' group by l.name, l.threshold, l.sort_order order by l.sort_order nulls first`,
   },
-  {
-    key: "xp-levels",
-    group: "users",
-    label: "XP Levels",
-    description: "Current distribution of players by XP level.",
-    permission: "reports.view",
-    columns: [
-      { key: "level", label: "Level", format: "int" },
-      { key: "title", label: "Title" },
-      { key: "players", label: "Players", format: "int" },
-      { key: "avg_xp", label: "Average XP", format: "int" },
-    ],
-    query: () => sql`
-      select p.xp_level as level, coalesce(l.title, '') as title, count(*)::int as players, round(avg(p.xp_total))::int as avg_xp
-      from profiles p left join xp_levels l on l.level = p.xp_level
-      where p.role = 'USER' group by p.xp_level, l.title order by p.xp_level`,
-  },
   /* ---------------------------------- Games --------------------------------- */
   {
     key: "mystery-box",

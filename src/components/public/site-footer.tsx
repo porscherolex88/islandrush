@@ -35,7 +35,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_repeat(3,1fr)]">
         <div className="space-y-3">
           <Logo />
-          <p className="max-w-xs text-sm text-muted-foreground">Open boxes, explore Lost Island and unlock the Ancient Vault. New things to discover every day.</p>
+          <p className="max-w-xs text-sm text-muted-foreground">Open Mystery Boxes, explore ten adventure maps and complete puzzles to unlock prizes. New things to discover every day.</p>
           <p className="text-xs text-muted-foreground">18+ only. Play responsibly.</p>
         </div>
         {COLUMNS.map((c) => (

@@ -6,7 +6,6 @@ import {
   collections,
   items,
   mapAreas,
-  profiles,
   requirements,
   tileDiscoveries,
 } from "@/db/schema";
@@ -103,12 +102,6 @@ export async function evaluateRequirements(
           const [area] = await tx.select({ icon: mapAreas.icon }).from(mapAreas).where(eq(mapAreas.id, r.areaId)).limit(1);
           icon = area?.icon ?? "🧭";
         }
-        break;
-      }
-      case "XP_LEVEL": {
-        const [p] = await tx.select({ l: profiles.xpLevel }).from(profiles).where(eq(profiles.id, userId)).limit(1);
-        current = p?.l ?? 1;
-        icon = "⭐";
         break;
       }
     }
