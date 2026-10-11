@@ -82,7 +82,7 @@ export function BoxShop({
   let cashNeeded = rateCredits > 0n ? (BigInt(shortfall) * rateCash + rateCredits - 1n) / rateCredits : 0n;
   if (rateCash > 0n && cashMinorToCredits(cashNeeded, rateCash, rateCredits) < BigInt(shortfall)) cashNeeded += 1n;
   const canConvert = cashNeeded > 0n && cashNeeded <= BigInt(cashMinor);
-  const getCreditsHref = canConvert ? `/app/wallet/convert?amount=${toDecimal(cashNeeded)}` : "/app/wallet/deposit";
+  const getCreditsHref = canConvert ? `/wallet/convert?amount=${toDecimal(cashNeeded)}` : "/wallet/deposit";
   const art = box.artwork ?? ART.crate;
   const lootGained = result ? lootIn(result) : 0;
   const lootBefore = phase === "idle" ? knownLoot : lootAtOpen;
@@ -160,7 +160,7 @@ export function BoxShop({
             label={map.state === "collecting" || map.state === "locked" ? `Loot to unlock Map ${map.level}` : map.state === "exploring" ? "Loot for your next checkpoint" : `Map ${map.level} Loot`}
           />
           {readyCp ? (
-            <Link href={`/app/play/map?level=${map.level}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "mt-3 w-full")}>
+            <Link href={`/play/map?level=${map.level}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "mt-3 w-full")}>
               <MapIcon className="size-4" aria-hidden /> {readyCp.name} is ready on Map {map.level}
             </Link>
           ) : (
@@ -177,7 +177,7 @@ export function BoxShop({
             <CheckCircle2 className="size-4 text-success" aria-hidden /> Map {box.level} complete. This box is retired.
           </p>
           <p className="text-xs text-muted-foreground">Its Loot can&apos;t move you forward any more, so it can no longer be opened.</p>
-          <Link href={nextHref ?? "/app/play/prizes"} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "w-full")}>
+          <Link href={nextHref ?? "/play/prizes"} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "w-full")}>
             {nextHref ? `Continue to Mystery Box ${box.level + 1}` : "View your prizes"} <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
@@ -185,7 +185,7 @@ export function BoxShop({
         <div className="space-y-3 rounded-2xl border border-dashed bg-surface p-4 text-center">
           <p className="text-sm font-semibold">{box.lockReason}</p>
           {box.requiresMapLevel && (
-            <Link href={`/app/play/map?level=${box.requiresMapLevel}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "w-full")}>
+            <Link href={`/play/map?level=${box.requiresMapLevel}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "w-full")}>
               <MapIcon className="size-4" aria-hidden /> Go to Map {box.requiresMapLevel}
             </Link>
           )}
@@ -229,7 +229,7 @@ export function BoxShop({
       <BoxOddsSheet name={box.name} rewards={odds.rewards} loot={odds.loot} />
 
       <Sheet open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-3xl pb-safe">
+        <SheetContent side="bottom">
           <SheetHeader>
             <SheetTitle className="font-heading text-xl">Open {box.name}?</SheetTitle>
             <SheetDescription>You&apos;ll receive one {map?.name ?? ""} Loot drop and one bonus reward.</SheetDescription>
@@ -331,7 +331,7 @@ export function BoxShop({
               )}
               <div className="mt-5 grid gap-2">
                 {mapReadyNow ? (
-                  <Link href={`/app/play/map?level=${box.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
+                  <Link href={`/play/map?level=${box.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
                     Map {box.level} is ready to unlock <ArrowRight className="size-4" aria-hidden />
                   </Link>
                 ) : (
@@ -346,7 +346,7 @@ export function BoxShop({
                 ) : (
                   map &&
                   map.state !== "locked" && (
-                    <Link href={`/app/play/map?level=${box.level}`} className={cn(buttonVariants({ variant: "ghost", size: "pill" }), "text-white hover:bg-white/10 hover:text-white")}>
+                    <Link href={`/play/map?level=${box.level}`} className={cn(buttonVariants({ variant: "ghost", size: "pill" }), "text-white hover:bg-white/10 hover:text-white")}>
                       View Map {box.level}
                     </Link>
                   )

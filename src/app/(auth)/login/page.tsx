@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/auth-forms";
-import { getRealAuthSession } from "@/lib/auth/session";
+import { getAuthSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Sign in" };
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
   const next = typeof sp.next === "string" ? sp.next : undefined;
-  if (await getRealAuthSession()) redirect(next?.startsWith("/") && !next.startsWith("//") ? next : "/app");
+  if (await getAuthSession()) redirect(next?.startsWith("/") && !next.startsWith("//") ? next : "/home");
   return (
     <div className="space-y-6">
       <div>

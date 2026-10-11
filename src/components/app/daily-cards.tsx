@@ -12,7 +12,7 @@ const WHEEL = "bg-[conic-gradient(#f6c453_0_12.5%,#13798a_0_25%,#fbe3a1_0_37.5%,
 export function SpinCard({ spun, available }: { spun: boolean; available: boolean }) {
   return (
     <Link
-      href="/app/daily#spin"
+      href="/daily#spin"
       className="group relative isolate flex flex-col overflow-hidden rounded-2xl bg-[linear-gradient(160deg,oklch(0.45_0.08_205),oklch(0.27_0.05_228))] p-3 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
     >
       <span aria-hidden className={cn("absolute -top-6 -right-6 -z-10 size-24 rounded-full opacity-20 transition-transform duration-700 group-hover:rotate-45", WHEEL)} />

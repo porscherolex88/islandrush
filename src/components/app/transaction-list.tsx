@@ -53,7 +53,7 @@ function amountText(currency: "MYR" | "CREDITS", amount: string, fiat: FiatDispl
 
 export function TransactionList({ rows, fiat }: { rows: ActivityRow[]; fiat: FiatDisplay }) {
   return (
-    <ul className="divide-y rounded-2xl border bg-card">
+    <ul className="divide-y rounded-3xl border bg-card">
       {rows.map((r) => {
         const t = TYPE[r.type] ?? { icon: Banknote, label: sanitize(r.description), tone: "bg-surface text-muted-foreground" };
         const Icon = t.icon;

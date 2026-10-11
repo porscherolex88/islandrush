@@ -389,19 +389,19 @@ export type AdventureState = Awaited<ReturnType<typeof getAdventureState>>;
 
 function nextStepFor(mapViews: AdventureMapView[], puzzleViews: PuzzleView[], current: AdventureMapView | null): NextStep {
   const claim = puzzleViews.find((p) => p.claim?.status === "UNLOCKED");
-  if (claim) return { kind: "claim", title: `Claim your Adventure Level ${claim.level} prize`, detail: claim.prize.name, href: "/app/play/prizes" };
+  if (claim) return { kind: "claim", title: `Claim your Adventure Level ${claim.level} prize`, detail: claim.prize.name, href: "/play/prizes" };
   const spin = puzzleViews.find((p) => p.canSpin);
-  if (spin) return { kind: "wheel", title: "Final unlock ready", detail: `Adventure Level ${spin.level} puzzle complete: ${spin.prize.name}`, href: "/app/play/prizes" };
+  if (spin) return { kind: "wheel", title: "Final unlock ready", detail: `Adventure Level ${spin.level} puzzle complete: ${spin.prize.name}`, href: "/play/prizes" };
   const box = mapViews.find((m) => m.bigBox?.state === "available");
-  if (box) return { kind: "bigbox", title: "Open your Big Mystery Box", detail: `Found at the end of ${box.name}`, href: `/app/play/map?level=${box.level}` };
-  if (!current) return { kind: "done", title: "Your adventure is being prepared", detail: "Check back soon.", href: "/app/play" };
-  const href = `/app/play/map?level=${current.level}`;
+  if (box) return { kind: "bigbox", title: "Open your Big Mystery Box", detail: `Found at the end of ${box.name}`, href: `/play/map?level=${box.level}` };
+  if (!current) return { kind: "done", title: "Your adventure is being prepared", detail: "Check back soon.", href: "/play" };
+  const href = `/play/map?level=${current.level}`;
   switch (current.state) {
     case "locked":
       return { kind: "map", title: `Complete Adventure Level ${current.prerequisiteLevel}`, detail: `to open ${current.name}`, href };
     case "collecting": {
       const need = current.lootRequired - current.lootCollected;
-      return { kind: "loot", title: `Collect ${need} more Loot`, detail: `to unlock Map ${current.level}: ${current.name}`, href: `/app/play/mystery-box?level=${current.level}` };
+      return { kind: "loot", title: `Collect ${need} more Loot`, detail: `to unlock Map ${current.level}: ${current.name}`, href: `/play/mystery-box?level=${current.level}` };
     }
     case "ready":
       return { kind: "map", title: `Unlock Map ${current.level}`, detail: `${current.name} is ready to explore`, href };
@@ -409,10 +409,10 @@ function nextStepFor(mapViews: AdventureMapView[], puzzleViews: PuzzleView[], cu
       const next = current.checkpoints.find((c) => c.isNext);
       if (!next) return { kind: "checkpoint", title: `Explore ${current.name}`, detail: "Reach the final checkpoint", href };
       if (next.state === "available") return { kind: "checkpoint", title: "Your chest is full", detail: next.isFinal ? `Collect it to reach ${next.name} and unlock puzzles` : `Collect it and move up to ${next.name}`, href };
-      return { kind: "loot", title: `Collect ${next.lootRequired - current.lootCollected} more Loot`, detail: `to move up to ${next.name}`, href: `/app/play/mystery-box?level=${current.level}` };
+      return { kind: "loot", title: `Collect ${next.lootRequired - current.lootCollected} more Loot`, detail: `to move up to ${next.name}`, href: `/play/mystery-box?level=${current.level}` };
     }
     case "completed":
-      return { kind: "done", title: "Adventure complete", detail: "Every map has been explored.", href: "/app/play/prizes" };
+      return { kind: "done", title: "Adventure complete", detail: "Every map has been explored.", href: "/play/prizes" };
   }
 }
 
@@ -461,7 +461,7 @@ export async function unlockMap(userId: string, mapId: string) {
         result: { lootCollected: loot },
       });
       await trackMission(tx, userId, "UNLOCK_AREA");
-      await notify(tx, userId, "REWARD", `Map ${map.level} unlocked`, `${map.name} is open. Start exploring its checkpoints.`, `/app/play/map?level=${map.level}`);
+      await notify(tx, userId, "REWARD", `Map ${map.level} unlocked`, `${map.name} is open. Start exploring its checkpoints.`, `/play/map?level=${map.level}`);
       return { mapId: map.id, level: map.level, name: map.name, replayed: false };
     });
   } catch (err) {
@@ -607,7 +607,7 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
             "REWARD",
             `Map ${level} complete: ${map.name}`,
             completion.unlockedMap ? `Map ${completion.unlockedMap.level} and the next Mystery Box are now unlocked.` : "You've completed the final map of the adventure.",
-            `/app/play/map?level=${level}`,
+            `/play/map?level=${level}`,
           );
           await syncPuzzleCompletions(tx, userId);
         }
@@ -655,7 +655,7 @@ export async function syncPuzzleCompletions(tx: Tx, userId: string): Promise<Com
       config: { piecesRequired: p.piecesRequired, prizeId: p.prizeId },
       result: { piecesTotal: total },
     });
-    await notify(tx, userId, "REWARD", `Level ${p.level} puzzle complete`, `One final step remains to unlock ${prize?.name ?? "your prize"}.`, "/app/play/prizes");
+    await notify(tx, userId, "REWARD", `Level ${p.level} puzzle complete`, `One final step remains to unlock ${prize?.name ?? "your prize"}.`, "/play/prizes");
     out.push({ puzzleId: p.id, level: p.level, name: p.name, prizeName: prize?.name ?? "" });
   }
   return out;
@@ -853,10 +853,10 @@ export async function spinPrizeWheel(userId: string, input: { puzzleId: string; 
           level: puzzle.level,
           prizeSnapshot: { name: prize.name, kind: prize.kind, amount: prize.amount, image: prize.image, description: prize.description, estimatedValue: prize.estimatedValue },
         });
-        await notify(tx, userId, "REWARD", "Prize unlocked", `${prize.name} is unlocked. Claim it from the Prizes page.`, "/app/play/prizes");
+        await notify(tx, userId, "REWARD", "Prize unlocked", `${prize.name} is unlocked. Claim it from the Prizes page.`, "/play/prizes");
       } else {
         await recordEvent(tx, { ...base, type: "ALTERNATIVE_REWARD", actionId: attemptId, result: alternativeReward ?? {}, ledgerTransactionId });
-        await notify(tx, userId, "REWARD", "Alternative reward received", `${(await storedRewardDisplay(alternativeReward)) ?? "Your reward"} from the Level ${puzzle.level} final unlock.`, "/app/play/prizes");
+        await notify(tx, userId, "REWARD", "Alternative reward received", `${(await storedRewardDisplay(alternativeReward)) ?? "Your reward"} from the Level ${puzzle.level} final unlock.`, "/play/prizes");
       }
       const [row] = await find(tx);
       return attemptResult(tx, row, false);
@@ -998,7 +998,7 @@ export async function updatePrizeClaimStatus(
       result: { from: claim.status, to: input.status, by: actor.id },
     });
     const label = input.status.replace("_", " ").toLowerCase();
-    await notify(tx, claim.userId, "REWARD", "Prize claim update", `Your ${String((claim.prizeSnapshot as { name?: string }).name ?? "prize")} claim is now ${label}.`, "/app/play/prizes");
+    await notify(tx, claim.userId, "REWARD", "Prize claim update", `Your ${String((claim.prizeSnapshot as { name?: string }).name ?? "prize")} claim is now ${label}.`, "/play/prizes");
     return { claimId: claim.id, status: input.status };
   });
 }

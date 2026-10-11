@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isAppPath } from "@/lib/app-routes";
 import { detectFiatDisplay, FIAT_COOKIE } from "@/lib/fiat-display.shared";
 
 const DEVICE_COOKIE = "lb_did";
@@ -13,16 +14,16 @@ function hasSessionCookie(req: NextRequest) {
  * Lightweight edge of the request pipeline:
  * - assigns a first-party device id (used for fraud signals, never for tracking across sites)
  * - remembers referral codes from ?ref= links
- * - bounces obviously signed-out visitors away from /app and /admin (real auth is enforced server-side)
+ * - bounces signed-out visitors away from the app and /admin to sign in (real auth is enforced server-side)
  */
 export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
-  const isProtected = pathname.startsWith("/app") || pathname.startsWith("/admin");
+  const isProtected = isAppPath(pathname) || pathname === "/admin" || pathname.startsWith("/admin/");
 
-  if (isProtected && !hasSessionCookie(req) && !process.env.DEMO_AUTO_LOGIN_EMAIL) {
+  if (isProtected && !hasSessionCookie(req)) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    url.search = `?next=${encodeURIComponent(pathname)}`;
+    url.search = `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }
 

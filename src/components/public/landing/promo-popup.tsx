@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LandingButton } from "@/components/public/marketing";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { isAppPath } from "@/lib/app-routes";
 
 export type Promo = { id: string; title: string; body: string | null; link: string | null };
 
@@ -61,8 +62,8 @@ export function PromoPopup({ promos, signedIn }: { promos: Promo[]; signedIn: bo
   }, [promos, signedIn]);
 
   if (!promo) return null;
-  const href = promo.link ?? (signedIn ? "/app" : "/register");
-  const cta = href === "/register" ? "Claim my free spin" : href.startsWith("/app") ? "Open the app" : "Take a look";
+  const href = promo.link ?? (signedIn ? "/home" : "/register");
+  const cta = href === "/register" ? "Claim my free spin" : isAppPath(href) ? "Open the app" : "Take a look";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

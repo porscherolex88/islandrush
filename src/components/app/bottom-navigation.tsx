@@ -1,17 +1,17 @@
 "use client";
 
-import { Compass, Home, Store, TrendingUp, Wallet } from "lucide-react";
+import { Compass, Home, Library, Store, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isRootRoute, rootSection, type RootRoute } from "@/lib/app-routes";
 import { cn } from "@/lib/utils";
 
 const TABS: { href: RootRoute; label: string; icon: typeof Home }[] = [
-  { href: "/app", label: "Home", icon: Home },
-  { href: "/app/market", label: "Market", icon: Store },
-  { href: "/app/play", label: "Play", icon: Compass },
-  { href: "/app/progress", label: "Progress", icon: TrendingUp },
-  { href: "/app/wallet", label: "Wallet", icon: Wallet },
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/market", label: "Market", icon: Store },
+  { href: "/play", label: "Play", icon: Compass },
+  { href: "/collections", label: "Collections", icon: Library },
+  { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 
 export function BottomNavigation() {

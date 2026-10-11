@@ -9,7 +9,7 @@ import { headerPillButton } from "./header-buttons";
 export function CreditsChip({ credits }: { credits: bigint | number }) {
   return (
     <Link
-      href="/app/wallet"
+      href="/wallet"
       className={cn(headerPillButton, "font-bold tabular")}
       aria-label={`${formatCredits(credits)} Credits, open Wallet`}
     >

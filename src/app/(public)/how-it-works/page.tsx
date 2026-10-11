@@ -1,3 +1,4 @@
+import { Banknote, CircleCheck, Clock, Coins, Gem, Landmark, Map as MapIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { CtaBand, FeatureCard, PageHero, SectionBlock, Steps } from "@/components/public/marketing";
 import { formatCredits, formatCash } from "@/lib/money";
@@ -12,8 +13,8 @@ export default async function HowItWorksPage() {
   const conversion = await getConfig("conversion");
   return (
     <>
-      <PageHero eyebrow="How it works" title="From first spin to first withdrawal" description="Everything you need to know about Cash, Credits, games and rewards on LootBox." />
-      <SectionBlock title="Getting started">
+      <PageHero eyebrow="How it works" title="From first spin to first withdrawal" description="Everything you need to know about Cash, Credits, games and rewards on LootBox." art="/illustrations/3d/coins.webp" />
+      <SectionBlock eyebrow="Getting started" title="Four steps to your first reward">
         <Steps
           steps={[
             { title: "Sign up", body: "Create a free account. Your daily check-in, spin and missions are ready right away." },
@@ -23,31 +24,31 @@ export default async function HowItWorksPage() {
           ]}
         />
       </SectionBlock>
-      <SectionBlock title="Your wallet, explained" className="bg-surface">
-        <div className="grid gap-5 md:grid-cols-3 lg:grid-cols-5">
-          <FeatureCard emoji="💵" title="Cash">
+      <SectionBlock eyebrow="Wallet" title="Your wallet, explained" className="bg-surface">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-5">
+          <FeatureCard icon={Banknote} title="Cash">
             Money you&apos;ve deposited. Convert it into Credits whenever you want to play.
           </FeatureCard>
-          <FeatureCard emoji="🪙" title="Credits">
+          <FeatureCard icon={Coins} title="Credits">
             Used to open boxes and explore. Every Credit price also shows its cash value in your currency.
           </FeatureCard>
-          <FeatureCard emoji="⏳" title="Pending rewards">
+          <FeatureCard icon={Clock} title="Pending rewards">
             Cash rewards you&apos;ve won that are going through the settlement period.
           </FeatureCard>
-          <FeatureCard emoji="✅" title="Withdrawable">
+          <FeatureCard icon={CircleCheck} title="Withdrawable">
             Settled rewards ready to be sent to your bank account.
           </FeatureCard>
-          <FeatureCard emoji="🏦" title="Withdrawal pending">
+          <FeatureCard icon={Landmark} title="Withdrawal pending">
             Amounts in withdrawal requests that are being reviewed or paid out.
           </FeatureCard>
         </div>
       </SectionBlock>
-      <SectionBlock title="Two ways to level up">
-        <div className="grid gap-5 md:grid-cols-2">
-          <FeatureCard emoji="🗺️" title="Adventure levels">
+      <SectionBlock eyebrow="Progress" title="Two ways to level up">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+          <FeatureCard icon={MapIcon} title="Adventure levels">
             Open Mystery Boxes to collect Loot, reach checkpoints and finish each map. Every map you complete moves you up an Adventure Level, up to 10.
           </FeatureCard>
-          <FeatureCard emoji="💎" title="Deposit levels">
+          <FeatureCard icon={Gem} title="Deposit levels">
             Deposit Levels are based on your total approved deposits and come with their own benefits.
           </FeatureCard>
         </div>

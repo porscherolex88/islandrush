@@ -551,7 +551,7 @@ export const RESOURCES = {
     fields: [
       { name: "title", label: "Title", type: "text", required: true },
       { name: "body", label: "Message", type: "textarea", required: true },
-      { name: "link", label: "Link", type: "text", help: "Optional in-app path, e.g. /app/play/map" },
+      { name: "link", label: "Link", type: "text", help: "Optional in-app path, e.g. /play/map" },
       { name: "audience", label: "Audience", type: "select", options: ["ALL", "DEPOSITORS", "NON_DEPOSITORS"], default: "ALL", required: true },
       status("DRAFT"),
       { name: "scheduledAt", label: "Send at", type: "datetime", help: "Leave empty to send on the next broadcast run after publishing." },

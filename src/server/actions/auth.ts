@@ -13,7 +13,7 @@ export type AuthFormState = { error?: string; fields?: Record<string, string> };
 
 function safeNext(value: FormDataEntryValue | null) {
   const next = typeof value === "string" ? value : "";
-  return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/api") ? next : "/app";
+  return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/api") ? next : "/home";
 }
 
 async function limited(key: string, limit: number, windowSeconds: number) {
@@ -92,7 +92,7 @@ export async function signUpAction(_prev: AuthFormState, form: FormData): Promis
     { ip: meta.ip, deviceId: meta.deviceId, referralCode: referralCode || meta.referralCode },
   );
   await recordLogin({ userId: profile.id, email, success: true, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
-  redirect("/app?welcome=1");
+  redirect("/home?welcome=1");
 }
 
 export async function signOutAction() {

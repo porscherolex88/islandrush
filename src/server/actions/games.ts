@@ -21,7 +21,7 @@ export async function claimLoginAction() {
   return userAction(async (user) => {
     await assertPlayable(user);
     const result = await claimDailyLogin(user.id);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return result;
   });
 }
@@ -39,7 +39,7 @@ export async function claimMissionBonusAction() {
   return userAction(async (user) => {
     await assertPlayable(user);
     const result = await claimMissionBonus(user.id);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return result;
   });
 }
@@ -115,7 +115,7 @@ export async function claimPrizeAction(input: { claimId: string; contact: ClaimC
     await assertPlayable(user);
     await gameRateLimit(user.id);
     const result = await claimPrize(user.id, data);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return result;
   });
 }

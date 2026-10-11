@@ -3,14 +3,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { RegisterForm } from "@/components/auth/auth-forms";
 import { REFERRAL_COOKIE } from "@/lib/auth/request";
-import { getRealAuthSession } from "@/lib/auth/session";
+import { getAuthSession } from "@/lib/auth/session";
 import { isFeatureEnabled } from "@/server/services/config";
 
 export const metadata: Metadata = { title: "Create account" };
 export const dynamic = "force-dynamic";
 
 export default async function RegisterPage({ searchParams }: PageProps<"/register">) {
-  if (await getRealAuthSession()) redirect("/app");
+  if (await getAuthSession()) redirect("/home");
   const [sp, jar, open] = await Promise.all([searchParams, cookies(), isFeatureEnabled("registrations")]);
   const ref = (typeof sp.ref === "string" ? sp.ref : jar.get(REFERRAL_COOKIE)?.value)?.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
   return (

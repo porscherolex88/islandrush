@@ -52,7 +52,7 @@ export async function unlockVault(userId: string, vaultId: string) {
       });
       await tx.update(vaultUnlocks).set({ consumed, rewards }).where(eq(vaultUnlocks.id, unlock.id));
       await checkAchievements(tx, userId, "VAULTS_UNLOCKED");
-      await notify(tx, userId, "REWARD", `${vault.icon} ${vault.name} opened!`, rewards.map((r) => r.display).join(", ") || "The Vault is yours.", "/app/play/vault");
+      await notify(tx, userId, "REWARD", `${vault.icon} ${vault.name} opened!`, rewards.map((r) => r.display).join(", ") || "The Vault is yours.", "/play/vault");
       return { vault, rewards, consumed };
     });
   } catch (err) {

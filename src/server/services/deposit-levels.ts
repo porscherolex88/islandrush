@@ -25,7 +25,7 @@ export async function recomputeDepositLevel(tx: DbOrTx, userId: string) {
     const previous = levels.find((l) => l.id === profile.depositLevelId);
     await tx.update(profiles).set({ depositLevelId: level.id, updatedAt: new Date() }).where(eq(profiles.id, userId));
     if (!previous || previous.sortOrder < level.sortOrder) {
-      await notify(tx, userId, "WALLET", `Deposit Level: ${level.name}`, `You've reached ${level.name}. See your new benefits in Progress.`, "/app/progress");
+      await notify(tx, userId, "WALLET", `Deposit Level: ${level.name}`, `You've reached ${level.name}. See your new benefits in your Wallet.`, "/wallet#deposit-level");
     }
   }
   return level;

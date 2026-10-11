@@ -14,77 +14,136 @@ export function Container({ children, className }: { children: ReactNode; classN
   return <div className={cn("mx-auto w-full max-w-6xl px-4 sm:px-6", className)}>{children}</div>;
 }
 
-export function PageHero({ eyebrow, title, description, children }: { eyebrow?: string; title: string; description?: string; children?: ReactNode }) {
+/** Section title block used on every public page: optional eyebrow, title and supporting line. */
+export function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  align = "left",
+  tone = "light",
+  className,
+}: {
+  eyebrow?: string;
+  title: ReactNode;
+  description?: ReactNode;
+  align?: "left" | "center";
+  tone?: "light" | "dark";
+  className?: string;
+}) {
   return (
-    <section className="border-b bg-[radial-gradient(ellipse_at_top,var(--brand-soft),transparent_70%)]">
-      <Container className="py-14 text-center sm:py-20">
-        {eyebrow && <p className="mb-3 text-sm font-semibold text-primary">{eyebrow}</p>}
-        <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
-        {description && <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">{description}</p>}
-        {children && <div className="mt-8">{children}</div>}
+    <div className={cn("mb-8 max-w-2xl sm:mb-12", align === "center" && "mx-auto text-center", className)}>
+      {eyebrow && <p className={cn("mb-2 text-xs font-bold tracking-widest uppercase", tone === "dark" ? "text-gold" : "text-primary")}>{eyebrow}</p>}
+      <h2 className="text-3xl leading-[1.1] font-bold tracking-tight sm:text-5xl">{title}</h2>
+      {description && <p className={cn("mt-3 text-base sm:mt-4 sm:text-lg", tone === "dark" ? "text-white/70" : "text-muted-foreground")}>{description}</p>}
+    </div>
+  );
+}
+
+/** Dark ocean hero for inner public pages, matching the landing page hero. */
+export function PageHero({ eyebrow, title, description, art, children }: { eyebrow?: string; title: string; description?: string; art?: string; children?: ReactNode }) {
+  return (
+    <section className="relative isolate overflow-hidden bg-ocean-deep text-white">
+      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_70%_at_80%_20%,oklch(0.42_0.09_210/0.9),transparent_70%),radial-gradient(ellipse_60%_60%_at_0%_100%,oklch(0.36_0.08_190/0.7),transparent_70%)]" />
+      <Container className={cn("grid items-center gap-6 py-10 sm:py-16", art && "md:grid-cols-[1.4fr_1fr]")}>
+        <div>
+          {eyebrow && <p className="mb-3 text-xs font-bold tracking-widest text-gold uppercase">{eyebrow}</p>}
+          <h1 className="max-w-3xl text-[2.25rem] leading-[1.05] font-extrabold tracking-[-0.02em] sm:text-6xl">{title}</h1>
+          {description && <p className="mt-4 max-w-2xl text-base text-white/75 sm:text-lg">{description}</p>}
+          {children && <div className="mt-6">{children}</div>}
+        </div>
+        {art && (
+          <div className="relative mx-auto hidden aspect-square w-full max-w-[280px] md:block">
+            <Image src={art} alt="" fill priority sizes="280px" className="animate-float object-contain drop-shadow-[0_24px_30px_rgb(2_20_28/0.55)]" />
+          </div>
+        )}
       </Container>
     </section>
   );
 }
 
-export function SectionBlock({ title, description, children, className }: { title?: string; description?: string; children: ReactNode; className?: string }) {
+export function SectionBlock({
+  eyebrow,
+  title,
+  description,
+  children,
+  className,
+}: {
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <section className={cn("py-14 sm:py-20", className)}>
+    <section className={cn("py-12 sm:py-20", className)}>
       <Container>
-        {(title || description) && (
-          <div className="mx-auto mb-10 max-w-2xl text-center">
-            {title && <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>}
-            {description && <p className="mt-3 text-muted-foreground">{description}</p>}
-          </div>
-        )}
+        {(title || description) && <SectionHeading eyebrow={eyebrow} title={title} description={description} />}
         {children}
       </Container>
     </section>
   );
 }
 
-export function FeatureCard({ icon: Icon, emoji, title, children, className }: { icon?: LucideIcon; emoji?: string; title: string; children: ReactNode; className?: string }) {
+export function FeatureCard({ icon: Icon, art, title, children, className }: { icon?: LucideIcon; art?: string; title: string; children: ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-3xl border bg-card p-6", className)}>
-      <div className="mb-4 grid size-12 place-items-center rounded-full bg-brand-soft text-2xl text-primary">
-        {Icon ? <Icon className="size-6" aria-hidden /> : <span aria-hidden>{emoji}</span>}
-      </div>
+    <div className={cn("rounded-3xl border bg-card p-5 sm:p-6", className)}>
+      {art ? (
+        <div className="relative mb-4 size-14">
+          <Image src={art} alt="" fill sizes="56px" className="object-contain" />
+        </div>
+      ) : (
+        Icon && (
+          <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-brand-soft text-primary">
+            <Icon className="size-6" aria-hidden />
+          </div>
+        )
+      )}
       <h3 className="text-lg font-bold">{title}</h3>
-      <div className="mt-2 text-sm text-muted-foreground">{children}</div>
+      <div className="mt-1.5 text-sm text-muted-foreground">{children}</div>
     </div>
   );
 }
 
 export function Steps({ steps }: { steps: { title: string; body: string }[] }) {
   return (
-    <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <ol className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
       {steps.map((s, i) => (
-        <li key={s.title} className="rounded-3xl border bg-card p-6">
-          <span className="grid size-9 place-items-center rounded-full bg-primary font-heading font-bold text-primary-foreground">{i + 1}</span>
-          <h3 className="mt-4 font-bold">{s.title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
+        <li key={s.title} className="flex gap-4 rounded-3xl border bg-card p-5 sm:flex-col sm:gap-0 sm:p-6">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gold font-heading font-bold text-[oklch(0.3_0.08_55)]">{i + 1}</span>
+          <span>
+            <h3 className="font-bold sm:mt-4">{s.title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
+          </span>
         </li>
       ))}
     </ol>
   );
 }
 
-export function CtaBand({ title = "Your adventure is waiting", description = "Create a free account and claim your first daily spin today." }: { title?: string; description?: string }) {
+export function CtaBand({
+  title = "Your adventure is waiting",
+  description = "Create a free account and claim your first daily spin today.",
+  signedIn = false,
+}: {
+  title?: string;
+  description?: string;
+  signedIn?: boolean;
+}) {
   return (
-    <section className="py-14 sm:py-20">
+    <section className="py-12 sm:py-20">
       <Container>
-        <div className="relative overflow-hidden rounded-2xl px-6 py-12 text-center text-white sm:px-12">
-          <Image src="/illustrations/adventure/map-1.webp" alt="" fill sizes="(min-width: 1024px) 1100px, 100vw" className="object-cover" />
-          <div aria-hidden className="absolute inset-0 bg-[oklch(0.25_0.06_222/0.78)]" />
-          <h2 className="relative text-3xl font-bold sm:text-4xl">{title}</h2>
-          <p className="relative mx-auto mt-3 max-w-xl text-white/85">{description}</p>
-          <div className="relative mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild size="xl" variant="gold">
-              <Link href="/register">Get started free</Link>
-            </Button>
-            <Button asChild size="xl" variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+        <div className="relative isolate overflow-hidden rounded-3xl px-5 py-12 text-center text-white sm:px-12 sm:py-16">
+          <Image src="/illustrations/adventure/map-1.webp" alt="" fill sizes="(min-width: 1024px) 1100px, 100vw" className="-z-10 object-cover" />
+          <div aria-hidden className="absolute inset-0 -z-10 bg-[oklch(0.25_0.06_222/0.8)]" />
+          <h2 className="text-3xl font-bold sm:text-5xl">{title}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-white/85">{description}</p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <LandingButton asChild>
+              <Link href={signedIn ? "/home" : "/register"}>{signedIn ? "Continue my adventure" : "Get started free"}</Link>
+            </LandingButton>
+            <LandingButton asChild variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white">
               <Link href="/how-it-works">How it works</Link>
-            </Button>
+            </LandingButton>
           </div>
         </div>
       </Container>

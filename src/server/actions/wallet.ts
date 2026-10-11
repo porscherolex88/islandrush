@@ -68,7 +68,7 @@ export async function createDepositAction(form: FormData) {
       proofFileId,
       idempotencyKey: d.idempotencyKey,
     });
-    revalidatePath("/app/wallet", "layout");
+    revalidatePath("/wallet", "layout");
     return { id: row.id, amount: row.amount };
   });
 }
@@ -79,7 +79,7 @@ export async function convertAction(input: { cashAmount: string; idempotencyKey:
     if (!d.success) throw new AppError(d.error.issues[0]?.message ?? "Invalid amount");
     await assertPlayable(user);
     const { conversion } = await convertCashToCredits(user.id, d.data);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return { cashAmount: conversion.cashAmount, credits: conversion.credits };
   });
 }
@@ -91,7 +91,7 @@ export async function requestWithdrawalAction(input: { amount: string; withdrawa
     await assertPlayable(user, "withdrawals");
     await rateLimit(`withdraw:${user.id}`, 10, 3600);
     const w = await requestWithdrawal(user.id, d.data);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return { id: w.id, status: w.status, amount: w.amount, message: `Withdrawal of ${await fmtCash(w.amount)} requested` };
   });
 }
@@ -99,7 +99,7 @@ export async function requestWithdrawalAction(input: { amount: string; withdrawa
 export async function cancelWithdrawalAction(id: string) {
   return userAction(async (user) => {
     await cancelWithdrawal(user.id, z.string().uuid().parse(id));
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return null;
   });
 }
@@ -119,7 +119,7 @@ export async function addWithdrawalAccountAction(input: { bankName: string; acco
     if (!d.success) throw new AppError(d.error.issues[0]?.message ?? "Please check the form");
     await rateLimit(`wacct:${user.id}`, 10, 3600);
     const row = await addWithdrawalAccount(user.id, d.data);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return { id: row.id };
   });
 }
@@ -127,7 +127,7 @@ export async function addWithdrawalAccountAction(input: { bankName: string; acco
 export async function archiveWithdrawalAccountAction(id: string) {
   return userAction(async (user) => {
     await archiveWithdrawalAccount(user.id, z.string().uuid().parse(id));
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return null;
   });
 }
@@ -135,7 +135,7 @@ export async function archiveWithdrawalAccountAction(id: string) {
 export async function setDefaultWithdrawalAccountAction(id: string) {
   return userAction(async (user) => {
     await setDefaultWithdrawalAccount(user.id, z.string().uuid().parse(id));
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return null;
   });
 }

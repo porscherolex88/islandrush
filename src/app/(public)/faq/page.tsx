@@ -13,21 +13,21 @@ export default async function FaqPage() {
   for (const r of rows) groups.set(r.category, [...(groups.get(r.category) ?? []), r]);
   return (
     <>
-      <PageHero eyebrow="FAQ" title="Frequently asked questions" />
-      <Container className="max-w-3xl py-12">
+      <PageHero eyebrow="FAQ" title="Frequently asked questions" description="Quick answers about Credits, rewards, withdrawals and the adventure." art="/illustrations/3d/puzzle.webp" />
+      <Container className="max-w-3xl py-10 sm:py-14">
         {groups.size === 0 && <p className="text-center text-muted-foreground">No questions published yet.</p>}
         <div className="space-y-10">
           {[...groups].map(([category, items]) => (
             <section key={category}>
               <h2 className="mb-3 text-xl font-bold">{category}</h2>
-              <div className="divide-y rounded-2xl border bg-card">
+              <div className="divide-y rounded-3xl border bg-card">
                 {items.map((f) => (
-                  <details key={f.id} className="group p-4 [&_summary::-webkit-details-marker]:hidden">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold">
+                  <details key={f.id} className="group px-4 py-1 [&_summary::-webkit-details-marker]:hidden">
+                    <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 font-semibold">
                       {f.question}
                       <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
                     </summary>
-                    <p className="mt-2 text-sm leading-6 whitespace-pre-line text-muted-foreground">{f.answer}</p>
+                    <p className="pb-4 text-sm leading-6 whitespace-pre-line text-muted-foreground">{f.answer}</p>
                   </details>
                 ))}
               </div>

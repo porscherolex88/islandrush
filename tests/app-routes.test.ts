@@ -1,57 +1,64 @@
 import { describe, expect, it } from "vitest";
-import { isRootRoute, parentRoute, rootSection, routeLabel } from "@/lib/app-routes";
+import { isAppPath, isRootRoute, parentRoute, rootSection, routeLabel } from "@/lib/app-routes";
 
 describe("app route hierarchy", () => {
   it("treats only the five bottom-nav pages as roots", () => {
-    for (const r of ["/app", "/app/market", "/app/play", "/app/progress", "/app/wallet", "/app/market/"]) expect(isRootRoute(r)).toBe(true);
-    for (const r of ["/app/daily", "/app/account", "/app/play/map", "/app/account/profile", "/app/collections"]) expect(isRootRoute(r)).toBe(false);
+    for (const r of ["/home", "/market", "/play", "/collections", "/wallet", "/market/"]) expect(isRootRoute(r)).toBe(true);
+    for (const r of ["/daily", "/account", "/play/map", "/account/profile", "/progress"]) expect(isRootRoute(r)).toBe(false);
   });
 
   it("maps inner pages to their logical parent", () => {
-    expect(parentRoute("/app/daily")).toBe("/app");
-    expect(parentRoute("/app/play/mystery-box")).toBe("/app/play");
-    expect(parentRoute("/app/play/mystery-box/history")).toBe("/app/play/mystery-box");
-    expect(parentRoute("/app/play/map")).toBe("/app/play");
-    expect(parentRoute("/app/play/prizes")).toBe("/app/play");
-    expect(parentRoute("/app/collections")).toBe("/app/progress");
-    expect(parentRoute("/app/wallet/convert")).toBe("/app/wallet");
-    expect(parentRoute("/app/wallet/withdraw")).toBe("/app/wallet");
-    expect(parentRoute("/app/referrals")).toBe("/app/account");
-    expect(parentRoute("/app/notifications")).toBe("/app");
-    expect(parentRoute("/app/account")).toBe("/app");
-    expect(parentRoute("/app/account/withdrawal-accounts")).toBe("/app/wallet");
-    expect(parentRoute("/app/account/security")).toBe("/app/account");
-    expect(parentRoute("/app/account/support/abc")).toBe("/app/account/support");
+    expect(parentRoute("/daily")).toBe("/home");
+    expect(parentRoute("/play/mystery-box")).toBe("/play");
+    expect(parentRoute("/play/mystery-box/history")).toBe("/play/mystery-box");
+    expect(parentRoute("/play/map")).toBe("/play");
+    expect(parentRoute("/play/prizes")).toBe("/play");
+    expect(parentRoute("/progress")).toBe("/collections");
+    expect(parentRoute("/collections/relics")).toBe("/collections");
+    expect(parentRoute("/wallet/convert")).toBe("/wallet");
+    expect(parentRoute("/wallet/withdraw")).toBe("/wallet");
+    expect(parentRoute("/invite")).toBe("/account");
+    expect(parentRoute("/notifications")).toBe("/home");
+    expect(parentRoute("/account")).toBe("/home");
+    expect(parentRoute("/account/withdrawal-accounts")).toBe("/wallet");
+    expect(parentRoute("/account/security")).toBe("/account");
+    expect(parentRoute("/account/support/abc")).toBe("/account/support");
   });
 
   it("falls back to the nearest ancestor for unknown routes and never leaves the app", () => {
-    expect(parentRoute("/app/daily/spin")).toBe("/app/daily");
-    expect(parentRoute("/app/progress/achievements")).toBe("/app/progress");
-    expect(parentRoute("/app/something")).toBe("/app");
+    expect(parentRoute("/daily/spin")).toBe("/daily");
+    expect(parentRoute("/collections/achievements")).toBe("/collections");
+    expect(parentRoute("/something")).toBe("/home");
   });
 
   it("assigns every page to the bottom-nav section of its logical parent", () => {
-    expect(rootSection("/app")).toBe("/app");
-    expect(rootSection("/app/daily")).toBe("/app");
-    expect(rootSection("/app/daily/spin")).toBe("/app");
-    expect(rootSection("/app/play/mystery-box/history")).toBe("/app/play");
-    expect(rootSection("/app/play/map")).toBe("/app/play");
-    expect(rootSection("/app/play/prizes")).toBe("/app/play");
-    expect(rootSection("/app/collections")).toBe("/app/progress");
-    expect(rootSection("/app/progress/achievements")).toBe("/app/progress");
-    expect(rootSection("/app/wallet/deposit")).toBe("/app/wallet");
-    expect(rootSection("/app/wallet/transactions")).toBe("/app/wallet");
-    expect(rootSection("/app/account/withdrawal-accounts")).toBe("/app/wallet");
-    expect(rootSection("/app/referrals")).toBe("/app");
-    expect(rootSection("/app/notifications")).toBe("/app");
-    expect(rootSection("/app/account/support/abc")).toBe("/app");
-    expect(rootSection("/app/something")).toBe("/app");
+    expect(rootSection("/home")).toBe("/home");
+    expect(rootSection("/daily")).toBe("/home");
+    expect(rootSection("/daily/spin")).toBe("/home");
+    expect(rootSection("/play/mystery-box/history")).toBe("/play");
+    expect(rootSection("/play/map")).toBe("/play");
+    expect(rootSection("/play/prizes")).toBe("/play");
+    expect(rootSection("/progress")).toBe("/collections");
+    expect(rootSection("/collections/relics")).toBe("/collections");
+    expect(rootSection("/wallet/deposit")).toBe("/wallet");
+    expect(rootSection("/wallet/transactions")).toBe("/wallet");
+    expect(rootSection("/account/withdrawal-accounts")).toBe("/wallet");
+    expect(rootSection("/invite")).toBe("/home");
+    expect(rootSection("/notifications")).toBe("/home");
+    expect(rootSection("/account/support/abc")).toBe("/home");
+    expect(rootSection("/something")).toBe("/home");
+  });
+
+  it("knows which paths belong to the signed-in app", () => {
+    for (const p of ["/home", "/market", "/play/map", "/wallet/deposit", "/account/support/abc", "/invite", "/notifications", "/daily", "/collections"]) expect(isAppPath(p)).toBe(true);
+    for (const p of ["/", "/login", "/register", "/referrals", "/how-it-works", "/games", "/faq", "/homepage", "/marketing", "/admin"]) expect(isAppPath(p)).toBe(false);
   });
 
   it("labels parents for the back button", () => {
-    expect(routeLabel("/app/wallet")).toBe("Wallet");
-    expect(routeLabel("/app/play")).toBe("Play");
-    expect(routeLabel("/app/market")).toBe("Market");
-    expect(routeLabel("/app")).toBe("Home");
+    expect(routeLabel("/wallet")).toBe("Wallet");
+    expect(routeLabel("/play")).toBe("Play");
+    expect(routeLabel("/market")).toBe("Market");
+    expect(routeLabel("/home")).toBe("Home");
+    expect(routeLabel("/collections")).toBe("Collections");
   });
 });

@@ -133,7 +133,7 @@ export function AdminHeader({ nav, user }: { nav: NavGroup[]; user: { name: stri
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/app">
+              <Link href="/home">
                 <ExternalLink /> Open player app
               </Link>
             </DropdownMenuItem>

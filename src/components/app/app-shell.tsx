@@ -15,7 +15,8 @@ export function AppShell({ children, banner, drawer }: { children: ReactNode; ba
   return (
     <div className="min-h-dvh bg-surface desktop:flex desktop:items-center desktop:justify-center desktop:bg-[radial-gradient(circle_at_20%_10%,oklch(0.9_0.05_205),transparent_45%),radial-gradient(circle_at_80%_90%,oklch(0.93_0.06_85),transparent_40%)] desktop:py-6">
       <div
-        className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-clip bg-background desktop:h-[min(920px,calc(100dvh-3rem))] desktop:min-h-0 desktop:overflow-hidden desktop:rounded-[2.25rem] desktop:border"
+        data-sheet-host
+        className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-clip bg-background desktop:h-[min(920px,calc(100dvh-3rem))] desktop:min-h-0 desktop:overflow-hidden desktop:rounded-[2.25rem] desktop:border desktop:[contain:layout]"
         style={{ "--drawer-w": "min(82vw, 320px)" } as CSSProperties}
       >
         <PushDrawerFrame drawer={drawer} nav={<BottomNavigation />}>

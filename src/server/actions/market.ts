@@ -21,7 +21,7 @@ export async function createListingAction(input: { itemId: string; quantity: num
     await assertPlayable(user, "market");
     await gameRateLimit(user.id);
     const result = await createListing(user.id, data);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return result;
   });
 }
@@ -31,7 +31,7 @@ export async function cancelListingAction(listingId: string) {
     const id = parse(z.string().uuid(), listingId);
     await assertPlayable(user);
     const result = await cancelListing(user.id, id);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return result;
   });
 }
@@ -42,7 +42,7 @@ export async function buyListingAction(input: { listingId: string; quantity: num
     await assertPlayable(user, "market");
     await gameRateLimit(user.id);
     const result = await buyListing(user.id, data);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return result;
   });
 }

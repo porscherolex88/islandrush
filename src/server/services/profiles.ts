@@ -47,9 +47,9 @@ export async function ensureProfile(
         await ensureUserAccounts(tx, profile.id);
         await tx.insert(userStreaks).values({ userId: profile.id }).onConflictDoNothing();
         await recomputeDepositLevel(tx, profile.id);
-        await notify(tx, profile.id, "SYSTEM", "Welcome to LootBox 🏝️", "Your island adventure starts now. Claim your daily check-in and spin to get going.", "/app/daily");
+        await notify(tx, profile.id, "SYSTEM", "Welcome to LootBox 🏝️", "Your island adventure starts now. Claim your daily check-in and spin to get going.", "/daily");
         if (referredById) {
-          await notify(tx, referredById, "REFERRAL", "New referral joined", `${profile.name.split(" ")[0]} joined with your referral code.`, "/app/referrals");
+          await notify(tx, referredById, "REFERRAL", "New referral joined", `${profile.name.split(" ")[0]} joined with your referral code.`, "/invite");
         }
         await onSignupSignals(tx, profile);
         const [fresh] = await tx.select().from(profiles).where(eq(profiles.id, profile.id)).limit(1);
@@ -125,7 +125,7 @@ export async function setSuspension(actor: Actor, userId: string, suspend: boole
       .set({ status: suspend ? "SUSPENDED" : "ACTIVE", suspendedReason: suspend ? reason : null, updatedAt: new Date() })
       .where(eq(profiles.id, userId));
     await audit(tx, { actorId: actor.id, actorRole: actor.role, action: suspend ? "user.suspend" : "user.unsuspend", entityType: "profile", entityId: userId, before: { status: p.status }, after: { status: suspend ? "SUSPENDED" : "ACTIVE" }, reason });
-    await notify(tx, userId, "SYSTEM", suspend ? "Account restricted" : "Account restored", suspend ? "Your account has been restricted. Please contact support for details." : "Your account is active again.", "/app/account/support");
+    await notify(tx, userId, "SYSTEM", suspend ? "Account restricted" : "Account restored", suspend ? "Your account has been restricted. Please contact support for details." : "Your account is active again.", "/account/support");
   });
 }
 
@@ -155,7 +155,7 @@ export async function setVerification(
       reason: input.note ?? null,
     });
     if (input.status && input.status !== p.verificationStatus) {
-      await notify(tx, userId, "SYSTEM", "Verification update", `Your verification status is now ${input.status.toLowerCase()}.`, "/app/account/verification");
+      await notify(tx, userId, "SYSTEM", "Verification update", `Your verification status is now ${input.status.toLowerCase()}.`, "/account/verification");
     }
   });
 }

@@ -186,7 +186,7 @@ export async function discoverTile(userId: string, tileId: string): Promise<Disc
         .where(and(eq(tileDiscoveries.userId, userId), eq(tileDiscoveries.areaId, area.id)));
       const areaCompleted = found >= total;
       if (areaCompleted) {
-        await notify(tx, userId, "REWARD", `${area.icon} ${area.name} fully explored`, "Every tile in this area has been discovered.", "/app/play/map");
+        await notify(tx, userId, "REWARD", `${area.icon} ${area.name} fully explored`, "Every tile in this area has been discovered.", "/play/map");
       }
       const b = await getBalances(userId, tx);
       return {
@@ -229,7 +229,7 @@ export async function unlockArea(userId: string, areaId: string) {
       });
       await trackMission(tx, userId, "UNLOCK_AREA");
       await checkAchievements(tx, userId, "AREAS_UNLOCKED");
-      await notify(tx, userId, "REWARD", `${area.icon} ${area.name} unlocked`, area.isSpecial ? "A Special Area has opened on your map." : "A new area has opened on your map.", "/app/play/map");
+      await notify(tx, userId, "REWARD", `${area.icon} ${area.name} unlocked`, area.isSpecial ? "A Special Area has opened on your map." : "A new area has opened on your map.", "/play/map");
       return { area, rewards };
     });
   } catch (err) {

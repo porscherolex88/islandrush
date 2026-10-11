@@ -13,14 +13,14 @@ export default async function HelpPage() {
   for (const a of articles) groups.set(a.category, [...(groups.get(a.category) ?? []), a]);
   return (
     <>
-      <PageHero eyebrow="Help centre" title="How can we help?" description="Step-by-step guides for the most common questions." />
-      <Container className="max-w-4xl py-12">
+      <PageHero eyebrow="Help centre" title="How can we help?" description="Step-by-step guides for the most common questions." art="/illustrations/3d/map-scroll.webp" />
+      <Container className="max-w-4xl py-10 sm:py-14">
         {groups.size === 0 && <p className="text-center text-muted-foreground">No articles published yet.</p>}
         <div className="grid gap-8 md:grid-cols-2">
           {[...groups].map(([category, items]) => (
             <section key={category}>
               <h2 className="mb-3 text-lg font-bold">{category}</h2>
-              <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+              <ul className="divide-y overflow-hidden rounded-3xl border bg-card">
                 {items.map((a) => (
                   <li key={a.slug}>
                     <Link href={`/help/${a.slug}`} className="flex items-center gap-3 p-4 transition-colors hover:bg-surface">
@@ -36,7 +36,7 @@ export default async function HelpPage() {
             </section>
           ))}
         </div>
-        <div className="mt-12 rounded-3xl bg-surface p-6 text-center">
+        <div className="mt-10 rounded-3xl bg-gold-soft p-6 text-center">
           <p className="font-semibold">Can&apos;t find what you need?</p>
           <p className="mt-1 text-sm text-muted-foreground">
             <Link href="/contact" className="font-semibold text-primary underline">

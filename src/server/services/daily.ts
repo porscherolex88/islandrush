@@ -104,7 +104,7 @@ export async function trackMission(tx: Tx, userId: string, action: MissionAction
         set: { progress: next, completedAt: completed ? new Date() : null, updatedAt: new Date() },
       });
     if (completed) {
-      await notify(tx, userId, "MISSION", `${mission.icon} Mission complete`, mission.title, "/app/daily");
+      await notify(tx, userId, "MISSION", `${mission.icon} Mission complete`, mission.title, "/daily");
     }
   }
 }
@@ -154,7 +154,7 @@ export async function claimDailyLogin(userId: string) {
         key: `streak:${userId}:${m.id}:${runStartDay}`,
       });
       await tx.update(streakMilestoneClaims).set({ rewards }).where(eq(streakMilestoneClaims.id, claim[0].id));
-      await notify(tx, userId, "REWARD", `🔥 ${m.days}-day streak!`, `${m.title}: ${rewards.map((r) => r.display).join(", ") || "Milestone reached"}`, "/app/daily");
+      await notify(tx, userId, "REWARD", `🔥 ${m.days}-day streak!`, `${m.title}: ${rewards.map((r) => r.display).join(", ") || "Milestone reached"}`, "/daily");
       milestoneRewards.push({ title: m.title, days: m.days, rewards });
     }
 
@@ -208,7 +208,7 @@ export async function claimMissionBonus(userId: string) {
       key: `missions:${userId}:${day}`,
     });
     await tx.update(missionBonusClaims).set({ rewards }).where(eq(missionBonusClaims.id, inserted[0].id));
-    await notify(tx, userId, "MISSION", "🎯 All daily missions complete", rewards.map((r) => r.display).join(", ") || "Great work today!", "/app/daily");
+    await notify(tx, userId, "MISSION", "🎯 All daily missions complete", rewards.map((r) => r.display).join(", ") || "Great work today!", "/daily");
     return { rewards };
   });
 }

@@ -17,7 +17,7 @@ export function OddsSheet({ odds, label = "View prizes & odds", title = "Prize p
           {label}
         </button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="mx-auto max-h-[85dvh] max-w-[430px] overflow-y-auto rounded-t-3xl pb-safe">
+      <SheetContent side="bottom">
         <SheetHeader>
           <SheetTitle className="font-heading text-xl">{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>

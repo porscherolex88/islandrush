@@ -61,7 +61,7 @@ export function ArtCard({
         className,
       )}
     >
-      <Image src={art} alt="" fill sizes="(max-width: 430px) 100vw, 430px" priority={priority} className="-z-10 object-cover transition-transform duration-700 group-hover:scale-105" />
+      <Image src={art} alt="" fill sizes="(max-width: 430px) 100vw, 430px" priority={priority} className="-z-10 object-cover" />
       <div aria-hidden className="art-scrim absolute inset-0 -z-10" />
       <div className={cn("flex w-full flex-col gap-1 p-5 pr-[30%]", top ? "justify-start" : "justify-end")}>
         {eyebrow && <p className="text-xs font-bold text-amber-200">{eyebrow}</p>}

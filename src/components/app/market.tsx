@@ -1,6 +1,6 @@
 "use client";
 
-import { Coins, Loader2, Minus, Plus } from "lucide-react";
+import { Coins, Info, Loader2, Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,21 +14,24 @@ import { Token } from "./art";
 
 type ItemSummary = { name: string; icon: string; rarity: string };
 
-const sheetClass = "mx-auto max-w-[430px] rounded-t-3xl pb-safe";
-
-function Stepper({ value, max, onChange }: { value: number; max: number; onChange: (n: number) => void }) {
+function QuantityRow({ value, max, hint, onChange }: { value: number; max: number; hint: string; onChange: (n: number) => void }) {
   return (
-    <div className="flex items-center gap-3">
-      <Button type="button" variant="outline" size="icon" className="size-10 rounded-full" onClick={() => onChange(Math.max(1, value - 1))} disabled={value <= 1} aria-label="Decrease quantity">
-        <Minus />
-      </Button>
-      <span className="min-w-10 text-center font-heading text-xl font-extrabold tabular" aria-live="polite">
-        {value}
-      </span>
-      <Button type="button" variant="outline" size="icon" className="size-10 rounded-full" onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max} aria-label="Increase quantity">
-        <Plus />
-      </Button>
-      <span className="text-sm text-muted-foreground">of {max}</span>
+    <div className="flex items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">Quantity</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </div>
+      <div className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
+        <Button type="button" variant="ghost" size="icon" className="size-9 rounded-full bg-background shadow-sm disabled:shadow-none" onClick={() => onChange(Math.max(1, value - 1))} disabled={value <= 1} aria-label="Decrease quantity">
+          <Minus />
+        </Button>
+        <span className="min-w-9 text-center font-heading text-lg font-extrabold tabular" aria-live="polite">
+          {value}
+        </span>
+        <Button type="button" variant="ghost" size="icon" className="size-9 rounded-full bg-background shadow-sm disabled:shadow-none" onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max} aria-label="Increase quantity">
+          <Plus />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -50,12 +53,13 @@ function ItemHeading({ item, detail }: { item: ItemSummary; detail: string }) {
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={strong ? "inline-flex items-center gap-1 font-heading text-lg font-extrabold tabular" : "font-semibold tabular"}>
-        {strong && <Coins className="size-4 text-gold" aria-hidden />}
+    <div className={strong ? "flex items-center justify-between border-t pt-3" : "flex items-center justify-between text-sm"}>
+      <dt className={strong ? "text-sm font-semibold" : "text-muted-foreground"}>{label}</dt>
+      <dd className={strong ? "inline-flex items-center gap-1.5 font-heading text-xl font-extrabold tabular" : "font-semibold tabular"}>
+        {strong && <Coins className="size-5 text-gold" aria-hidden />}
         {value}
-      </span>
+        {strong && <span className="text-sm font-semibold text-muted-foreground">Credits</span>}
+      </dd>
     </div>
   );
 }
@@ -86,17 +90,18 @@ export function BuySheet({ listingId, item, available, unitPrice, seller }: { li
           Buy
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className={sheetClass}>
+      <SheetContent side="bottom">
         <SheetHeader>
           <ItemHeading item={item} detail={`Sold by ${seller}`} />
         </SheetHeader>
         <div className="space-y-4 px-4 pb-4">
-          {available > 1 && <Stepper value={qty} max={available} onChange={setQty} />}
-          <div className="space-y-2 rounded-2xl border bg-card p-3">
+          {available > 1 && <QuantityRow value={qty} max={available} hint={`${available} available`} onChange={setQty} />}
+          <dl className="space-y-3 rounded-2xl border bg-card p-4">
             <Row label="Price each" value={`${formatCredits(unitPrice)} Credits`} />
+            {qty > 1 && <Row label="Quantity" value={`x ${qty}`} />}
             <Row label="Total" value={formatCredits(total)} strong />
-          </div>
-          <Button className="w-full" size="pill" variant="gold" disabled={pending} onClick={() => run({ listingId, quantity: qty, idempotencyKey: key })}>
+          </dl>
+          <Button className="h-12 w-full text-base" size="pill" variant="gold" disabled={pending} onClick={() => run({ listingId, quantity: qty, idempotencyKey: key })}>
             {pending && <Loader2 className="animate-spin" />}
             Buy for {formatCredits(total)} Credits
           </Button>
@@ -118,6 +123,8 @@ export function SellSheet({ itemId, item, owned, feePct, minPrice, maxPrice }: {
   const total = unit * qty;
   const fee = Math.floor((total * feePct) / 100);
   const valid = unit >= minPrice && unit <= maxPrice;
+  const priceError =
+    price === "" ? null : unit < minPrice ? `Minimum price is ${formatCredits(minPrice)} Credits` : unit > maxPrice ? `Maximum price is ${formatCredits(maxPrice)} Credits` : null;
 
   return (
     <Sheet
@@ -135,7 +142,7 @@ export function SellSheet({ itemId, item, owned, feePct, minPrice, maxPrice }: {
           Sell
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className={sheetClass}>
+      <SheetContent side="bottom">
         <SheetHeader>
           <ItemHeading item={item} detail={`You own ${owned}`} />
         </SheetHeader>
@@ -146,27 +153,49 @@ export function SellSheet({ itemId, item, owned, feePct, minPrice, maxPrice }: {
             if (valid) run({ itemId, quantity: qty, unitPrice: unit });
           }}
         >
-          {owned > 1 && <Stepper value={qty} max={owned} onChange={setQty} />}
-          <div className="space-y-1.5">
-            <Label htmlFor={`price-${itemId}`}>Price each (Credits)</Label>
-            <Input
-              id={`price-${itemId}`}
-              inputMode="numeric"
-              placeholder="e.g. 500"
-              value={price}
-              onChange={(e) => setPrice(e.target.value.replace(/\D/g, "").slice(0, 9))}
-              autoComplete="off"
-            />
+          {owned > 1 && <QuantityRow value={qty} max={owned} hint={`You own ${owned}`} onChange={setQty} />}
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <Label htmlFor={`price-${itemId}`} className="font-semibold">
+                Price each
+              </Label>
+              <span className="text-xs text-muted-foreground tabular">
+                {formatCredits(minPrice)} - {formatCredits(maxPrice)} Credits
+              </span>
+            </div>
+            <div className="relative">
+              <Coins className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-gold" aria-hidden />
+              <Input
+                id={`price-${itemId}`}
+                inputMode="numeric"
+                placeholder="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                autoComplete="off"
+                aria-invalid={priceError ? true : undefined}
+                aria-describedby={priceError ? `price-error-${itemId}` : undefined}
+                className="h-12 rounded-xl pr-20 pl-12 font-heading text-lg font-bold tabular md:text-lg"
+              />
+              <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold text-muted-foreground">Credits</span>
+            </div>
+            {priceError && (
+              <p id={`price-error-${itemId}`} className="text-xs font-medium text-destructive">
+                {priceError}
+              </p>
+            )}
           </div>
-          <div className="space-y-2 rounded-2xl border bg-card p-3">
-            <Row label="Sale price" value={`${formatCredits(total)} Credits`} />
-            <Row label={`Market fee (${feePct}%)`} value={`-${formatCredits(fee)}`} />
+          <dl className="space-y-3 rounded-2xl border bg-card p-4">
+            <Row label={qty > 1 ? `Sale price (${qty} x ${formatCredits(unit)})` : "Sale price"} value={`${formatCredits(total)} Credits`} />
+            <Row label={`Market fee (${feePct}%)`} value={`-${formatCredits(fee)} Credits`} />
             <Row label="You receive" value={formatCredits(total - fee)} strong />
-          </div>
-          <p className="text-xs text-muted-foreground">Listed items leave your collection until they sell. Cancel any time to get unsold items back.</p>
-          <Button type="submit" className="w-full" size="pill" variant="gold" disabled={!valid || pending}>
+          </dl>
+          <p className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
+            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            Listed items leave your collection until they sell. Cancel any time to get unsold items back.
+          </p>
+          <Button type="submit" className="h-12 w-full text-base" size="pill" variant="gold" disabled={!valid || pending}>
             {pending && <Loader2 className="animate-spin" />}
-            List for sale
+            {unit === 0 ? "Enter a price to continue" : qty > 1 ? `List ${qty} for sale` : "List for sale"}
           </Button>
         </form>
       </SheetContent>

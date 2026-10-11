@@ -304,7 +304,7 @@ async function main() {
       { key: "referral_reward", type: "REFERRAL", title: "Referral reward earned", body: "{{amount}} is pending from a level {{level}} referral." },
     ]);
     await db.insert(s.banners).values([
-      { kind: "BANNER", title: "A prize waits at the end of every map", body: "Collect Loot, reach checkpoints and open the Big Mystery Box to find puzzle pieces.", link: "/app/play/map", status: "PUBLISHED" },
+      { kind: "BANNER", title: "A prize waits at the end of every map", body: "Collect Loot, reach checkpoints and open the Big Mystery Box to find puzzle pieces.", link: "/play/map", status: "PUBLISHED" },
       { kind: "ANNOUNCEMENT", title: "Welcome to LootBox", body: "Every day brings a new spin, three missions and a mystery event.", status: "PUBLISHED" },
     ]);
     await db.insert(s.faqs).values([

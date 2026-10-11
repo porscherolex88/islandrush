@@ -51,7 +51,7 @@ export async function staffReply(actor: Actor, ticketId: string, body: string, i
       .update(supportTickets)
       .set({ lastMessageAt: new Date(), updatedAt: new Date(), status: internal ? t.status : "PENDING", assignedToId: t.assignedToId ?? actor.id })
       .where(eq(supportTickets.id, ticketId));
-    if (!internal) await notify(tx, t.userId, "SYSTEM", "Support replied", `New reply on "${t.subject}"`, `/app/account/support/${t.id}`);
+    if (!internal) await notify(tx, t.userId, "SYSTEM", "Support replied", `New reply on "${t.subject}"`, `/account/support/${t.id}`);
   });
 }
 

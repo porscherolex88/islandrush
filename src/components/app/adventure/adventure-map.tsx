@@ -152,15 +152,15 @@ export function AdventureMap({
   }, []);
 
   useEffect(() => {
-    if (prevLevel !== null) router.prefetch(`/app/play/map?level=${prevLevel}`);
-    if (nextLevel !== null) router.prefetch(`/app/play/map?level=${nextLevel}`);
+    if (prevLevel !== null) router.prefetch(`/play/map?level=${prevLevel}`);
+    if (nextLevel !== null) router.prefetch(`/play/map?level=${nextLevel}`);
   }, [router, prevLevel, nextLevel]);
 
   useEffect(() => {
     const level = leaving === 1 ? nextLevel : leaving === -1 ? prevLevel : null;
     if (level === null) return;
     lastSwipe.dir = leaving;
-    router.push(`/app/play/map?level=${level}`, { scroll: false });
+    router.push(`/play/map?level=${level}`, { scroll: false });
   }, [leaving, nextLevel, prevLevel, router]);
 
   function go(dir: -1 | 1) {
@@ -318,7 +318,7 @@ export function AdventureMap({
                   >
                     <motion.span
                       className={cn(
-                        "relative grid place-items-center rounded-full border-[3px] shadow-lg transition-transform group-hover:scale-105 group-focus-visible:ring-4 group-focus-visible:ring-white/70",
+                        "relative grid place-items-center rounded-full border-[3px] shadow-lg group-focus-visible:ring-4 group-focus-visible:ring-white/70",
                         c.isFinal ? "size-14" : "size-12",
                         done && "border-white bg-success text-white",
                         state === "full" && "border-white bg-amber-300 ring-4 ring-amber-300/50",
@@ -415,7 +415,7 @@ export function AdventureMap({
                 Unlock Map {map.level}
               </Button>
             ) : (
-              <Link href={`/app/play/mystery-box?level=${map.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 w-full text-base")}>
+              <Link href={`/play/mystery-box?level=${map.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 w-full text-base")}>
                 Find Loot in Mystery Box {map.level}
               </Link>
             )}
@@ -443,7 +443,7 @@ export function AdventureMap({
                 {shown.isFinal ? "Collect chest and unlock puzzles" : "Collect chest and move up"}
               </Button>
             ) : shown.chest.state === "filling" ? (
-              <Link href={`/app/play/mystery-box?level=${map.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 w-full text-base")}>
+              <Link href={`/play/mystery-box?level=${map.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 w-full text-base")}>
                 Find Loot in Mystery Box {map.level}
               </Link>
             ) : (
@@ -468,7 +468,7 @@ export function AdventureMap({
               text={map.bigBox?.piecesFound ? `The final checkpoint gave you ${map.bigBox.piecesFound} Puzzle ${map.bigBox.piecesFound === 1 ? "Piece" : "Pieces"}.` : "You reached the final checkpoint."}
             />
             <div className={cn("grid gap-2", nextLevel !== null && "grid-cols-2")}>
-              <Link href="/app/play/prizes" className={cn(buttonVariants({ variant: nextLevel !== null ? "outline" : "gold", size: "pill" }), "h-12 text-base")}>
+              <Link href="/play/prizes" className={cn(buttonVariants({ variant: nextLevel !== null ? "outline" : "gold", size: "pill" }), "h-12 text-base")}>
                 <Puzzle className="size-4" aria-hidden /> Puzzles
               </Link>
               {nextLevel !== null && (
@@ -554,11 +554,11 @@ export function AdventureMap({
             )}
             <div className="mt-5 grid gap-2">
               {bigBox.completedPuzzles.length > 0 ? (
-                <Link href="/app/play/prizes" className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
+                <Link href="/play/prizes" className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
                   Go to the final unlock
                 </Link>
               ) : nextMap ? (
-                <Link href={`/app/play/map?level=${nextMap.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
+                <Link href={`/play/map?level=${nextMap.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
                   Continue to Map {nextMap.level}
                 </Link>
               ) : (
@@ -566,7 +566,7 @@ export function AdventureMap({
                   Continue
                 </Button>
               )}
-              <Link href="/app/play/prizes" className={cn(buttonVariants({ variant: "ghost", size: "pill" }), "text-white hover:bg-white/10 hover:text-white")}>
+              <Link href="/play/prizes" className={cn(buttonVariants({ variant: "ghost", size: "pill" }), "text-white hover:bg-white/10 hover:text-white")}>
                 View puzzles
               </Link>
             </div>

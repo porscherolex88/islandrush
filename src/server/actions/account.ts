@@ -30,7 +30,7 @@ export async function updateProfileAction(input: { name: string; phone: string }
     if (!d.success) throw new AppError(d.error.issues[0]?.message ?? "Please check the form");
     await updateOwnProfile(user.id, { name: d.data.name, phone: d.data.phone || null });
     await getAuth().updateUser({ name: d.data.name }).catch(() => null);
-    revalidatePath("/app", "layout");
+    revalidatePath("/", "layout");
     return null;
   });
 }
@@ -39,7 +39,7 @@ export async function updateNotificationPrefsAction(prefs: { rewards: boolean; m
   return userAction(async (user) => {
     const d = z.object({ rewards: z.boolean(), missions: z.boolean(), referrals: z.boolean(), system: z.boolean() }).parse(prefs);
     await updateNotificationPrefs(user.id, d);
-    revalidatePath("/app/account", "layout");
+    revalidatePath("/account", "layout");
     return null;
   });
 }
@@ -59,7 +59,7 @@ export async function updatePlayLimitsAction(input: { dailyCreditLimit: number |
         ? new Date(Date.now() + d.data.breakDays * 86_400_000).toISOString()
         : current.selfExcludedUntil;
       await updatePlayLimits(user.id, { dailyCreditLimit: d.data.dailyCreditLimit, selfExcludedUntil });
-      revalidatePath("/app", "layout");
+      revalidatePath("/", "layout");
       return null;
     },
     { allowSuspended: true },
@@ -69,7 +69,7 @@ export async function updatePlayLimitsAction(input: { dailyCreditLimit: number |
 export async function requestVerificationAction() {
   return userAction(async (user) => {
     await requestVerification(user.id);
-    revalidatePath("/app/account", "layout");
+    revalidatePath("/account", "layout");
     return null;
   });
 }
@@ -78,7 +78,7 @@ export async function markNotificationsReadAction(id?: string) {
   return userAction(
     async (user) => {
       await markRead(user.id, id ? z.string().uuid().parse(id) : undefined);
-      revalidatePath("/app", "layout");
+      revalidatePath("/", "layout");
       return null;
     },
     { allowSuspended: true },
@@ -98,7 +98,7 @@ export async function createTicketAction(input: { subject: string; category: str
       if (!d.success) throw new AppError(d.error.issues[0]?.message ?? "Please check the form");
       await rateLimit(`ticket:${user.id}`, 5, 3600);
       const t = await createTicket(user.id, d.data);
-      revalidatePath("/app/account/support");
+      revalidatePath("/account/support");
       return { id: t.id };
     },
     { allowSuspended: true },
@@ -112,7 +112,7 @@ export async function replyTicketAction(ticketId: string, body: string) {
       if (!text.success) throw new AppError(text.error.issues[0]?.message ?? "Write a message");
       await rateLimit(`ticket-reply:${user.id}`, 30, 3600);
       await userReply(user.id, z.string().uuid().parse(ticketId), text.data);
-      revalidatePath(`/app/account/support/${ticketId}`);
+      revalidatePath(`/account/support/${ticketId}`);
       return null;
     },
     { allowSuspended: true },
@@ -142,7 +142,7 @@ export async function revokeSessionAction(token: string) {
     async () => {
       const { error } = await getAuth().revokeSession({ token });
       if (error) throw new AppError("Could not sign out that device");
-      revalidatePath("/app/account/security");
+      revalidatePath("/account/security");
       return null;
     },
     { allowSuspended: true },
@@ -154,7 +154,7 @@ export async function revokeOtherSessionsAction() {
     async () => {
       const { error } = await getAuth().revokeOtherSessions();
       if (error) throw new AppError("Could not sign out other devices");
-      revalidatePath("/app/account/security");
+      revalidatePath("/account/security");
       return null;
     },
     { allowSuspended: true },

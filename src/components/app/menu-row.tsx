@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 /** Grouped card of MenuRows, as used on the Account page and in the side drawer. */
 export function MenuCard({ children }: { children: ReactNode }) {
-  return <div className="divide-y overflow-hidden rounded-2xl border bg-card">{children}</div>;
+  return <div className="divide-y overflow-hidden rounded-3xl border bg-card">{children}</div>;
 }
 
 export function MenuRow({ href, icon: Icon, label, meta }: { href: string; icon: LucideIcon; label: string; meta?: ReactNode }) {

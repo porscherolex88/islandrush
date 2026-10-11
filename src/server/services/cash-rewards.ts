@@ -55,7 +55,7 @@ export async function settleDueRewards(opts: { userId?: string; limit?: number }
         .update(cashRewards)
         .set({ status: "SETTLED", settleTransactionId: posted.transactionId, settledAt: new Date(), updatedAt: new Date() })
         .where(eq(cashRewards.id, id));
-      await notify(tx, reward.userId, "WALLET", "Reward now withdrawable", `${await fmtCash(reward.amount)} moved to your Withdrawable balance.`, "/app/wallet");
+      await notify(tx, reward.userId, "WALLET", "Reward now withdrawable", `${await fmtCash(reward.amount)} moved to your Withdrawable balance.`, "/wallet");
       return "settled";
     });
     if (outcome === "settled") settled++;

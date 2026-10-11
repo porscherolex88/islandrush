@@ -39,7 +39,7 @@ function AuthActions({ signedIn, onNavigate }: { signedIn: boolean; onNavigate?:
 
   const launch = (
     <Button asChild size="xl" className={cn("md:h-10 md:px-4 md:text-sm", onNavigate && "flex-1")}>
-      <Link href="/app" onClick={onNavigate}>
+      <Link href="/home" onClick={onNavigate}>
         Launch App
       </Link>
     </Button>
@@ -82,20 +82,23 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
               key={n.href}
               href={n.href}
               className={cn(
-                "rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
-                pathname === n.href && "text-foreground",
+                "rounded-full px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
+                pathname === n.href && "bg-brand-soft font-semibold text-primary hover:bg-brand-soft hover:text-primary",
               )}
             >
               {n.label}
             </Link>
           ))}
         </nav>
+        <Button asChild size="sm" className="ml-auto h-10 rounded-full px-4 md:hidden">
+          <Link href={signedIn ? "/home" : "/register"}>{signedIn ? "Launch App" : "Get started"}</Link>
+        </Button>
         <div className="ml-auto hidden items-center gap-2 md:flex">
           <AuthActions signedIn={signedIn} />
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="ml-auto md:hidden" aria-label="Open menu">
+            <Button variant="ghost" size="icon" className="-ml-4 size-11 md:hidden" aria-label="Open menu">
               <Menu />
             </Button>
           </SheetTrigger>
@@ -105,7 +108,13 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
             </SheetHeader>
             <nav className="grid gap-1 px-4" aria-label="Mobile">
               {[...PUBLIC_NAV, { href: "/help", label: "Help centre" }, { href: "/contact", label: "Contact" }].map((n) => (
-                <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 font-medium hover:bg-muted">
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={pathname === n.href ? "page" : undefined}
+                  className={cn("rounded-xl px-3 py-3 font-medium hover:bg-muted", pathname === n.href && "bg-brand-soft text-primary hover:bg-brand-soft")}
+                >
                   {n.label}
                 </Link>
               ))}

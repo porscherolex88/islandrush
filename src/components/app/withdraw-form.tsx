@@ -48,7 +48,7 @@ export function WithdrawForm({ accounts, available, min, max }: { accounts: Acco
         <p className="mt-2 font-semibold">Add a bank account first</p>
         <p className="mt-1 text-sm text-muted-foreground">Withdrawals are paid to a bank account in your name.</p>
         <Button variant="gold" asChild size="pill" className="mt-3">
-          <Link href="/app/account/withdrawal-accounts">Add bank account</Link>
+          <Link href="/account/withdrawal-accounts">Add bank account</Link>
         </Button>
       </div>
     );
@@ -99,7 +99,7 @@ export function WithdrawForm({ accounts, available, min, max }: { accounts: Acco
             </button>
           ))}
         </div>
-        <Link href="/app/account/withdrawal-accounts" className="flex h-11 items-center text-sm font-semibold text-primary">
+        <Link href="/account/withdrawal-accounts" className="flex h-11 items-center text-sm font-semibold text-primary">
           Manage bank accounts
         </Link>
       </div>

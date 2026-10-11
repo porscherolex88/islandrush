@@ -100,7 +100,7 @@ export function SendNotificationForm({ userId }: { userId: string }) {
       <Label className="text-xs text-muted-foreground">Send in-app notification</Label>
       <Input value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Title" required />
       <Textarea value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} rows={2} placeholder="Message" required />
-      <Input value={v.link} onChange={(e) => setV({ ...v, link: e.target.value })} placeholder="Link (optional), e.g. /app/wallet" />
+      <Input value={v.link} onChange={(e) => setV({ ...v, link: e.target.value })} placeholder="Link (optional), e.g. /wallet" />
       <div>
         <Button size="sm" type="submit" disabled={pending}>
           {pending && <Loader2 className="animate-spin" />}

@@ -74,7 +74,7 @@ export async function processReferralRewards(tx: Tx, deposit: typeof deposits.$i
             "REFERRAL",
             "Referral reward earned",
             `RM${toDecimal(reward)} from a level ${level} referral is pending and will become withdrawable once eligible.`,
-            "/app/referrals",
+            "/invite",
           );
         }
       }

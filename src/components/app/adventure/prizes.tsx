@@ -158,7 +158,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
                   <ShieldCheck className="size-4" aria-hidden /> Verify your account to continue
                 </p>
                 <p className="text-muted-foreground">This prize needs a verified account before the final unlock.</p>
-                <Link href="/app/account/verification" className={cn(buttonVariants({ variant: "outline", size: "pill" }), "w-full")}>
+                <Link href="/account/verification" className={cn(buttonVariants({ variant: "outline", size: "pill" }), "w-full")}>
                   Verify account
                 </Link>
               </div>
@@ -261,7 +261,7 @@ function ClaimSheet({ open, onOpenChange, claimId, puzzle }: { open: boolean; on
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="mx-auto max-h-[90dvh] max-w-[430px] overflow-y-auto rounded-t-3xl pb-safe">
+      <SheetContent side="bottom">
         <SheetHeader>
           <SheetTitle className="font-heading text-xl">Claim {puzzle.prize.name}</SheetTitle>
           <SheetDescription>

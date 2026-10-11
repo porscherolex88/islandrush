@@ -60,7 +60,7 @@ export async function createAdjustment(
       reason: input.reason,
     });
     const display = currency === "MYR" ? await fmtCash(signed, { sign: true }) : `${formatCredits(signed, { sign: true })} Credits`;
-    await notify(tx, input.userId, "WALLET", "Balance adjustment", `${display} ${input.account.toLowerCase()} adjustment: ${input.reason}`, "/app/wallet/transactions");
+    await notify(tx, input.userId, "WALLET", "Balance adjustment", `${display} ${input.account.toLowerCase()} adjustment: ${input.reason}`, "/wallet/transactions");
     return posted;
   });
 }

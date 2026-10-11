@@ -135,7 +135,7 @@ export async function requestWithdrawal(userId: string, input: { amount: string;
           requestTransactionId: posted.transactionId,
         })
         .returning();
-      await notify(tx, userId, "WALLET", "Withdrawal requested", `Your ${await fmtCash(amount)} withdrawal is being processed.`, "/app/wallet/transactions");
+      await notify(tx, userId, "WALLET", "Withdrawal requested", `Your ${await fmtCash(amount)} withdrawal is being processed.`, "/wallet/transactions");
       return row;
     });
   } catch (err) {
@@ -249,7 +249,7 @@ export async function transitionWithdrawal(
       reverse: ["Payout reversed", `A ${await fmtCash(amount)} payout could not be delivered and has been returned to your Withdrawable balance.`],
     };
     const msg = messages[action];
-    if (msg) await notify(tx, w.userId, "WALLET", msg[0], msg[1], "/app/wallet/transactions");
+    if (msg) await notify(tx, w.userId, "WALLET", msg[0], msg[1], "/wallet/transactions");
     await audit(tx, {
       actorId: actor.id,
       actorRole: actor.role,

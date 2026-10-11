@@ -63,7 +63,7 @@ export function BoxOddsSheet({ name, rewards, loot, trigger }: { name: string; r
           </button>
         )}
       </SheetTrigger>
-      <SheetContent side="bottom" className="mx-auto max-h-[85dvh] max-w-[430px] overflow-y-auto rounded-t-3xl pb-safe">
+      <SheetContent side="bottom">
         <SheetHeader>
           <SheetTitle className="font-heading text-xl">{name}: prizes & odds</SheetTitle>
           <SheetDescription>Every box contains one Loot drop and one bonus reward. Both are drawn separately on our servers when you open it.</SheetDescription>

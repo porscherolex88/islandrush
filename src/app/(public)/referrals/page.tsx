@@ -12,8 +12,8 @@ export default async function ReferralsInfoPage() {
   const { levels, referral } = await publicReferralFacts();
   return (
     <>
-      <PageHero eyebrow="Referrals" title="Bring friends on the adventure" description="Share your code. When friends join and make a qualifying deposit, you earn rewards." />
-      <SectionBlock title="How referrals work">
+      <PageHero eyebrow="Referrals" title="Bring friends on the adventure" description="Share your code. When friends join and make a qualifying deposit, you earn rewards." art="/illustrations/3d/gift.webp" />
+      <SectionBlock eyebrow="Step by step" title="How referrals work">
         <Steps
           steps={[
             { title: "Share your code", body: "Find your personal referral link in the app under Referrals." },
@@ -24,8 +24,8 @@ export default async function ReferralsInfoPage() {
         />
       </SectionBlock>
       {levels.length > 0 && (
-        <SectionBlock title="Reward levels" className="bg-surface">
-          <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-3">
+        <SectionBlock eyebrow="Rewards" title="Reward levels" className="bg-surface">
+          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
             {levels.map((l) => (
               <div key={l.level} className="rounded-3xl border bg-card p-6 text-center">
                 <p className="text-sm font-semibold text-muted-foreground">Level {l.level}</p>
@@ -38,8 +38,8 @@ export default async function ReferralsInfoPage() {
           </div>
         </SectionBlock>
       )}
-      <SectionBlock title="Fair play rules">
-        <ul className="mx-auto max-w-2xl list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+      <SectionBlock eyebrow="Fair play" title="Fair play rules">
+        <ul className="max-w-2xl list-disc space-y-2 rounded-3xl border bg-card p-5 pl-10 text-sm text-muted-foreground">
           <li>Self-referrals, duplicate accounts and shared devices or payment details are not allowed.</li>
           <li>Referral rewards are reviewed before they settle and may be reversed if abuse is detected.</li>
           <li>Rewards are based on qualifying first deposits, not on how much your friends play.</li>

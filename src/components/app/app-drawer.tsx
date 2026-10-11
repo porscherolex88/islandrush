@@ -31,7 +31,7 @@ export function AppDrawer({
         <div className="flex h-[66px] items-center justify-between px-4 md:px-5">
           <DrawerClose />
           <Link
-            href="/app/account"
+            href="/account"
             aria-label="Settings"
             className="grid size-10 shrink-0 place-items-center rounded-full border bg-card transition-colors outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
@@ -41,7 +41,7 @@ export function AppDrawer({
       </div>
       <div className="px-4 pb-2">
         <Link
-          href="/app/account/profile"
+          href="/account/profile"
           className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           aria-label={`${name}, open profile`}
         >

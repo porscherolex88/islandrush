@@ -39,7 +39,7 @@ function LegalSheetLink({ slug, label }: { slug: LegalSlug; label: string }) {
           {label}
         </button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="mx-auto max-h-[85dvh] max-w-[430px] overflow-y-auto rounded-t-3xl pb-safe">
+      <SheetContent side="bottom">
         <SheetHeader>
           <SheetTitle className="font-heading text-xl">{page?.title ?? label}</SheetTitle>
           <SheetDescription>{page ? `Last updated ${formatDate(page.updatedAt)}` : page === null ? "This page isn't available right now." : "Loading..."}</SheetDescription>
@@ -59,7 +59,7 @@ function LegalSheetLink({ slug, label }: { slug: LegalSlug; label: string }) {
             </Link>
           )}
           {slug === "responsible-play" && page && (
-            <Link href="/app/account/responsible-play" className={buttonVariants({ variant: "gold", size: "pill", className: "mt-6 w-full" })}>
+            <Link href="/account/responsible-play" className={buttonVariants({ variant: "gold", size: "pill", className: "mt-6 w-full" })}>
               Open responsible play settings
             </Link>
           )}

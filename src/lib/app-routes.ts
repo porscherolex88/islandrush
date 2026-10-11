@@ -1,24 +1,30 @@
-/** The five bottom-navigation roots. Every other /app route is an inner page. */
-export const ROOT_ROUTES = ["/app", "/app/market", "/app/play", "/app/progress", "/app/wallet"] as const;
+/** The five bottom-navigation roots. Every other signed-in route is an inner page. */
+export const ROOT_ROUTES = ["/home", "/market", "/play", "/collections", "/wallet"] as const;
+
+/** Top-level segments of the signed-in app. Everything under these requires an account. */
+export const APP_SECTIONS = ["/home", "/market", "/play", "/collections", "/wallet", "/daily", "/account", "/invite", "/notifications", "/progress"] as const;
+
+export function isAppPath(pathname: string) {
+  return APP_SECTIONS.some((s) => pathname === s || pathname.startsWith(`${s}/`));
+}
 
 export type RootRoute = (typeof ROOT_ROUTES)[number];
 
 const LABELS: Record<string, string> = {
-  "/app": "Home",
-  "/app/market": "Market",
-  "/app/play": "Play",
-  "/app/daily": "Daily",
-  "/app/progress": "Progress",
-  "/app/account": "Account",
-  "/app/account/withdrawal-accounts": "Bank accounts",
-  "/app/play/mystery-box": "Mystery Box",
-  "/app/play/map": "Adventure Map",
-  "/app/play/prizes": "Puzzles & Prizes",
-  "/app/collections": "Collections",
-  "/app/wallet": "Wallet",
-  "/app/referrals": "Referrals",
-  "/app/notifications": "Notifications",
-  "/app/account/support": "Support",
+  "/home": "Home",
+  "/market": "Market",
+  "/play": "Play",
+  "/daily": "Daily",
+  "/account": "Account",
+  "/account/withdrawal-accounts": "Bank accounts",
+  "/play/mystery-box": "Mystery Box",
+  "/play/map": "Adventure Map",
+  "/play/prizes": "Puzzles & Prizes",
+  "/collections": "Collections",
+  "/wallet": "Wallet",
+  "/invite": "Referrals",
+  "/notifications": "Notifications",
+  "/account/support": "Support",
 };
 
 /**
@@ -26,19 +32,19 @@ const LABELS: Record<string, string> = {
  * Back navigation always goes to this parent, never to browser history.
  */
 const PARENTS: [pattern: string, parent: string][] = [
-  ["/app/play/mystery-box/history", "/app/play/mystery-box"],
-  ["/app/play/*", "/app/play"],
-  ["/app/daily/*", "/app/daily"],
-  ["/app/daily", "/app"],
-  ["/app/collections/*", "/app/collections"],
-  ["/app/collections", "/app/progress"],
-  ["/app/wallet/*", "/app/wallet"],
-  ["/app/referrals", "/app/account"],
-  ["/app/notifications", "/app"],
-  ["/app/account/withdrawal-accounts", "/app/wallet"],
-  ["/app/account/support/*", "/app/account/support"],
-  ["/app/account/*", "/app/account"],
-  ["/app/account", "/app"],
+  ["/play/mystery-box/history", "/play/mystery-box"],
+  ["/play/*", "/play"],
+  ["/daily/*", "/daily"],
+  ["/daily", "/home"],
+  ["/collections/*", "/collections"],
+  ["/progress", "/collections"],
+  ["/wallet/*", "/wallet"],
+  ["/invite", "/account"],
+  ["/notifications", "/home"],
+  ["/account/withdrawal-accounts", "/wallet"],
+  ["/account/support/*", "/account/support"],
+  ["/account/*", "/account"],
+  ["/account", "/home"],
 ];
 
 function normalise(pathname: string) {
@@ -56,21 +62,21 @@ export function isRootRoute(pathname: string): pathname is RootRoute {
   return (ROOT_ROUTES as readonly string[]).includes(normalise(pathname));
 }
 
-/** Parent route for an inner page. Unknown deeper routes fall back to their nearest ancestor under /app. */
+/** Parent route for an inner page. Unknown deeper routes fall back to their nearest app ancestor. */
 export function parentRoute(pathname: string): string {
   const path = normalise(pathname);
   const hit = PARENTS.find(([pattern]) => matches(pattern, path));
   if (hit) return hit[1];
   const up = path.split("/").slice(0, -1).join("/");
-  return up.startsWith("/app") && up.length >= 4 ? up : "/app";
+  return isAppPath(up) ? up : "/home";
 }
 
 /** The bottom-nav section a page belongs to, found by walking up its parent chain. */
 export function rootSection(pathname: string): RootRoute {
   let path = normalise(pathname);
-  if (!path.startsWith("/app")) return "/app";
+  if (!isAppPath(path)) return "/home";
   for (let i = 0; i < 10 && !isRootRoute(path); i++) path = parentRoute(path);
-  return isRootRoute(path) ? path : "/app";
+  return isRootRoute(path) ? path : "/home";
 }
 
 export function routeLabel(pathname: string) {

@@ -32,8 +32,8 @@ const COLUMNS = [
 export function SiteFooter() {
   return (
     <footer className="border-t bg-surface">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_repeat(3,1fr)]">
-        <div className="space-y-3">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-[1.5fr_repeat(3,1fr)] md:gap-10">
+        <div className="col-span-2 space-y-3 md:col-span-1">
           <Logo />
           <p className="max-w-xs text-sm text-muted-foreground">Open Mystery Boxes, explore ten adventure maps and complete puzzles to unlock prizes. New things to discover every day.</p>
           <p className="text-xs text-muted-foreground">18+ only. Play responsibly.</p>
@@ -41,10 +41,10 @@ export function SiteFooter() {
         {COLUMNS.map((c) => (
           <div key={c.title}>
             <p className="mb-3 text-sm font-semibold">{c.title}</p>
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {c.links.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Link href={l.href} className="inline-flex min-h-9 items-center text-sm text-muted-foreground hover:text-foreground">
                     {l.label}
                   </Link>
                 </li>

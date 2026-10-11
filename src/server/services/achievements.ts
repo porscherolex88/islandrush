@@ -80,7 +80,7 @@ export async function checkAchievements(tx: Tx, userId: string, condition: Achie
       "REWARD",
       `${ach.badgeIcon} Achievement unlocked: ${ach.name}`,
       rewards.length ? `You earned the ${ach.badgeName} badge and ${rewards.map((r) => r.display).join(", ")}.` : `You earned the ${ach.badgeName} badge.`,
-      "/app/progress",
+      "/collections",
     );
   }
 }

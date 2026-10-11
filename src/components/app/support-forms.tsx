@@ -25,7 +25,7 @@ export function NewTicketForm() {
   const { run, pending } = useAction(createTicketAction, {
     success: "Ticket created. We'll reply soon.",
     refresh: false,
-    onSuccess: (d) => router.push(`/app/account/support/${d.id}`),
+    onSuccess: (d) => router.push(`/account/support/${d.id}`),
   });
   return (
     <form

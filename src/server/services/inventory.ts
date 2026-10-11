@@ -55,7 +55,7 @@ export async function grantItem(tx: Tx, userId: string, itemId: string, qty: num
     if (parent && count > 0) {
       await consumeItem(tx, userId, item.id, required * count, { sourceType: "assembly", sourceId: parent.id, reason: `Assembled ${parent.name}` });
       await grantItem(tx, userId, parent.id, count, { sourceType: "assembly", sourceId: item.id, reason: `Assembled from ${required} fragments` }, depth + 1);
-      await notify(tx, userId, "COLLECTION", `${parent.icon} ${parent.name} assembled!`, `You combined ${required} fragments into ${parent.name}.`, "/app/collections");
+      await notify(tx, userId, "COLLECTION", `${parent.icon} ${parent.name} assembled!`, `You combined ${required} fragments into ${parent.name}.`, "/collections");
     }
   }
 
@@ -139,7 +139,7 @@ export async function checkCollectionCompletion(tx: Tx, userId: string, collecti
     "COLLECTION",
     `${col.icon} ${col.name} complete!`,
     rewards.length ? `Completion reward: ${rewards.map((r) => r.display).join(", ")}.` : "You completed the collection.",
-    `/app/collections/${col.slug}`,
+    "/collections",
   );
   await checkAchievements(tx, userId, "COLLECTIONS_COMPLETED");
   return rewards;

@@ -2,6 +2,7 @@ import { ArrowLeftRight, Coins, Library, Tag } from "lucide-react";
 import Image from "next/image";
 import { RARITY, type RarityKey } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
+import { SectionHeading } from "../marketing";
 
 const LISTINGS: { name: string; rarity: RarityKey; price: string }[] = [
   { name: "Tide Pearl", rarity: "UNCOMMON", price: "120" },
@@ -11,7 +12,7 @@ const LISTINGS: { name: string; rarity: RarityKey; price: string }[] = [
 ];
 
 const POINTS = [
-  { icon: Library, title: "Collect", body: "Track every Loot item, puzzle piece and achievement on your Collection page." },
+  { icon: Library, title: "Collect", body: "See everything you own on your Collections page, sellable items and keepsakes side by side." },
   { icon: Tag, title: "Sell", body: "List spare items on the Market at your own price in Credits." },
   { icon: ArrowLeftRight, title: "Buy", body: "Pick up items from other players with your Credits." },
 ];
@@ -20,7 +21,7 @@ export function MarketShowcase() {
   return (
     <div className="grid items-center gap-12 lg:grid-cols-2">
       <div className="relative order-2 lg:order-1">
-        <div aria-hidden className="pointer-events-none absolute -top-24 right-24 z-10 size-28 sm:-top-28 sm:size-32">
+        <div aria-hidden className="pointer-events-none absolute -top-16 right-6 z-10 size-24 sm:-top-28 sm:right-24 sm:size-32">
           <Image src="/illustrations/3d/gems.webp" alt="" fill sizes="176px" className="animate-float object-contain drop-shadow-[0_18px_22px_oklch(0.24_0.05_228/0.35)]" />
         </div>
         <div className="rounded-[1.75rem] border bg-card p-3 shadow-[0_30px_60px_-30px_oklch(0.24_0.05_228/0.35)]">
@@ -51,8 +52,12 @@ export function MarketShowcase() {
         </div>
       </div>
       <div className="order-1 lg:order-2">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Every item has a home, or a buyer</h2>
-        <p className="mt-3 max-w-lg text-muted-foreground">Five rarities, from Common to Legendary. Keep what moves your adventure forward and trade the rest with other explorers.</p>
+        <SectionHeading
+          eyebrow="Collect and trade"
+          title="Every item has a home, or a buyer"
+          description="Five rarities, from Common to Legendary. Keep what moves your adventure forward and trade the rest with other explorers."
+          className="mb-0 sm:mb-0"
+        />
         <ul className="mt-8 space-y-5">
           {POINTS.map(({ icon: Icon, title, body }) => (
             <li key={title} className="flex gap-4">

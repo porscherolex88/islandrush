@@ -60,7 +60,7 @@ export async function createDeposit(
         idempotencyKey: input.idempotencyKey,
       })
       .returning();
-    await notify(db, userId, "WALLET", "Deposit submitted", `Your ${await fmtCash(row.amount)} deposit is pending review.`, "/app/wallet/transactions");
+    await notify(db, userId, "WALLET", "Deposit submitted", `Your ${await fmtCash(row.amount)} deposit is pending review.`, "/wallet/transactions");
     return row;
   } catch (err) {
     if (isUniqueViolation(err)) {
@@ -108,7 +108,7 @@ export async function approveDeposit(actor: Actor, depositId: string, note?: str
     await recomputeDepositLevel(tx, dep.userId);
     await processReferralRewards(tx, updated);
     await onDepositSignals(tx, updated);
-    await notify(tx, dep.userId, "WALLET", "Deposit approved", `${await fmtCash(dep.amount)} has been added to your Cash wallet.`, "/app/wallet");
+    await notify(tx, dep.userId, "WALLET", "Deposit approved", `${await fmtCash(dep.amount)} has been added to your Cash wallet.`, "/wallet");
     await audit(tx, {
       actorId: actor.id,
       actorRole: actor.role,
@@ -132,7 +132,7 @@ export async function rejectDeposit(actor: Actor, depositId: string, reason: str
       .update(deposits)
       .set({ status: "REJECTED", reviewerId: actor.id, reviewedAt: new Date(), reviewNote: reason, updatedAt: new Date() })
       .where(eq(deposits.id, dep.id));
-    await notify(tx, dep.userId, "WALLET", "Deposit not approved", `Your ${await fmtCash(dep.amount)} deposit could not be verified: ${reason}`, "/app/wallet/transactions");
+    await notify(tx, dep.userId, "WALLET", "Deposit not approved", `Your ${await fmtCash(dep.amount)} deposit could not be verified: ${reason}`, "/wallet/transactions");
     await audit(tx, { actorId: actor.id, actorRole: actor.role, action: "deposit.reject", entityType: "deposit", entityId: dep.id, before: { status: dep.status }, after: { status: "REJECTED" }, reason });
   });
 }
@@ -185,7 +185,7 @@ export async function reverseDeposit(actor: Actor, depositId: string, reason: st
       });
       await tx.update(cashRewards).set({ status: "REVERSED", heldReason: "Source deposit reversed", updatedAt: new Date() }).where(eq(cashRewards.id, r.id));
     }
-    await notify(tx, dep.userId, "WALLET", "Deposit reversed", `Your ${await fmtCash(dep.amount)} deposit was reversed. Contact support if you have questions.`, "/app/wallet/transactions");
+    await notify(tx, dep.userId, "WALLET", "Deposit reversed", `Your ${await fmtCash(dep.amount)} deposit was reversed. Contact support if you have questions.`, "/wallet/transactions");
     await audit(tx, { actorId: actor.id, actorRole: actor.role, action: "deposit.reverse", entityType: "deposit", entityId: dep.id, before: { status: "APPROVED" }, after: { status: "REVERSED", reversedReferralRewards: related.length }, reason });
   });
 }
