@@ -32,7 +32,7 @@ export function LevelTrack({ levels, active, hrefFor, label }: { levels: TrackLe
                 className={cn(
                   "relative grid size-11 place-items-center rounded-full font-heading text-sm font-extrabold tabular transition-transform outline-none focus-visible:ring-4 focus-visible:ring-ring/50 active:scale-95",
                   l.state === "done" && "bg-success text-white",
-                  l.state === "current" && "bg-[linear-gradient(180deg,oklch(0.86_0.15_85),oklch(0.76_0.16_70))] text-amber-950 shadow-md shadow-amber-500/30",
+                  l.state === "current" && "bg-[linear-gradient(180deg,var(--gold-hi),var(--gold-lo))] text-[var(--gold-ink)] shadow-md shadow-amber-500/30",
                   l.state === "open" && "bg-primary text-primary-foreground",
                   l.state === "locked" && "bg-muted text-muted-foreground",
                   isActive && "ring-[3px] ring-foreground/80 ring-offset-2 ring-offset-card",

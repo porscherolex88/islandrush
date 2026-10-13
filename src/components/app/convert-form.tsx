@@ -64,7 +64,7 @@ export function ConvertForm({ cash, rateCash, rateCredits, initialAmount = "" }:
         </div>
         <div className="mt-3 flex gap-2">
           {[25n, 50n, 100n].map((p) => (
-            <button key={p.toString()} type="button" onClick={() => pctOf(p)} className="h-12 flex-1 rounded-xl border bg-card text-sm font-semibold hover:bg-muted" disabled={cashMinor === 0n}>
+            <button key={p.toString()} type="button" onClick={() => pctOf(p)} className="h-12 flex-1 rounded-full border bg-card text-sm font-semibold hover:bg-muted" disabled={cashMinor === 0n}>
               {p === 100n ? "All" : `${p}%`}
             </button>
           ))}

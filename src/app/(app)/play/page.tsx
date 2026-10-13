@@ -197,7 +197,7 @@ export default async function PlayPage() {
 
           {puzzle && (
             <Section title="Prize puzzle">
-              <Link href="/play/prizes" className="flex items-center gap-3 rounded-3xl border bg-[linear-gradient(135deg,oklch(0.98_0.03_85),oklch(0.95_0.05_80))] p-4 transition-colors hover:brightness-[1.02]">
+              <Link href="/play/prizes" className="flex items-center gap-3 rounded-3xl border bg-[linear-gradient(135deg,var(--warm-soft),var(--gold-soft))] p-4 transition-colors hover:brightness-[1.02]">
                 <span className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white text-amber-600 ring-2 ring-amber-200">
                   {puzzle.image ? <Image src={puzzle.image} alt="" fill sizes="56px" unoptimized={/^https?:/.test(puzzle.image)} className="object-cover" /> : <Puzzle className="size-7" aria-hidden />}
                 </span>

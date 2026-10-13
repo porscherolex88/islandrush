@@ -100,7 +100,7 @@ export function DepositForm({
                 role="radio"
                 aria-checked={a.id === accountId}
                 onClick={() => setAccountId(a.id)}
-                className={cn("h-12 flex-1 rounded-xl border px-3 text-sm font-semibold", a.id === accountId ? "border-primary bg-brand-soft text-primary" : "bg-card")}
+                className={cn("h-12 flex-1 rounded-full border px-3 text-sm font-semibold", a.id === accountId ? "border-primary bg-brand-soft text-primary" : "bg-card")}
               >
                 {a.bankName}
               </button>
@@ -108,7 +108,7 @@ export function DepositForm({
           </div>
         )}
         {account ? (
-          <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,oklch(0.52_0.1_200),oklch(0.3_0.07_222)_75%)] p-5 text-white">
+          <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_85%_0%,var(--ocean),var(--ocean-deep)_75%)] p-5 text-white">
             <div className="flex items-center gap-3">
               <span className="grid size-11 place-items-center rounded-full bg-white/15">
                 <Landmark className="size-5" aria-hidden />
@@ -149,7 +149,7 @@ export function DepositForm({
           <Input id="amount" name="amount" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} required className="h-12 text-lg font-semibold" />
           <div className="flex gap-2">
             {QUICK.map((q) => (
-              <button key={q} type="button" onClick={() => setAmount(q)} className="h-11 flex-1 rounded-xl border bg-surface text-sm font-semibold hover:bg-muted">
+              <button key={q} type="button" onClick={() => setAmount(q)} className="h-11 flex-1 rounded-full border bg-surface text-sm font-semibold hover:bg-muted">
                 {fiat === "MYR" ? `RM${q}` : fmt(q)}
               </button>
             ))}
@@ -169,7 +169,7 @@ export function DepositForm({
                   role="radio"
                   aria-checked={m === method}
                   onClick={() => setMethod(m)}
-                  className={cn("h-12 flex-1 rounded-xl border px-3 text-sm font-semibold", m === method ? "border-primary bg-brand-soft text-primary" : "bg-card")}
+                  className={cn("h-12 flex-1 rounded-full border px-3 text-sm font-semibold", m === method ? "border-primary bg-brand-soft text-primary" : "bg-card")}
                 >
                   {METHOD_LABEL[m] ?? m}
                 </button>

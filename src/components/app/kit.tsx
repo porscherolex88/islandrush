@@ -16,14 +16,14 @@ export function HeroCard({ children, className, ...props }: ComponentProps<"div"
   return (
     <div
       className={cn(
-        "relative isolate overflow-hidden rounded-3xl bg-ocean-deep p-5 text-white shadow-[0_14px_30px_-16px_oklch(0.24_0.05_228/0.7)]",
+        "relative isolate overflow-hidden rounded-3xl bg-ocean-deep p-5 text-white shadow-[0_14px_30px_-16px_color-mix(in_oklab,var(--ocean-deep)_70%,transparent)]",
         className,
       )}
       {...props}
     >
       <span
         aria-hidden
-        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_70%_at_90%_0%,oklch(0.42_0.09_210/0.9),transparent_70%),radial-gradient(ellipse_60%_60%_at_0%_100%,oklch(0.36_0.08_190/0.6),transparent_70%)]"
+        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_70%_at_90%_0%,color-mix(in_oklab,var(--ocean)_90%,transparent),transparent_70%),radial-gradient(ellipse_60%_60%_at_0%_100%,color-mix(in_oklab,var(--ocean)_60%,transparent),transparent_70%)]"
       />
       {children}
     </div>
@@ -95,8 +95,8 @@ export function ActionButton({ href, label, icon: Icon, primary, className }: { 
     <Link href={href} className={cn("group flex flex-col items-center gap-1.5 rounded-2xl py-1 text-xs font-bold", focusRing, className)}>
       <span
         className={cn(
-          "grid size-14 place-items-center rounded-2xl transition-colors",
-          primary ? "bg-[linear-gradient(180deg,oklch(0.86_0.15_85),oklch(0.76_0.16_70))] text-[oklch(0.3_0.08_55)] group-hover:brightness-105" : "border bg-card text-primary group-hover:bg-surface",
+          "grid size-14 place-items-center rounded-full transition-colors",
+          primary ? "bg-[linear-gradient(180deg,var(--gold-hi),var(--gold-lo))] text-[var(--gold-ink)] group-hover:brightness-105" : "border bg-card text-primary group-hover:bg-surface",
         )}
       >
         <Icon className="size-6" aria-hidden />

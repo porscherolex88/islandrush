@@ -1,6 +1,9 @@
 import type { CSSProperties, ReactNode } from "react";
+import { BodyTheme } from "@/components/shared/body-theme";
 import { BottomNavigation } from "./bottom-navigation";
 import { PushDrawerFrame } from "./side-drawer";
+
+const THEME = "theme-coinbase";
 
 /**
  * Mobile-first user app frame. On phones it is full-bleed; on larger screens it is
@@ -13,7 +16,8 @@ import { PushDrawerFrame } from "./side-drawer";
  */
 export function AppShell({ children, banner, drawer }: { children: ReactNode; banner?: ReactNode; drawer: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-surface desktop:flex desktop:items-center desktop:justify-center desktop:bg-[radial-gradient(circle_at_20%_10%,oklch(0.9_0.05_205),transparent_45%),radial-gradient(circle_at_80%_90%,oklch(0.93_0.06_85),transparent_40%)] desktop:py-6">
+    <div className={`${THEME} min-h-dvh bg-surface text-foreground desktop:flex desktop:items-center desktop:justify-center desktop:bg-[radial-gradient(circle_at_20%_10%,var(--brand-soft),transparent_45%),radial-gradient(circle_at_80%_90%,var(--gold-soft),transparent_40%)] desktop:py-6`}>
+      <BodyTheme className={THEME} />
       <div
         data-sheet-host
         className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-clip bg-background desktop:h-[min(920px,calc(100dvh-3rem))] desktop:min-h-0 desktop:overflow-hidden desktop:rounded-[2.25rem] desktop:border desktop:[contain:layout]"

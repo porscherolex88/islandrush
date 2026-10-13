@@ -82,7 +82,7 @@ export function Hero3D() {
       }}
       onPointerLeave={() => setTilt({ x: 0, y: 0 })}
     >
-      <div aria-hidden className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,oklch(0.82_0.16_80/0.55),transparent_65%)] blur-2xl animate-glow" />
+      <div aria-hidden className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--gold-hi)_40%,transparent),transparent_65%)] blur-2xl animate-glow" />
 
       <div className={cn("absolute inset-[8%] transition-opacity duration-700", show3D && ready ? "opacity-0" : "opacity-100")}>
         <motion.div
@@ -91,7 +91,7 @@ export function Hero3D() {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.1 }}
         >
-          <Image src="/illustrations/3d/chest-burst.webp" alt="Treasure chest bursting with coins and gems" fill priority sizes="(min-width: 1024px) 440px, 80vw" className="object-contain drop-shadow-[0_30px_40px_rgb(2_20_28/0.55)] animate-bob" />
+          <Image src="/illustrations/3d/chest-burst.webp" alt="Treasure chest bursting with coins and gems" fill priority sizes="(min-width: 1024px) 440px, 80vw" className="object-contain drop-shadow-[0_30px_40px_rgb(10_11_13/0.25)] animate-bob" />
         </motion.div>
       </div>
 
@@ -103,7 +103,7 @@ export function Hero3D() {
           <button
             type="button"
             onClick={() => setBurst((n) => n + 1)}
-            className="absolute inset-[18%] rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/70"
+            className="absolute inset-[18%] rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             aria-label="Open the treasure chest"
           />
         </div>
@@ -118,12 +118,12 @@ export function Hero3D() {
           animate={{ opacity: 1, scale: 1, x: tilt.x * f.depth, y: tilt.y * f.depth }}
           transition={{ opacity: { delay: f.delay + 0.3 }, scale: { type: "spring", stiffness: 140, damping: 12, delay: f.delay + 0.3 }, x: { type: "spring", stiffness: 60, damping: 15 }, y: { type: "spring", stiffness: 60, damping: 15 } }}
         >
-          <Image src={f.src} alt="" fill sizes="140px" className="object-contain drop-shadow-[0_16px_20px_rgb(2_20_28/0.5)] animate-float" style={{ animationDelay: `${f.delay * -4}s` }} />
+          <Image src={f.src} alt="" fill sizes="140px" className="object-contain drop-shadow-[0_16px_20px_rgb(10_11_13/0.2)] animate-float" style={{ animationDelay: `${f.delay * -4}s` }} />
         </motion.div>
       ))}
 
       {show3D && ready && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-0 text-center text-xs font-semibold text-white/70">Tap the chest</p>
+        <p className="pointer-events-none absolute inset-x-0 bottom-0 text-center text-xs font-semibold text-muted-foreground">Tap the chest</p>
       )}
     </div>
   );

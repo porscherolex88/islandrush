@@ -16,7 +16,7 @@ function PasswordInput({ id, autoComplete, minLength }: { id: string; autoComple
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
-        className="absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+        className="absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"
         aria-label={show ? "Hide password" : "Show password"}
       >
         {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}

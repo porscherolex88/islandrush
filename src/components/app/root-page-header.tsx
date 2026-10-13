@@ -41,7 +41,7 @@ export function UserAvatar({ name, className }: { name: string; className?: stri
   return (
     <span
       className={cn(
-        "grid shrink-0 place-items-center rounded-full bg-[linear-gradient(180deg,oklch(0.86_0.15_85),oklch(0.72_0.16_65))] font-heading font-extrabold text-amber-950 ring-4 ring-gold-soft",
+        "grid shrink-0 place-items-center rounded-full bg-[linear-gradient(180deg,var(--gold-hi),var(--gold-lo))] font-heading font-extrabold text-[var(--gold-ink)] ring-4 ring-gold-soft",
         className,
       )}
       aria-hidden
@@ -229,7 +229,7 @@ export function DailyHeader({ timeZone, streak, done, total }: { timeZone: strin
       <InnerPageHeader title="Daily" subtitle="Your rewards & discoveries for today" back="/home" />
 
       <header className="px-4 pt-1 md:px-5">
-        <div className="relative isolate overflow-hidden rounded-3xl border border-amber-200/70 bg-[linear-gradient(180deg,oklch(0.965_0.05_78),oklch(0.99_0.015_85))] p-4">
+        <div className="relative isolate overflow-hidden rounded-3xl border border-amber-200/70 bg-[linear-gradient(180deg,var(--gold-soft),var(--warm-soft))] p-4">
           <Sun aria-hidden className="absolute top-3 right-3 -z-10 size-14 text-amber-400/40" strokeWidth={1.25} />
           <p className="text-xs font-bold tracking-widest text-orange-800 uppercase">Today</p>
           <p className="font-heading text-xl leading-tight font-extrabold">
@@ -249,7 +249,7 @@ export function DailyHeader({ timeZone, streak, done, total }: { timeZone: strin
               </span>
             )}
           </div>
-          {total > 0 && <Progress value={pct} className="mt-2.5 h-2.5 bg-white/80" indicatorClassName="bg-[linear-gradient(90deg,#fdba74,#f97316)]" aria-label={`${done} of ${total} daily activities completed`} />}
+          {total > 0 && <Progress value={pct} className="mt-2.5 h-2.5 bg-white/80" indicatorClassName="bg-[linear-gradient(90deg,var(--color-orange-300),var(--color-orange-500))]" aria-label={`${done} of ${total} daily activities completed`} />}
         </div>
       </header>
     </>

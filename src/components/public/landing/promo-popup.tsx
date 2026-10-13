@@ -1,11 +1,13 @@
 "use client";
 
+import { XIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Dialog as DialogPrimitive } from "radix-ui";
+import { useEffect, useRef, useState } from "react";
 import { LandingButton } from "@/components/public/marketing";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { isAppPath } from "@/lib/app-routes";
 
 export type Promo = { id: string; title: string; body: string | null; link: string | null };
@@ -32,6 +34,7 @@ function seenIds(): string[] {
 /** One promotion per visit, after a short delay or once the visitor scrolls 40% of the page. */
 export function PromoPopup({ promos, signedIn }: { promos: Promo[]; signedIn: boolean }) {
   const reduced = useReducedMotion();
+  const contentRef = useRef<HTMLDivElement>(null);
   const [promo, setPromo] = useState<Promo | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -67,28 +70,74 @@ export function PromoPopup({ promos, signedIn }: { promos: Promo[]; signedIn: bo
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="overflow-hidden rounded-3xl border-0 bg-ocean-deep p-0 text-white ring-white/10 sm:max-w-md [&_[data-slot=dialog-close]]:text-white/80 [&_[data-slot=dialog-close]]:hover:bg-white/10 [&_[data-slot=dialog-close]]:hover:text-white">
-        <div className="relative h-44 bg-[radial-gradient(circle_at_50%_70%,oklch(0.8_0.16_80/0.55),transparent_60%)]">
-          <motion.div
-            className="absolute inset-x-0 top-3 mx-auto aspect-square w-40"
-            initial={reduced ? false : { scale: 0.4, rotate: -14, y: 40, opacity: 0 }}
-            animate={{ scale: 1, rotate: 0, y: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 220, damping: 13, delay: 0.08 }}
-          >
-            <Image src="/illustrations/3d/gift.webp" alt="" fill sizes="160px" className="object-contain drop-shadow-[0_18px_24px_rgb(0_0_0/0.45)]" />
-          </motion.div>
-        </div>
-        <div className="px-6 pb-6 text-center">
-          <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">{promo.title}</DialogTitle>
-          {promo.body && <DialogDescription className="mt-2 text-white/75">{promo.body}</DialogDescription>}
-          <LandingButton asChild className="mt-5 w-full">
-            <Link href={href} onClick={() => setOpen(false)}>
-              {cta}
-            </Link>
-          </LandingButton>
-          <p className="mt-3 text-xs text-white/50">18+ only. Play responsibly.</p>
-        </div>
-      </DialogContent>
+      <DialogPortal>
+        <DialogOverlay className="bg-ink/55 supports-backdrop-filter:backdrop-blur-sm" />
+        <DialogPrimitive.Content
+          ref={contentRef}
+          // The popup opens on a timer, so start focus on the panel instead of ringing the close button.
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            contentRef.current?.focus();
+          }}
+          className="fixed top-[calc(50%+2.5rem)] left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 text-white outline-none duration-200 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+        >
+          <div className="pointer-events-none absolute -top-24 left-1/2 z-10 w-40 -translate-x-1/2">
+            <motion.div
+              className="relative aspect-[545/700]"
+              initial={reduced ? false : { scale: 0.5, rotate: -12, y: 48, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, y: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 210, damping: 14, delay: 0.1 }}
+            >
+              <Image
+                src="/illustrations/3d/gift.webp"
+                alt=""
+                fill
+                sizes="160px"
+                className="object-contain drop-shadow-[0_20px_22px_oklch(0.15_0.04_230/0.55)]"
+              />
+            </motion.div>
+          </div>
+
+          <div className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(180deg,var(--ocean)_0%,var(--ocean-deep)_55%)] px-7 pt-32 pb-6 text-center shadow-[0_30px_80px_-20px_oklch(0.15_0.05_230/0.8)] ring-1 ring-white/10">
+            <div className="pointer-events-none absolute top-6 left-1/2 size-[34rem] -translate-x-1/2 -translate-y-1/2" aria-hidden>
+              <motion.div
+                className="size-full bg-[repeating-conic-gradient(rgb(255_255_255/0.14)_0deg_5deg,transparent_5deg_15deg)] [mask-image:radial-gradient(circle,black_0%,transparent_50%)]"
+                animate={reduced ? undefined : { rotate: 360 }}
+                transition={{ duration: 80, ease: "linear", repeat: Infinity }}
+              />
+            </div>
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_60%_70%_at_50%_10%,rgb(255_255_255/0.28),transparent_70%)]"
+              aria-hidden
+            />
+
+            <DialogPrimitive.Close className="absolute top-3.5 right-3.5 z-10 grid size-9 place-items-center rounded-full bg-white/10 text-white/80 transition-colors outline-none hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70">
+              <XIcon className="size-4" />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+
+            <div className="relative">
+              <DialogTitle className="font-heading text-[1.75rem] leading-[1.1] font-extrabold tracking-tight text-balance">
+                {promo.title}
+              </DialogTitle>
+              {promo.body && (
+                <DialogDescription className="mx-auto mt-3 max-w-[30ch] text-[0.95rem] leading-relaxed text-pretty text-white/70">
+                  {promo.body}
+                </DialogDescription>
+              )}
+              <LandingButton
+                asChild
+                className="mt-7 w-full bg-white bg-none text-primary shadow-[0_12px_28px_-10px_rgb(10_11_13/0.45)] hover:bg-white/90 hover:brightness-100 focus-visible:ring-white/60"
+              >
+                <Link href={href} onClick={() => setOpen(false)}>
+                  {cta}
+                </Link>
+              </LandingButton>
+              <p className="mt-4 text-xs text-white/45">18+ only. Play responsibly.</p>
+            </div>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 }

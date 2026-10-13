@@ -46,7 +46,7 @@ function AuthActions({ signedIn, onNavigate }: { signedIn: boolean; onNavigate?:
   );
   const logout = (
     <form action={signOutAction} className={onNavigate ? undefined : "contents"}>
-      <Button type="submit" variant="ghost" size="icon" className={cn("size-10 shrink-0", onNavigate && "size-14 rounded-xl border bg-card")} aria-label="Log out">
+      <Button type="submit" variant="ghost" size="icon" className={cn("size-10 shrink-0", onNavigate && "size-14 border bg-card")} aria-label="Log out">
         <LogOut className="size-4" aria-hidden />
       </Button>
     </form>

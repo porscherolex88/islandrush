@@ -1,9 +1,10 @@
-import { ChevronRight, HandCoins, UserRound, Users } from "lucide-react";
+import { Box, CalendarCheck, Disc3, HandCoins, ListChecks, Sparkles, Users } from "lucide-react";
 import type { Metadata } from "next";
-import { Fragment } from "react";
+import { type EarnWay, EarnMore } from "@/components/app/earn-more";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
 import { Section } from "@/components/app/mobile-header";
 import { ReferralCard } from "@/components/app/referral-card";
+import { ReferralHero } from "@/components/app/referral-hero";
 import { EmptyState } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { requireUser } from "@/lib/auth/session";
@@ -13,6 +14,7 @@ import { siteUrl } from "@/lib/site-url";
 import { formatDate, formatDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { isFeatureEnabled } from "@/server/services/config";
+import { getDailyState } from "@/server/services/daily";
 import { getReferralSummary } from "@/server/services/referrals";
 
 export const metadata: Metadata = { title: "Referrals" };
@@ -20,26 +22,87 @@ export const metadata: Metadata = { title: "Referrals" };
 export default async function ReferralsPage() {
   const fiat = await getFiatDisplay();
   const user = await requireUser();
-  const [s, origin, enabled] = await Promise.all([getReferralSummary(user.id), siteUrl(), isFeatureEnabled("referrals")]);
+  const [s, origin, enabled, daily] = await Promise.all([getReferralSummary(user.id), siteUrl(), isFeatureEnabled("referrals"), getDailyState(user.id)]);
+  const cash = (v: Parameters<typeof formatCash>[0]) => formatCash(v, { currency: fiat });
   const link = `${origin}/register?ref=${s.code}`;
   const active = enabled && s.config.enabled;
   const levels = s.levels.filter((l) => l.active && l.level <= s.config.levels);
-  const rewardText = (l: (typeof levels)[number]) => (l.rewardKind === "PERCENT" ? `${Number(l.value)}% of first deposit` : `${formatCash(l.value, { currency: fiat })} each`);
+  const rewardText = (l: (typeof levels)[number]) => (l.rewardKind === "PERCENT" ? `${Number(l.value)}% of first deposit` : `${cash(l.value)} each`);
+  const direct = levels.find((l) => l.level === 1);
+  const headline = !direct
+    ? "Invite friends, explore together"
+    : direct.rewardKind === "PERCENT"
+      ? `Earn ${Number(direct.value)}% of every friend's first deposit`
+      : `Earn ${cash(direct.value)} for every friend who deposits`;
   const network = [
     { label: "Direct friends", hint: "People you invited", value: s.counts.l1 },
     { label: "Level 2", hint: "Friends they invited", value: s.counts.l2 },
     { label: "Level 3", hint: "The next circle", value: s.counts.l3 },
-  ].slice(0, Math.max(1, s.config.levels));
+  ]
+    .slice(0, Math.max(1, s.config.levels))
+    .map((c, i) => ({ ...c, reward: levels.find((l) => l.level === i + 1) }));
+
+  const streak = daily.streak.current;
+  const ways: EarnWay[] = [
+    {
+      href: "/daily",
+      icon: CalendarCheck,
+      title: "Daily check-in",
+      description:
+        streak > 0
+          ? `Day ${streak} streak.${daily.nextMilestone ? ` ${daily.nextMilestone.title} at ${daily.nextMilestone.days} days.` : ""}`
+          : "Check in every day to build a streak and unlock milestone rewards.",
+      done: daily.loginClaimed,
+    },
+    ...(daily.spinAvailable ? [{ href: "/daily#spin", icon: Disc3, title: "Daily Spin", description: "One free spin every day.", done: Boolean(daily.spin) }] : []),
+    ...(daily.missions.length
+      ? [
+          {
+            href: "/daily#missions",
+            icon: ListChecks,
+            title: "Daily Missions",
+            description: `${daily.missionsDone} of ${daily.missions.length} done. Finish all for a bonus reward.`,
+            done: daily.missionsDone >= daily.missions.length,
+          },
+        ]
+      : []),
+    ...(daily.event ? [{ href: "/daily#event", icon: Sparkles, title: "Daily Mystery", description: daily.event.title, done: Boolean(daily.eventClaim) }] : []),
+    { href: "/play/mystery-box", icon: Box, title: "Mystery Box", description: "Open a box for Loot, Credits and collectible items." },
+  ];
 
   return (
     <div>
       <InnerPageHeader title="Referrals" subtitle="Invite friends, earn rewards" />
       <Section>
+        <ReferralHero
+          total={cash(s.totals.all)}
+          stats={[
+            { label: "Withdrawable", value: cash(s.totals.settled) },
+            { label: "Pending", value: cash(s.totals.pending) },
+            { label: "Friends", value: String(s.counts.l1) },
+          ]}
+        />
+      </Section>
+
+      <Section>
         {active ? (
-          <ReferralCard code={s.code} link={link} />
+          <ReferralCard
+            code={s.code}
+            link={link}
+            headline={headline}
+            steps={[
+              "Share your link or code with a friend.",
+              `They sign up and make a first deposit of ${cash(s.config.qualifyingDepositMin)} or more.`,
+              `Your reward waits in Pending for about ${s.config.pendingHours} hours, then becomes withdrawable.`,
+            ]}
+          />
         ) : (
           <EmptyState icon={<Users className="size-8 text-primary" />} title="Invites are paused" description="The invite program is temporarily unavailable. Rewards you already earned are not affected." />
         )}
+      </Section>
+
+      <Section>
+        <EarnMore ways={ways} />
       </Section>
 
       <Section title="Your network">
@@ -49,57 +112,13 @@ export default async function ReferralsPage() {
               <p className="font-heading text-3xl font-extrabold tabular">{c.value}</p>
               <p className="text-sm font-semibold">{c.label}</p>
               <p className="text-xs text-muted-foreground">{c.hint}</p>
+              {c.reward && <p className="mt-1.5 text-[11px] leading-tight font-semibold text-primary">{rewardText(c.reward)}</p>}
             </div>
           ))}
         </div>
       </Section>
 
-      <Section title="Your earnings">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-surface p-4">
-            <p className="text-sm text-muted-foreground">Pending</p>
-            <p className="font-heading text-2xl font-extrabold tabular">{formatCash(s.totals.pending, { currency: fiat })}</p>
-            <p className="text-xs text-muted-foreground">Under review</p>
-          </div>
-          <div className="rounded-2xl bg-success-soft p-4">
-            <p className="text-sm text-muted-foreground">Earned</p>
-            <p className="font-heading text-2xl font-extrabold text-success tabular">{formatCash(s.totals.settled, { currency: fiat })}</p>
-            <p className="text-xs text-muted-foreground">Now withdrawable</p>
-          </div>
-        </div>
-      </Section>
-
-      <Section title="How it works">
-        <div className="rounded-2xl border bg-card p-4">
-          <ol className="flex items-start justify-between" aria-label="Invite levels">
-            <li className="flex w-16 flex-col items-center gap-1 text-center">
-              <span className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground">
-                <UserRound className="size-5" aria-hidden />
-              </span>
-              <span className="text-sm font-bold">You</span>
-            </li>
-            {levels.map((l) => (
-              <Fragment key={l.level}>
-                <ChevronRight className="mt-4 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <li className="flex w-16 flex-col items-center gap-1 text-center">
-                  <span className="grid size-12 place-items-center rounded-full bg-gold-soft text-gold-foreground">
-                    <UserRound className="size-5" aria-hidden />
-                  </span>
-                  <span className="text-sm font-bold">Friend</span>
-                  <span className="text-[11px] leading-tight text-muted-foreground">{rewardText(l)}</span>
-                </li>
-              </Fragment>
-            ))}
-          </ol>
-          <ul className="mt-4 space-y-1.5 border-t pt-3 text-sm text-muted-foreground">
-            <li>1. Share your link with a friend.</li>
-            <li>2. They sign up and make a first deposit of {formatCash(s.config.qualifyingDepositMin, { currency: fiat })} or more.</li>
-            <li>3. Your reward waits in Pending for about {s.config.pendingHours} hours, then becomes Withdrawable.</li>
-          </ul>
-        </div>
-      </Section>
-
-      <Section title="Your friends">
+      <Section title="Your friends" id="friends" className="scroll-mt-20">
         {s.directReferrals.length === 0 ? (
           <EmptyState icon={<HandCoins className="size-8 text-primary" />} title="No friends yet" description="Share your link. Friends who join will appear here." />
         ) : (
@@ -110,7 +129,7 @@ export default async function ReferralsPage() {
                   <p className="font-semibold">{r.name}</p>
                   <p className="text-xs text-muted-foreground">Joined {formatDate(r.joined)}</p>
                 </div>
-                <StatusBadge status={r.qualified ? "COMPLETED" : "PENDING"} label={r.qualified ? "Deposited" : "Not deposited yet"} />
+                <StatusBadge status={r.qualified ? "COMPLETED" : "PENDING"} tone={r.qualified ? "brand" : "neutral"} label={r.qualified ? "Deposited" : "Not deposited yet"} />
               </li>
             ))}
           </ul>
@@ -128,7 +147,7 @@ export default async function ReferralsPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold tabular">{formatCash(r.amount, { currency: fiat })}</p>
-                  <StatusBadge status={r.status} />
+                  <StatusBadge status={r.status} tone={r.status === "SETTLED" ? "brand" : r.status === "REVERSED" ? "danger" : "neutral"} />
                 </div>
               </li>
             ))}

@@ -68,7 +68,7 @@ export function AppDrawer({
 
       <Section className="mt-auto pt-6 pb-4">
         <form action={signOutAction}>
-          <button type="submit" className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border bg-card font-semibold text-destructive hover:bg-destructive/5">
+          <button type="submit" className="flex h-14 w-full items-center justify-center gap-2 rounded-full border bg-card font-semibold text-destructive hover:bg-destructive/5">
             <LogOut className="size-4" aria-hidden /> Log out
           </button>
         </form>

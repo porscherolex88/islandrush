@@ -23,7 +23,7 @@ function StepArt({ step, sizes, priority }: { step: (typeof STEPS)[number]; size
   return FULL_BLEED.has(step.title) ? (
     <>
       <Image src={step.art} alt="" fill sizes={sizes} priority={priority} className="object-cover" />
-      <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,transparent_55%,oklch(0.24_0.05_228/0.75))]" />
+      <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,transparent_55%,color-mix(in_oklab,var(--ocean-deep)_75%,transparent))]" />
     </>
   ) : (
     <span className="absolute inset-[14%]">
@@ -33,7 +33,7 @@ function StepArt({ step, sizes, priority }: { step: (typeof STEPS)[number]; size
 }
 
 function Panel({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_50%_60%,oklch(0.42_0.08_215),var(--ocean-deep)_75%)]", className)}>{children}</div>;
+  return <div className={cn("relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_50%_60%,var(--ocean),var(--ocean-deep)_75%)]", className)}>{children}</div>;
 }
 
 function Step({ i, active, onActive }: { i: number; active: boolean; onActive: (i: number) => void }) {
@@ -49,7 +49,7 @@ function Step({ i, active, onActive }: { i: number; active: boolean; onActive: (
         <span
           className={cn(
             "grid size-10 shrink-0 place-items-center rounded-full border-2 font-heading text-base font-extrabold transition-colors duration-300 sm:size-11 sm:text-lg",
-            active ? "border-gold bg-gold text-[oklch(0.3_0.08_55)]" : "border-border bg-card text-muted-foreground",
+            active ? "border-gold bg-gold text-[var(--gold-ink)]" : "border-border bg-card text-muted-foreground",
           )}
         >
           {i + 1}

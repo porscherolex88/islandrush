@@ -8,7 +8,7 @@ import { Marquee } from "./marquee";
 const KIND: Record<ActivityKind, { icon: typeof Gift; verb: string; tint: string }> = {
   box: { icon: Package, verb: "opened", tint: "bg-ocean text-white" },
   bigbox: { icon: Puzzle, verb: "found", tint: "bg-brand-soft text-primary" },
-  prize: { icon: Gift, verb: "unlocked", tint: "bg-gold text-[oklch(0.3_0.08_55)]" },
+  prize: { icon: Gift, verb: "unlocked", tint: "bg-gold text-[var(--gold-ink)]" },
 };
 
 function ago(iso: string, now: number) {
@@ -47,8 +47,8 @@ export function LiveTicker({ events }: { events: LandingActivity[] }) {
   const now = useClock();
 
   return (
-    <div className="flex items-center border-y border-white/10 bg-ocean-deep text-white">
-      <span className="z-10 flex h-14 shrink-0 items-center gap-2 bg-ocean-deep pr-4 pl-4 text-sm font-bold sm:pl-6">
+    <div className="flex items-center border-y border-white/10 bg-ink text-white">
+      <span className="z-10 flex h-14 shrink-0 items-center gap-2 bg-ink pr-4 pl-4 text-sm font-bold sm:pl-6">
         <span className="relative flex size-2.5">
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400" />
@@ -65,7 +65,7 @@ export function LiveTicker({ events }: { events: LandingActivity[] }) {
                 <Icon className="size-3.5" aria-hidden />
               </span>
               <span>
-                <strong className="font-semibold">{e.player}</strong> <span className="text-white/70">{k.verb}</span> <strong className="font-semibold text-gold">{describe(e)}</strong>
+                <strong className="font-semibold">{e.player}</strong> <span className="text-white/70">{k.verb}</span> <strong className="font-semibold text-amber-300">{describe(e)}</strong>
               </span>
               {now !== null && <span className="text-xs text-white/45">{ago(e.at, now)}</span>}
             </span>

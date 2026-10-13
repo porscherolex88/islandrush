@@ -31,7 +31,7 @@ export function PrizeWheel({ prizePct, outcome, onDone }: { prizePct: number; ou
   return (
     <div className="relative mx-auto aspect-square w-64">
       <svg viewBox="0 0 100 100" className="absolute -top-1 left-1/2 z-10 h-7 w-7 -translate-x-1/2" aria-hidden>
-        <path d="M50 92 L22 30 Q50 10 78 30 Z" fill="white" stroke="oklch(0.3 0.05 230)" strokeWidth="6" strokeLinejoin="round" />
+        <path d="M50 92 L22 30 Q50 10 78 30 Z" fill="white" style={{ stroke: "var(--ocean-deep)" }} strokeWidth="6" strokeLinejoin="round" />
       </svg>
       <motion.svg
         viewBox="0 0 100 100"
@@ -42,9 +42,9 @@ export function PrizeWheel({ prizePct, outcome, onDone }: { prizePct: number; ou
         onAnimationComplete={() => outcome && onDone?.()}
         aria-hidden
       >
-        <circle cx="50" cy="50" r="49" fill="oklch(0.3 0.05 230)" />
-        {prizePct > 0 && <path d={arc(0, prizeDeg)} fill="oklch(0.82 0.13 80)" />}
-        {prizePct < 100 && <path d={arc(prizeDeg, 360)} fill="oklch(0.62 0.08 200)" />}
+        <circle cx="50" cy="50" r="49" style={{ fill: "var(--ocean-deep)" }} />
+        {prizePct > 0 && <path d={arc(0, prizeDeg)} style={{ fill: "var(--gold)" }} />}
+        {prizePct < 100 && <path d={arc(prizeDeg, 360)} style={{ fill: "var(--ocean)" }} />}
         {prizePct > 0 && (
           <text x={prizeLabel.x} y={prizeLabel.y} textAnchor="middle" dominantBaseline="middle" className="fill-amber-950 font-heading text-[7px] font-extrabold">
             Prize
@@ -55,7 +55,7 @@ export function PrizeWheel({ prizePct, outcome, onDone }: { prizePct: number; ou
             Alternative
           </text>
         )}
-        <circle cx="50" cy="50" r="9" fill="white" stroke="oklch(0.3 0.05 230)" strokeWidth="2" />
+        <circle cx="50" cy="50" r="9" fill="white" style={{ stroke: "var(--ocean-deep)" }} strokeWidth="2" />
       </motion.svg>
     </div>
   );

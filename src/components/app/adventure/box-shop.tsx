@@ -109,7 +109,7 @@ export function BoxShop({
 
   return (
     <div className="space-y-4">
-      <div className="relative isolate overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_15%,oklch(0.45_0.08_205),oklch(0.24_0.05_228)_75%)] px-5 pt-5 pb-6 text-center text-white">
+      <div className="relative isolate overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_15%,var(--ocean),var(--ocean-deep)_75%)] px-5 pt-5 pb-6 text-center text-white">
         <div aria-hidden className="pointer-events-none absolute -top-20 left-1/2 -z-10 size-72 -translate-x-1/2 rounded-full bg-amber-200/20 blur-3xl" />
         <p className="text-xs font-bold tracking-wide text-amber-200 uppercase">{map?.name ?? `Adventure Level ${box.level}`}</p>
         <h2 className="font-heading text-2xl font-extrabold">{box.name}</h2>
@@ -281,7 +281,7 @@ export function BoxShop({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_25%,oklch(0.42_0.08_215),oklch(0.24_0.05_228))] p-6 text-white ring-1 ring-white/10"
+              className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_25%,var(--ocean),var(--ocean-deep))] p-6 text-white ring-1 ring-white/10"
               initial={reduce ? { opacity: 0 } : { scale: 0.85, y: 24, opacity: 0 }}
               animate={reduce ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
               transition={{ type: "spring", stiffness: 280, damping: 24 }}

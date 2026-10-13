@@ -7,16 +7,13 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const SEGMENTS = [
-  { fill: "oklch(0.55 0.1 205)", Icon: Coins },
-  { fill: "oklch(0.84 0.15 82)", Icon: Star },
-  { fill: "oklch(0.68 0.16 28)", Icon: Gift },
-  { fill: "oklch(0.95 0.03 85)", Icon: Coins },
-  { fill: "oklch(0.55 0.1 205)", Icon: Star },
-  { fill: "oklch(0.84 0.15 82)", Icon: Gift },
-  { fill: "oklch(0.68 0.16 28)", Icon: Coins },
-  { fill: "oklch(0.95 0.03 85)", Icon: Star },
+const TONES = [
+  { fill: "var(--ocean-deep)", ink: "white" },
+  { fill: "var(--gold)", ink: "var(--gold-ink)" },
+  { fill: "var(--ocean)", ink: "white" },
+  { fill: "var(--gold-soft)", ink: "var(--gold-foreground)" },
 ];
+const SEGMENTS = [Coins, Star, Gift, Coins, Star, Gift, Coins, Star].map((Icon, i) => ({ Icon, ...TONES[i % TONES.length] }));
 
 /** Rounded so server and client serialise identical SVG attributes. */
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -50,25 +47,25 @@ function SpinWheel() {
     <div className="flex flex-col items-center">
       <div className="relative aspect-square w-full max-w-[300px]">
         <div aria-hidden className="absolute -top-1 left-1/2 z-10 h-0 w-0 -translate-x-1/2 border-x-[14px] border-t-[24px] border-x-transparent border-t-gold drop-shadow" />
-        <motion.svg viewBox="-110 -110 220 220" className="size-full drop-shadow-[0_20px_30px_oklch(0.24_0.05_228/0.35)]" style={{ rotate }} aria-hidden>
-          <circle r="108" fill="oklch(0.78 0.15 78)" />
+        <motion.svg viewBox="-110 -110 220 220" className="size-full drop-shadow-[0_20px_30px_rgb(10_11_13/0.25)]" style={{ rotate }} aria-hidden>
+          <circle r="108" style={{ fill: "var(--gold-lo)" }} />
           {SEGMENTS.map((s, i) => (
-            <path key={i} d={slice(i, n, 96)} fill={s.fill} stroke="oklch(0.86 0.13 85)" strokeWidth="1.5" />
+            <path key={i} d={slice(i, n, 96)} style={{ fill: s.fill, stroke: "var(--gold-hi)" }} strokeWidth="1.5" />
           ))}
           {SEGMENTS.map((s, i) => {
             const a = ((i + 0.5) / n) * 360 - 90;
             const rad = (a * Math.PI) / 180;
             return (
               <g key={`i${i}`} transform={`translate(${r2(Math.cos(rad) * 62)} ${r2(Math.sin(rad) * 62)}) rotate(${r2(a + 90)})`}>
-                <s.Icon x={-11} y={-11} width={22} height={22} color={i % 4 === 3 || i % 4 === 1 ? "oklch(0.36 0.09 60)" : "white"} strokeWidth={2.2} />
+                <s.Icon x={-11} y={-11} width={22} height={22} style={{ color: s.ink }} strokeWidth={2.2} />
               </g>
             );
           })}
           {Array.from({ length: 16 }, (_, i) => {
             const a = (i / 16) * Math.PI * 2;
-            return <circle key={`b${i}`} cx={r2(Math.cos(a) * 102)} cy={r2(Math.sin(a) * 102)} r="3" fill="oklch(0.98 0.04 90)" />;
+            return <circle key={`b${i}`} cx={r2(Math.cos(a) * 102)} cy={r2(Math.sin(a) * 102)} r="3" style={{ fill: "var(--warm-soft)" }} />;
           })}
-          <circle r="16" fill="oklch(0.82 0.15 80)" stroke="oklch(0.7 0.14 70)" strokeWidth="3" />
+          <circle r="16" style={{ fill: "var(--gold)", stroke: "var(--gold-foreground)" }} strokeWidth="3" />
         </motion.svg>
       </div>
       <Button variant="gold" size="xl" className="mt-6 rounded-full" onClick={spin} disabled={spinning}>
@@ -96,7 +93,7 @@ function StreakStrip() {
     <div ref={ref} className="rounded-3xl border bg-card p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-extrabold">Check in, build a streak</h3>
-        <span className="flex items-center gap-1 text-sm font-bold text-warning">
+        <span className="flex items-center gap-1 text-sm font-bold text-primary">
           <Flame className="size-4" aria-hidden /> Day 7
         </span>
       </div>
@@ -112,7 +109,7 @@ function StreakStrip() {
               className={cn(
                 "grid aspect-square place-items-center rounded-lg text-[10px] font-bold",
                 milestone ? "ring-2 ring-gold" : "",
-                done ? "bg-gold text-[oklch(0.3_0.08_55)]" : "bg-muted text-muted-foreground",
+                done ? "bg-gold text-[var(--gold-ink)]" : "bg-muted text-muted-foreground",
               )}
               initial={false}
               animate={inView && done ? { scale: [1, 1.25, 1] } : undefined}

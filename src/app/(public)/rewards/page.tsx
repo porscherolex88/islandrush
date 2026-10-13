@@ -42,7 +42,7 @@ export default async function RewardsPage() {
             "Rewards obtained through fraud or abuse may be held or reversed.",
           ].map((t, i) => (
             <li key={t} className="flex gap-3 rounded-3xl border bg-card p-4">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gold font-heading text-sm font-bold text-[oklch(0.3_0.08_55)]">{i + 1}</span>
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gold font-heading text-sm font-bold text-[var(--gold-ink)]">{i + 1}</span>
               <span>{t}</span>
             </li>
           ))}

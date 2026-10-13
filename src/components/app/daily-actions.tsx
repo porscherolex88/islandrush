@@ -19,9 +19,9 @@ import { RewardChip, RewardReveal } from "./reward-reveal";
 
 export function CheckInCard({ claimed, streak }: { claimed: boolean; streak: number }) {
   return (
-    <div className="relative isolate flex flex-col overflow-hidden rounded-2xl border border-orange-200 bg-[linear-gradient(160deg,oklch(0.98_0.03_75),oklch(0.93_0.07_60))] p-3">
+    <div className="relative isolate flex flex-col overflow-hidden rounded-2xl border border-orange-200 bg-[linear-gradient(160deg,var(--warm-soft),var(--gold-soft))] p-3">
       <Flame aria-hidden className="absolute -top-3 -right-4 -z-10 size-24 text-orange-400/20" strokeWidth={1.5} />
-      <span className="grid size-11 place-items-center rounded-full bg-[linear-gradient(180deg,#fb923c,#ea580c)] text-white shadow-sm shadow-orange-600/30" aria-hidden>
+      <span className="grid size-11 place-items-center rounded-full bg-[linear-gradient(180deg,var(--color-orange-400),var(--color-orange-600))] text-white shadow-sm shadow-orange-600/30" aria-hidden>
         <Flame className="size-6" />
       </span>
       <p className="mt-3 font-heading text-lg leading-tight font-extrabold text-orange-950">Daily check-in</p>
@@ -61,7 +61,7 @@ export function CheckInButton({ claimed, streak, compact }: { claimed: boolean; 
 /** Rounds SVG coordinates so server and browser render identical attribute strings. */
 const px = (n: number) => Math.round(n * 1000) / 1000;
 
-const WHEEL_COLORS = ["#0f5e6e", "#f6c453", "#13798a", "#fbe3a1", "#0b4f5c", "#f2b134", "#1a8fa1", "#fdf0c8"];
+const WHEEL_COLORS = ["var(--ocean-deep)", "var(--gold)", "var(--ocean)", "var(--gold-soft)"];
 
 export function SpinWheel({ entries, spun, available, boosted }: { entries: PoolOdds; spun: RewardResult | null; available: boolean; boosted: boolean }) {
   const reduce = useReducedMotion();
@@ -122,13 +122,13 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
           role="img"
           aria-label="Daily Spin wheel"
         >
-          <circle r="129" fill="#b7791f" />
-          <circle r="124" fill="#f6c453" />
+          <circle r="129" style={{ fill: "var(--gold-foreground)" }} />
+          <circle r="124" style={{ fill: "var(--gold)" }} />
           {segs.map((e, i) => {
             const mid = ((i * seg + seg / 2 - 90) * Math.PI) / 180;
             return (
               <g key={e.id}>
-                <path d={arc(i)} fill={WHEEL_COLORS[i % WHEEL_COLORS.length]} stroke="#fff7e0" strokeWidth="2" />
+                <path d={arc(i)} style={{ fill: WHEEL_COLORS[i % WHEEL_COLORS.length], stroke: "var(--warm-soft)" }} strokeWidth="2" />
                 <text x={px(Math.cos(mid) * 80)} y={px(Math.sin(mid) * 80)} textAnchor="middle" dominantBaseline="central" fontSize="24" transform={`rotate(${px(i * seg + seg / 2)} ${px(Math.cos(mid) * 80)} ${px(Math.sin(mid) * 80)})`}>
                   {e.icon}
                 </text>
@@ -136,10 +136,10 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
             );
           })}
           {Array.from({ length: 16 }).map((_, i) => (
-            <circle key={i} cx={px(Math.cos((i / 16) * Math.PI * 2) * 126)} cy={px(Math.sin((i / 16) * Math.PI * 2) * 126)} r="2.6" fill="#fff7e0" />
+            <circle key={i} cx={px(Math.cos((i / 16) * Math.PI * 2) * 126)} cy={px(Math.sin((i / 16) * Math.PI * 2) * 126)} r="2.6" style={{ fill: "var(--warm-soft)" }} />
           ))}
-          <circle r="26" fill="#0b4f5c" stroke="#f6c453" strokeWidth="5" />
-          <circle r="9" fill="#f6c453" />
+          <circle r="26" style={{ fill: "var(--ocean-deep)", stroke: "var(--gold)" }} strokeWidth="5" />
+          <circle r="9" style={{ fill: "var(--gold)" }} />
         </motion.svg>
       </div>
       <div className="mt-4 w-full">

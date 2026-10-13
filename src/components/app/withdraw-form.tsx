@@ -63,7 +63,7 @@ export function WithdrawForm({ accounts, available, min, max }: { accounts: Acco
           <Label htmlFor="w-amount" className="text-base font-semibold">
             How much?
           </Label>
-          <button type="button" className="h-11 rounded-lg px-2 text-sm font-semibold text-primary hover:bg-brand-soft" onClick={() => setAmount(toDecimal(toMinor(max)).replace(/\.00$/, ""))}>
+          <button type="button" className="h-11 rounded-full px-3 text-sm font-semibold text-primary hover:bg-brand-soft" onClick={() => setAmount(toDecimal(toMinor(max)).replace(/\.00$/, ""))}>
             Max {fmt(max)}
           </button>
         </div>

@@ -53,6 +53,7 @@
   --color-surface: var(--surface);
   --color-ocean: var(--ocean);
   --color-ocean-deep: var(--ocean-deep);
+  --color-ink: var(--ink);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -106,6 +107,133 @@
   --sidebar-accent-foreground: oklch(0.32 0.07 215);
   --sidebar-border: oklch(0.91 0.014 85);
   --sidebar-ring: oklch(0.6 0.1 210);
+  --gold-hi: oklch(0.86 0.15 85);
+  --gold-lo: oklch(0.76 0.16 70);
+  --gold-ink: oklch(0.3 0.08 55);
+  --warm-soft: oklch(0.97 0.04 80);
+  --ink: oklch(0.2 0.045 230);
+}
+
+/*
+ * Coinbase palette for the signed-in app: Coinbase Blue is the only accent.
+ * The warm and green Tailwind families are remapped onto one blue ramp so every
+ * highlight, flame and success state reads as the same accent. Rarity colours are
+ * fixed in src/lib/rarity.ts and are not affected.
+ */
+.theme-coinbase {
+  --cb-50: #f0f5ff;
+  --cb-100: #e0eaff;
+  --cb-200: #c2d5ff;
+  --cb-300: #94b6ff;
+  --cb-400: #5c8eff;
+  --cb-500: #2e6bff;
+  --cb-600: #0052ff;
+  --cb-700: #0043d1;
+  --cb-800: #0036a8;
+  --cb-900: #002b85;
+  --cb-950: #001a52;
+
+  --ocean: #2e6bff;
+  --ocean-deep: #0039b3;
+  --gold: #0052ff;
+  --gold-foreground: #0043d1;
+  --gold-soft: #ebf1ff;
+  --gold-hi: #3d7bff;
+  --gold-lo: #0052ff;
+  --gold-ink: #ffffff;
+  --warm-soft: #f5f8ff;
+  --ink: #0a0b0d;
+  --success: #0052ff;
+  --success-soft: #ebf1ff;
+  --warning: #5b616e;
+  --warning-soft: #eef0f3;
+  --chart-1: #0052ff;
+  --chart-2: #5c8eff;
+  --chart-3: #94b6ff;
+  --chart-4: #0036a8;
+  --chart-5: #c2d5ff;
+
+  --background: #ffffff;
+  --foreground: #0a0b0d;
+  --surface: #eef0f3;
+  --card: #ffffff;
+  --card-foreground: #0a0b0d;
+  --popover: #ffffff;
+  --popover-foreground: #0a0b0d;
+  --primary: #0052ff;
+  --primary-foreground: #ffffff;
+  --brand-soft: #ebf1ff;
+  --secondary: #eef0f3;
+  --secondary-foreground: #0a0b0d;
+  --muted: #eef0f3;
+  --muted-foreground: #5b616e;
+  --accent: #ebf1ff;
+  --accent-foreground: #0052ff;
+  --border: #dee1e6;
+  --input: #dee1e6;
+  --ring: #0052ff;
+
+  --color-amber-50: var(--cb-50);
+  --color-amber-100: var(--cb-100);
+  --color-amber-200: var(--cb-200);
+  --color-amber-300: var(--cb-300);
+  --color-amber-400: var(--cb-400);
+  --color-amber-500: var(--cb-500);
+  --color-amber-600: var(--cb-600);
+  --color-amber-700: var(--cb-700);
+  --color-amber-800: var(--cb-800);
+  --color-amber-900: var(--cb-900);
+  --color-amber-950: var(--cb-950);
+  --color-orange-50: var(--cb-50);
+  --color-orange-100: var(--cb-100);
+  --color-orange-200: var(--cb-200);
+  --color-orange-300: var(--cb-300);
+  --color-orange-400: var(--cb-400);
+  --color-orange-500: var(--cb-500);
+  --color-orange-600: var(--cb-600);
+  --color-orange-700: var(--cb-700);
+  --color-orange-800: var(--cb-800);
+  --color-orange-900: var(--cb-900);
+  --color-orange-950: var(--cb-950);
+  --color-yellow-50: var(--cb-50);
+  --color-yellow-100: var(--cb-100);
+  --color-yellow-200: var(--cb-200);
+  --color-yellow-300: var(--cb-300);
+  --color-yellow-400: var(--cb-400);
+  --color-yellow-500: var(--cb-500);
+  --color-yellow-600: var(--cb-600);
+  --color-yellow-700: var(--cb-700);
+  --color-yellow-800: var(--cb-800);
+  --color-emerald-50: var(--cb-50);
+  --color-emerald-100: var(--cb-100);
+  --color-emerald-200: var(--cb-200);
+  --color-emerald-300: var(--cb-300);
+  --color-emerald-400: var(--cb-400);
+  --color-emerald-500: var(--cb-500);
+  --color-emerald-600: var(--cb-600);
+  --color-emerald-700: var(--cb-700);
+  --color-emerald-800: var(--cb-800);
+  --color-green-50: var(--cb-50);
+  --color-green-100: var(--cb-100);
+  --color-green-500: var(--cb-500);
+  --color-green-600: var(--cb-600);
+  --color-green-700: var(--cb-700);
+  --color-violet-50: var(--cb-50);
+  --color-violet-100: var(--cb-100);
+  --color-violet-200: var(--cb-200);
+  --color-violet-700: var(--cb-700);
+}
+
+.theme-coinbase [data-sonner-toaster][data-sonner-toaster] {
+  --success-bg: #ebf1ff;
+  --success-border: #c2d5ff;
+  --success-text: #0043d1;
+  --warning-bg: #eef0f3;
+  --warning-border: #dee1e6;
+  --warning-text: #0a0b0d;
+  --info-bg: #ebf1ff;
+  --info-border: #c2d5ff;
+  --info-text: #0043d1;
 }
 
 @layer base {

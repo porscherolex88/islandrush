@@ -15,7 +15,7 @@ const EVERGREEN: PromoItem[] = [
 export function PromoTicker({ banners }: { banners: PromoItem[] }) {
   const items = banners.length ? [...banners, ...EVERGREEN.slice(0, Math.max(0, 4 - banners.length))] : EVERGREEN;
   return (
-    <div className="border-b border-gold/30 bg-[linear-gradient(90deg,oklch(0.86_0.15_85),oklch(0.8_0.16_72))] text-[oklch(0.3_0.08_55)]">
+    <div className="border-b border-gold/30 bg-[linear-gradient(90deg,var(--gold-hi),var(--gold-lo))] text-[var(--gold-ink)]">
       <Marquee label="Promotions" duration={Math.max(24, items.length * 9)}>
         {items.map((b) => {
           const body = (

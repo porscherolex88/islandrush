@@ -1,9 +1,11 @@
 import Image from "next/image";
+import { BodyTheme } from "@/components/shared/body-theme";
 import { Logo } from "@/components/shared/logo";
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-2">
+    <div className="theme-coinbase grid min-h-dvh bg-background text-foreground lg:grid-cols-2">
+      <BodyTheme className="theme-coinbase" />
       <div className="flex flex-col px-5 py-6 sm:px-10">
         <Logo />
         <div className="relative mt-5 h-28 overflow-hidden rounded-3xl text-white sm:h-36 lg:hidden">

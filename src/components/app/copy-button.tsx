@@ -20,7 +20,7 @@ export function CopyButton({ value, label = "Copy", className }: { value: string
           toast.error("Couldn't copy. Please copy it manually.");
         }
       }}
-      className={cn("inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-primary hover:bg-brand-soft", className)}
+      className={cn("inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-primary hover:bg-brand-soft", className)}
       aria-label={`${label}: ${value}`}
     >
       {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}

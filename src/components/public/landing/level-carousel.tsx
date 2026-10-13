@@ -25,13 +25,13 @@ function TiltCard({ m }: { m: LandingMap }) {
   const first = m.level === 1;
   return (
     <li ref={ref} onPointerMove={onMove} onPointerLeave={reset} className="w-[78%] shrink-0 snap-start [perspective:900px] sm:w-[46%] lg:w-[31%]">
-      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-[1.75rem] text-white shadow-[0_24px_50px_-20px_oklch(0.24_0.05_228/0.6)] transition-transform duration-300 ease-out [transform:rotateX(var(--rx,0deg))_rotateY(var(--ry,0deg))]">
+      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-[1.75rem] text-white shadow-[0_24px_50px_-20px_rgb(10_11_13/0.35)] transition-transform duration-300 ease-out [transform:rotateX(var(--rx,0deg))_rotateY(var(--ry,0deg))]">
         <Image src={mapArt(m.level, m.artwork)} alt={`${m.name} map`} fill sizes="(min-width: 1024px) 360px, 78vw" className="-z-10 object-cover" />
         <div aria-hidden className="art-scrim-b absolute inset-0 -z-10" />
         <div className="flex items-center justify-between p-4">
           <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-bold backdrop-blur">Level {m.level}</span>
           {first ? (
-            <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-xs font-bold text-[oklch(0.3_0.08_55)]">
+            <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-xs font-bold text-[var(--gold-ink)]">
               <Sparkles className="size-3.5" aria-hidden /> Start here
             </span>
           ) : (

@@ -36,7 +36,7 @@ export default async function HelpPage() {
             </section>
           ))}
         </div>
-        <div className="mt-10 rounded-3xl bg-gold-soft p-6 text-center">
+        <div className="mt-10 rounded-3xl bg-brand-soft p-6 text-center">
           <p className="font-semibold">Can&apos;t find what you need?</p>
           <p className="mt-1 text-sm text-muted-foreground">
             <Link href="/contact" className="font-semibold text-primary underline">

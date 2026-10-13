@@ -92,7 +92,7 @@ function Celebration({ open, onClose, labelledBy, children }: { open: boolean; o
       {open && (
         <motion.div role="dialog" aria-modal="true" aria-labelledby={labelledBy} className="fixed inset-0 z-50 grid place-items-center bg-ocean-deep/70 p-5 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <motion.div
-            className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_25%,oklch(0.42_0.08_215),oklch(0.24_0.05_228))] p-6 text-center text-white ring-1 ring-white/10"
+            className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_25%,var(--ocean),var(--ocean-deep))] p-6 text-center text-white ring-1 ring-white/10"
             initial={reduce ? { opacity: 0 } : { scale: 0.85, y: 24, opacity: 0 }}
             animate={reduce ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 280, damping: 24 }}
@@ -295,7 +295,7 @@ export function AdventureMap({
             <>
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full" aria-hidden>
                 <polyline points={routeLine} fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 7" vectorEffect="non-scaling-stroke" />
-                {doneLine && <polyline points={doneLine} fill="none" stroke="#fbbf24" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
+                {doneLine && <polyline points={doneLine} fill="none" style={{ stroke: "var(--color-amber-400)" }} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
               </svg>
               <span className="absolute grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-white bg-primary text-primary-foreground shadow-lg" style={{ left: `${start.x}%`, top: `${start.y}%` }} title="Start">
                 <Flag className="size-4" aria-hidden />

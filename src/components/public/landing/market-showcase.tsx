@@ -1,5 +1,4 @@
 import { ArrowLeftRight, Coins, Library, Tag } from "lucide-react";
-import Image from "next/image";
 import { RARITY, type RarityKey } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "../marketing";
@@ -21,10 +20,7 @@ export function MarketShowcase() {
   return (
     <div className="grid items-center gap-12 lg:grid-cols-2">
       <div className="relative order-2 lg:order-1">
-        <div aria-hidden className="pointer-events-none absolute -top-16 right-6 z-10 size-24 sm:-top-28 sm:right-24 sm:size-32">
-          <Image src="/illustrations/3d/gems.webp" alt="" fill sizes="176px" className="animate-float object-contain drop-shadow-[0_18px_22px_oklch(0.24_0.05_228/0.35)]" />
-        </div>
-        <div className="rounded-[1.75rem] border bg-card p-3 shadow-[0_30px_60px_-30px_oklch(0.24_0.05_228/0.35)]">
+        <div className="rounded-[1.75rem] border bg-card p-3 shadow-[0_30px_60px_-30px_rgb(10_11_13/0.25)]">
           <div className="flex items-center justify-between px-2 pt-1 pb-3">
             <p className="font-heading text-lg font-extrabold">Market</p>
             <p className="text-xs text-muted-foreground">Example listings</p>

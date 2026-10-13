@@ -45,12 +45,11 @@ export default async function LandingPage() {
     <>
       <PromoTicker banners={banners.map((b) => ({ id: b.id, title: b.title, link: b.link }))} />
 
-      <section className="relative isolate overflow-hidden bg-ocean-deep text-white">
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_75%_40%,oklch(0.42_0.09_210/0.9),transparent_70%),radial-gradient(ellipse_60%_50%_at_10%_100%,oklch(0.36_0.08_190/0.7),transparent_70%)]" />
-        <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-[linear-gradient(to_top,oklch(0.2_0.045_230),transparent)]" />
-        <Container className="grid items-center gap-4 pt-2 pb-10 sm:gap-6 sm:pt-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pt-16 lg:pb-14">
+      <section className="relative isolate overflow-hidden bg-background">
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_55%_60%_at_78%_45%,var(--brand-soft),transparent_70%)]" />
+        <Container className="grid items-center gap-4 pt-2 pb-10 sm:gap-6 sm:pt-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pt-16 lg:pb-16">
           <div className="text-center lg:text-left">
-            <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-gold">
+            <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-xs font-bold text-primary">
               <Sparkles className="size-3.5" aria-hidden /> Ten islands. Ten prizes.
             </p>
             <h1 className="mx-auto max-w-xl text-[2.35rem] leading-[1.02] font-extrabold tracking-[-0.03em] sm:text-6xl lg:mx-0 lg:text-7xl">
@@ -58,9 +57,9 @@ export default async function LandingPage() {
               <br />
               Cross the islands.
               <br />
-              <span className="text-gold">Claim the prize.</span>
+              Claim the prize.
             </h1>
-            <p className="mx-auto mt-4 max-w-lg text-base text-white/75 sm:mt-6 sm:text-lg lg:mx-0">
+            <p className="mx-auto mt-4 max-w-lg text-base text-muted-foreground sm:mt-6 sm:text-lg lg:mx-0">
               <span className="sm:hidden">Collect Loot, reach every checkpoint and finish the puzzle to unlock each level&apos;s prize.</span>
               <span className="hidden sm:inline">
                 Every Mystery Box drops Loot for your map. Reach the last checkpoint, open the Big Box for puzzle pieces, and finish the puzzle to unlock the prize for that level.
@@ -76,18 +75,18 @@ export default async function LandingPage() {
                   <Link href="/register">Start free, spin today</Link>
                 </LandingButton>
               )}
-              <LandingButton asChild variant="outline" className="border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+              <LandingButton asChild variant="outline">
                 <Link href="/how-it-works">How it works</Link>
               </LandingButton>
             </div>
-            <ul className="mt-5 flex flex-wrap justify-center gap-2 text-xs font-semibold text-white/75 lg:justify-start" aria-label="Highlights">
+            <ul className="mt-5 flex flex-wrap justify-center gap-2 text-xs font-semibold text-muted-foreground lg:justify-start" aria-label="Highlights">
               {[
                 { icon: Gift, label: "Free daily spin" },
                 { icon: ShieldCheck, label: "Server-decided results" },
                 { icon: Lock, label: "18+ only" },
               ].map(({ icon: Icon, label }) => (
-                <li key={label} className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5">
-                  <Icon className="size-3.5 text-gold" aria-hidden /> {label}
+                <li key={label} className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5">
+                  <Icon className="size-3.5 text-primary" aria-hidden /> {label}
                 </li>
               ))}
             </ul>
@@ -101,7 +100,7 @@ export default async function LandingPage() {
       {activity.length >= MIN_ACTIVITY && <LiveTicker events={activity} />}
 
       {showStats && (
-        <section className="bg-[oklch(0.2_0.045_230)] text-white">
+        <section className="bg-ink text-white">
           <Container className="grid grid-cols-3 gap-4 py-8 sm:py-14">
             <StatCounter value={stats.boxesOpened} label="boxes opened" />
             <StatCounter value={stats.prizesUnlocked} label="prizes unlocked" />
@@ -161,20 +160,20 @@ export default async function LandingPage() {
               </li>
             ))}
           </ol>
-          <Link href="/referrals" className="group mt-4 flex items-center gap-4 overflow-hidden rounded-3xl bg-gold-soft p-4 sm:mt-6 sm:p-6">
+          <Link href="/referrals" className="group mt-4 flex items-center gap-4 overflow-hidden rounded-3xl bg-brand-soft p-4 sm:mt-6 sm:p-6">
             <span className="relative size-16 shrink-0 sm:size-20">
               <Image src="/illustrations/3d/gift.webp" alt="" fill sizes="80px" className="object-contain" />
             </span>
             <span className="flex-1">
               <span className="block font-heading text-xl font-extrabold">Bring your crew</span>
-              <span className="mt-1 block text-sm text-gold-foreground">Share your invite link. You earn a reward when a friend makes their first deposit.</span>
+              <span className="mt-1 block text-sm text-muted-foreground">Share your invite link. You earn a reward when a friend makes their first deposit.</span>
             </span>
-            <span className="hidden text-sm font-bold text-gold-foreground underline-offset-4 group-hover:underline sm:inline">See referral rewards</span>
+            <span className="hidden text-sm font-bold text-primary underline-offset-4 group-hover:underline sm:inline">See referral rewards</span>
           </Link>
         </Container>
       </section>
 
-      <section className="bg-ocean-deep py-14 text-white sm:py-24">
+      <section className="bg-ink py-14 text-white sm:py-24">
         <Container className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
           <div>
             <SectionHeading
@@ -187,7 +186,7 @@ export default async function LandingPage() {
             <ul className="mt-8 space-y-5">
               {TRUST.map(({ icon: Icon, title, body }) => (
                 <li key={title} className="flex gap-4">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-gold">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-amber-300">
                     <Icon className="size-5" aria-hidden />
                   </span>
                   <span>

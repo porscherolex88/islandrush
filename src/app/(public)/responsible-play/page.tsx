@@ -11,7 +11,7 @@ export default function ResponsiblePlayPublicPage() {
     <>
       <ContentPage slug="responsible-play" />
       <Container className="max-w-2xl pb-14">
-        <div className="rounded-3xl bg-gold-soft p-6">
+        <div className="rounded-3xl bg-brand-soft p-6">
           <p className="font-semibold">Set your limits now</p>
           <p className="mt-1 text-sm text-muted-foreground">Signed-in players can set a daily Credit limit or take a break in a few taps.</p>
           <Button asChild variant="gold" size="pill" className="mt-4">

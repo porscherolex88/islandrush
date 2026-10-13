@@ -13,7 +13,7 @@ export function SpinCard({ spun, available }: { spun: boolean; available: boolea
   return (
     <Link
       href="/daily#spin"
-      className="group relative isolate flex flex-col overflow-hidden rounded-2xl bg-[linear-gradient(160deg,oklch(0.45_0.08_205),oklch(0.27_0.05_228))] p-3 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
+      className="group relative isolate flex flex-col overflow-hidden rounded-2xl bg-[linear-gradient(160deg,var(--ocean),var(--ocean-deep))] p-3 text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
     >
       <span aria-hidden className={cn("absolute -top-6 -right-6 -z-10 size-24 rounded-full opacity-20 transition-transform duration-700 group-hover:rotate-45", WHEEL)} />
       <span className={cn("relative grid size-11 place-items-center rounded-full inset-ring-2 inset-ring-white/90 shadow-sm shadow-black/30", WHEEL)} aria-hidden>
@@ -88,9 +88,9 @@ export function StreakCard({
   const todayIndex = checkedInToday ? done - 1 : done;
   const rewardDays = new Set(milestones.map((m) => m.days));
   return (
-    <div className="rounded-3xl border bg-[linear-gradient(135deg,oklch(0.97_0.05_60),oklch(0.99_0.02_85))] p-5">
+    <div className="rounded-3xl border bg-[linear-gradient(135deg,var(--gold-soft),var(--warm-soft))] p-5">
       <div className="flex items-center gap-3">
-        <div className="grid size-14 place-items-center rounded-full bg-[linear-gradient(180deg,#fb923c,#ea580c)] text-white">
+        <div className="grid size-14 place-items-center rounded-full bg-[linear-gradient(180deg,var(--color-orange-400),var(--color-orange-600))] text-white">
           <Flame className="size-8" aria-hidden />
         </div>
         <div className="flex-1">
@@ -120,7 +120,7 @@ export function StreakCard({
               <span
                 className={cn(
                   "relative grid aspect-square w-full max-w-10 place-items-center rounded-full text-white transition-colors",
-                  filled ? "bg-[linear-gradient(180deg,#fb923c,#ea580c)]" : "border-2 border-dashed border-orange-200 bg-white/80 text-orange-300",
+                  filled ? "bg-[linear-gradient(180deg,var(--color-orange-400),var(--color-orange-600))]" : "border-2 border-dashed border-orange-200 bg-white/80 text-orange-300",
                   isToday && (filled ? "ring-2 ring-orange-300 ring-offset-2 ring-offset-orange-50" : "border-solid border-orange-400 text-orange-500"),
                 )}
                 aria-hidden

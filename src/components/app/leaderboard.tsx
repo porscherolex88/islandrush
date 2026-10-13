@@ -13,7 +13,7 @@ type Key = keyof typeof BOARDS;
 
 const PODIUM = [
   { place: 2, height: "h-16", ring: "ring-slate-300", medal: "bg-slate-200 text-slate-700" },
-  { place: 1, height: "h-24", ring: "ring-amber-300", medal: "bg-[linear-gradient(180deg,oklch(0.86_0.15_85),oklch(0.76_0.16_70))] text-[oklch(0.3_0.08_55)]" },
+  { place: 1, height: "h-24", ring: "ring-amber-300", medal: "bg-[linear-gradient(180deg,var(--gold-hi),var(--gold-lo))] text-[var(--gold-ink)]" },
   { place: 3, height: "h-12", ring: "ring-orange-300", medal: "bg-orange-200 text-orange-800" },
 ];
 

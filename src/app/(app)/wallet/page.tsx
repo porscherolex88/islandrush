@@ -65,7 +65,7 @@ export default async function WalletPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="min-w-0">
               <Eyebrow className="flex items-center gap-1 text-white/70">
-                <Coins className="size-3.5 text-gold" aria-hidden /> Credits
+                <Coins className="size-3.5 text-amber-200" aria-hidden /> Credits
               </Eyebrow>
               <p className="mt-1 truncate font-heading text-3xl font-extrabold tabular">{formatCredits(b.CREDITS)}</p>
               <p className="text-xs text-white/65">To play</p>
@@ -84,7 +84,7 @@ export default async function WalletPage() {
               <strong className="tabular">{cash(b.CASH)}</strong>
             </span>
             {b.CASH > 0n ? (
-              <Link href={`/wallet/convert?amount=${toDecimal(b.CASH)}`} className="inline-flex shrink-0 items-center gap-1 font-bold text-gold">
+              <Link href={`/wallet/convert?amount=${toDecimal(b.CASH)}`} className="inline-flex shrink-0 items-center gap-1 font-bold text-amber-200">
                 Convert <ArrowRight className="size-4" aria-hidden />
               </Link>
             ) : (

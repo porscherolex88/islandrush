@@ -19,7 +19,7 @@ export default async function HelpArticlePage({ params }: PageProps<"/help/[slug
   return (
     <>
       <PageHero eyebrow={article.category} title={article.title} description={`Updated ${formatDate(article.updatedAt)}`}>
-        <Link href="/help" className="inline-flex h-11 items-center gap-1 text-sm font-semibold text-white/80 hover:text-white">
+        <Link href="/help" className="inline-flex h-11 items-center gap-1 text-sm font-semibold text-primary hover:underline">
           <ArrowLeft className="size-4" aria-hidden /> Help centre
         </Link>
       </PageHero>

@@ -40,9 +40,9 @@ function PieceGrid({ have, required }: { have: number; required: number }) {
 }
 
 const PRIZE_LOOK = {
-  CREDITS: { icon: Coins, tone: "bg-[linear-gradient(135deg,oklch(0.95_0.06_85),oklch(0.88_0.1_75))] text-amber-700" },
-  CASH: { icon: Banknote, tone: "bg-[linear-gradient(135deg,oklch(0.95_0.05_160),oklch(0.87_0.09_160))] text-emerald-700" },
-  PHYSICAL: { icon: Gift, tone: "bg-[linear-gradient(135deg,oklch(0.95_0.04_300),oklch(0.86_0.08_300))] text-violet-700" },
+  CREDITS: { icon: Coins, tone: "bg-[linear-gradient(135deg,var(--color-amber-50),var(--color-amber-200))] text-amber-700" },
+  CASH: { icon: Banknote, tone: "bg-[linear-gradient(135deg,var(--color-emerald-50),var(--color-emerald-200))] text-emerald-700" },
+  PHYSICAL: { icon: Gift, tone: "bg-[linear-gradient(135deg,var(--color-violet-50),var(--color-violet-200))] text-violet-700" },
 } as const;
 
 function PrizeImage({ src, kind, className }: { src: string | null; kind: PrizeView["kind"]; className?: string }) {

@@ -26,7 +26,7 @@ function Burst({ color }: { color: string }) {
         <motion.span
           key={i}
           className="absolute size-2 rounded-full"
-          style={{ background: i % 3 === 0 ? "#fde68a" : color }}
+          style={{ background: i % 3 === 0 ? "var(--color-amber-200)" : color }}
           initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
           animate={{
             x: Math.cos((i / rays.length) * Math.PI * 2) * 140,
@@ -87,7 +87,7 @@ export function RewardReveal({ open, onClose, title = "You found", rewards, note
           onClick={onClose}
         >
           <motion.div
-            className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_30%,oklch(0.42_0.08_215),oklch(0.24_0.05_228))] p-6 text-center text-white ring-1 ring-white/10"
+            className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_30%,var(--ocean),var(--ocean-deep))] p-6 text-center text-white ring-1 ring-white/10"
             initial={reduce ? { opacity: 0 } : { scale: 0.8, y: 30, opacity: 0 }}
             animate={reduce ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
             exit={reduce ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}
