@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const STEPS = [
   { title: "Box", art: "/illustrations/3d/crate.webp", body: "Pick a Mystery Box for your level and choose one of nine spots. Every box shows its prizes and odds first." },
-  { title: "Loot", art: "/illustrations/3d/coins.webp", body: "Each box pays out Loot for that level's map, plus a bonus reward like Credits or a collectible item." },
+  { title: "Loot", art: "/illustrations/3d/coins.webp", body: "Each box pays out Loot for that level's map, plus a lucky drop: free Credits, free Cash or a Free unlock that fills your next chest." },
   { title: "Map", art: "/illustrations/3d/map-scroll.webp", body: "Collect enough Loot and the level's illustrated map unlocks. Ten islands, each with its own trail." },
   { title: "Checkpoints", art: "/illustrations/3d/checkpoint.webp", body: "Keep collecting to move from checkpoint to checkpoint until you reach the final destination." },
   { title: "Big Box", art: "/illustrations/3d/big-box.webp", body: "The last checkpoint opens the Big Mystery Box, holding one to three puzzle pieces." },

@@ -155,21 +155,21 @@ function TradeRow({ trade }: { trade: Trade }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      className="flex items-center gap-3 rounded-2xl bg-white/[0.06] p-2.5"
+      className="flex items-center gap-3 rounded-2xl border bg-card p-2.5"
     >
-      <span className="relative size-10 shrink-0 rounded-xl bg-white/10">
+      <span className="relative size-10 shrink-0 rounded-xl bg-surface">
         <Image src={trade.item.art} alt="" fill sizes="40px" className="object-contain p-1" />
       </span>
       <span className="min-w-0 flex-1 text-sm leading-snug">
         <span className="block truncate">
-          <span className="font-semibold">{trade.who}</span> <span className="text-white/60">{trade.kind}</span>
+          <span className="font-semibold">{trade.who}</span> <span className="text-muted-foreground">{trade.kind}</span>
         </span>
-        <span className="block truncate text-white/80">{trade.item.name}</span>
+        <span className="block truncate text-muted-foreground">{trade.item.name}</span>
       </span>
       <span className="text-right">
-        <span className={cn("block text-[10px] font-bold tracking-wider uppercase", bought ? "text-amber-300" : "text-white/50")}>{bought ? "Sale" : "Listing"}</span>
+        <span className={cn("block text-[10px] font-bold", bought ? "text-primary" : "text-muted-foreground")}>{bought ? "Sale" : "Listing"}</span>
         <span className="inline-flex items-center gap-1 font-heading text-sm font-extrabold tabular">
-          <Coins className="size-3.5 text-amber-300" aria-hidden />
+          <Coins className="size-3.5 text-primary" aria-hidden />
           {fmt(trade.price)}
         </span>
       </span>
@@ -266,7 +266,7 @@ function MarketPreview() {
               <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-primary">Preview</span>
             </div>
             <div className="flex gap-1.5 text-[11px] font-semibold">
-              <span className="rounded-full bg-foreground px-2.5 py-1 text-background">All</span>
+              <span className="rounded-full bg-primary px-2.5 py-1 text-primary-foreground">All</span>
               <span className="hidden rounded-full border px-2.5 py-1 text-muted-foreground sm:inline">Rare+</span>
               <span className="hidden rounded-full border px-2.5 py-1 text-muted-foreground sm:inline">Under 500</span>
             </div>
@@ -294,13 +294,13 @@ function MarketPreview() {
           </div>
         </div>
 
-        <div className="flex flex-col rounded-3xl bg-ink p-3 text-white sm:p-4">
+        <div className="flex flex-col rounded-3xl bg-surface p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between px-1">
             <p className="font-heading text-lg font-extrabold">Recent trades</p>
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-white/60">
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <span className="relative flex size-2">
-                {!reduced && <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-300 opacity-75" />}
-                <span className="relative inline-flex size-2 rounded-full bg-amber-300" />
+                {!reduced && <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />}
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
               </span>
               Example
             </span>
@@ -312,7 +312,7 @@ function MarketPreview() {
               ))}
             </AnimatePresence>
           </ul>
-          <p className="mt-3 px-1 text-[11px] text-white/45">Simulated activity for illustration.</p>
+          <p className="mt-3 px-1 text-[11px] text-muted-foreground">Simulated activity for illustration.</p>
         </div>
       </div>
     </div>

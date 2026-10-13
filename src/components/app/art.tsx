@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 export const ART = {
   crate: "/illustrations/crate.webp",
+  crate3d: "/illustrations/3d/crate.webp",
   crateOpen: "/illustrations/crate-open.webp",
   island: "/illustrations/island-map.webp",
   tidePool: "/illustrations/tide-pool.webp",

@@ -6,7 +6,7 @@ import type { ActivityKind, LandingActivity } from "@/server/queries/landing";
 import { Marquee } from "./marquee";
 
 const KIND: Record<ActivityKind, { icon: typeof Gift; verb: string; tint: string }> = {
-  box: { icon: Package, verb: "opened", tint: "bg-ocean text-white" },
+  box: { icon: Package, verb: "opened", tint: "bg-primary text-primary-foreground" },
   bigbox: { icon: Puzzle, verb: "found", tint: "bg-brand-soft text-primary" },
   prize: { icon: Gift, verb: "unlocked", tint: "bg-gold text-[var(--gold-ink)]" },
 };
@@ -47,14 +47,7 @@ export function LiveTicker({ events }: { events: LandingActivity[] }) {
   const now = useClock();
 
   return (
-    <div className="flex items-center border-y border-white/10 bg-ink text-white">
-      <span className="z-10 flex h-14 shrink-0 items-center gap-2 bg-ink pr-4 pl-4 text-sm font-bold sm:pl-6">
-        <span className="relative flex size-2.5">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400" />
-        </span>
-        Live
-      </span>
+    <div className="flex items-center border-y bg-background text-foreground">
       <Marquee label="Recent player activity" duration={Math.max(30, events.length * 5)} className="flex-1">
         {events.map((e) => {
           const k = KIND[e.kind];
@@ -65,9 +58,9 @@ export function LiveTicker({ events }: { events: LandingActivity[] }) {
                 <Icon className="size-3.5" aria-hidden />
               </span>
               <span>
-                <strong className="font-semibold">{e.player}</strong> <span className="text-white/70">{k.verb}</span> <strong className="font-semibold text-amber-300">{describe(e)}</strong>
+                <strong className="font-semibold">{e.player}</strong> <span className="text-muted-foreground">{k.verb}</span> <strong className="font-semibold text-primary">{describe(e)}</strong>
               </span>
-              {now !== null && <span className="text-xs text-white/45">{ago(e.at, now)}</span>}
+              {now !== null && <span className="text-xs text-muted-foreground">{ago(e.at, now)}</span>}
             </span>
           );
         })}

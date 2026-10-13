@@ -129,7 +129,7 @@ export function SegmentedNav({ label, items, className }: { label: string; items
   );
 }
 
-/** Small uppercase label used above hero numbers. */
+/** Small label used above hero numbers. Never set it in all caps. */
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn("text-[11px] font-bold tracking-widest uppercase", className)}>{children}</p>;
+  return <p className={cn("text-[11px] font-bold", className)}>{children}</p>;
 }

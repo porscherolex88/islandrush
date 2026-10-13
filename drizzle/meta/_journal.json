@@ -57,6 +57,13 @@
       "when": 1791865257955,
       "tag": "0007_weekly_streak",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791884715200,
+      "tag": "0008_free_unlock_reward",
+      "breakpoints": true
     }
   ]
 }

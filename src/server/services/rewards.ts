@@ -5,12 +5,13 @@ import { AppError } from "@/lib/errors";
 import { formatCredits, toMinor } from "@/lib/money";
 import { fmtCash } from "@/lib/format-money";
 import { weightedPick } from "@/lib/rng";
+import { currentAdventureLevel, freeUnlockFill } from "./adventure-core";
 import { getConfig } from "./config";
 import { grantItem } from "./inventory";
 import { postTransaction, type RewardSource } from "./ledger";
 
 export type Rarity = "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY";
-export type RewardType = "CREDITS" | "CASH" | "ITEM" | "AREA_UNLOCK";
+export type RewardType = "CREDITS" | "CASH" | "ITEM" | "AREA_UNLOCK" | "FREE_UNLOCK";
 
 export type RewardResult = {
   entryId: string | null;
@@ -35,6 +36,8 @@ export type GrantContext = {
   /** Unique, deterministic key for this grant; used for ledger idempotency. */
   key: string;
   rewardSource?: RewardSource;
+  /** Adventure level a Free unlock applies to. Defaults to the player's current level. */
+  level?: number | null;
 };
 
 const RARITY_ICON: Record<RewardType, string> = {
@@ -42,6 +45,7 @@ const RARITY_ICON: Record<RewardType, string> = {
   CASH: "💵",
   ITEM: "🎁",
   AREA_UNLOCK: "🗺️",
+  FREE_UNLOCK: "🔓",
 };
 
 /** Picks one entry from a weighted pool, honouring per-entry availability limits atomically. */
@@ -109,32 +113,58 @@ export async function describeEntry(tx: Tx, entry: PoolEntry): Promise<RewardRes
         icon: area?.icon ?? RARITY_ICON.AREA_UNLOCK,
       };
     }
+    case "FREE_UNLOCK":
+      return { ...base, display: "Free unlock: your next chest, filled", icon: entry.reveal?.icon ?? RARITY_ICON.FREE_UNLOCK };
   }
+}
+
+async function grantCredits(tx: Tx, userId: string, amount: string, label: string, ctx: GrantContext) {
+  const n = toMinor(amount, "CREDITS");
+  if (n <= 0n) return;
+  await postTransaction(tx, {
+    type: "GAME_REWARD_CREDITS",
+    userId,
+    idempotencyKey: `${ctx.key}:credits`,
+    description: `${label} (${ctx.sourceType})`,
+    sourceType: ctx.sourceType,
+    sourceId: ctx.sourceId,
+    rewardSource: "GAME_REWARD",
+    entries: [
+      { account: "SYS_REWARD_EXPENSE", currency: "CREDITS", amount: -n },
+      { userId, account: "CREDITS", amount: n },
+    ],
+  });
+}
+
+/**
+ * Fills the player's next chest on the level with primary Loot. When nothing is left to unlock,
+ * the entry's amount is paid as Credits instead so the win is never wasted.
+ */
+async function grantFreeUnlock(tx: Tx, userId: string, entry: PoolEntry, result: RewardResult, ctx: GrantContext): Promise<RewardResult> {
+  const level = ctx.level ?? (await currentAdventureLevel(tx, userId));
+  const fill = level ? await freeUnlockFill(tx, userId, level) : null;
+  if (!fill) {
+    await grantCredits(tx, userId, entry.amount, entry.label, ctx);
+    return { ...result, amount: entry.amount, display: `Free unlock: ${formatCredits(entry.amount)} Credits instead`, headline: "Nothing left to unlock here, so it paid out in Credits" };
+  }
+  await grantItem(tx, userId, fill.item.id, fill.need, { sourceType: ctx.sourceType, sourceId: ctx.sourceId, reason: entry.label });
+  return {
+    ...result,
+    amount: String(fill.need),
+    itemId: fill.item.id,
+    itemName: fill.item.name,
+    display: `Free unlock: next ${fill.mapName} chest filled`,
+    headline: `+${fill.need} ${fill.item.name} added for free`,
+  };
 }
 
 /** Applies a reward to the user. Every effect is recorded (ledger, inventory events). */
 export async function grantReward(tx: Tx, userId: string, entry: PoolEntry, ctx: GrantContext): Promise<RewardResult> {
   const result = await describeEntry(tx, entry);
   switch (entry.rewardType) {
-    case "CREDITS": {
-      const n = toMinor(entry.amount, "CREDITS");
-      if (n > 0n) {
-        await postTransaction(tx, {
-          type: "GAME_REWARD_CREDITS",
-          userId,
-          idempotencyKey: `${ctx.key}:credits`,
-          description: `${entry.label} (${ctx.sourceType})`,
-          sourceType: ctx.sourceType,
-          sourceId: ctx.sourceId,
-          rewardSource: "GAME_REWARD",
-          entries: [
-            { account: "SYS_REWARD_EXPENSE", currency: "CREDITS", amount: -n },
-            { userId, account: "CREDITS", amount: n },
-          ],
-        });
-      }
+    case "CREDITS":
+      await grantCredits(tx, userId, entry.amount, entry.label, ctx);
       break;
-    }
     case "CASH":
       await createCashReward(tx, {
         userId,
@@ -157,6 +187,8 @@ export async function grantReward(tx: Tx, userId: string, entry: PoolEntry, ctx:
         await tx.insert(areaUnlocks).values({ userId, areaId: entry.areaId, method: "REWARD" }).onConflictDoNothing();
       }
       break;
+    case "FREE_UNLOCK":
+      return grantFreeUnlock(tx, userId, entry, result, ctx);
   }
   return result;
 }

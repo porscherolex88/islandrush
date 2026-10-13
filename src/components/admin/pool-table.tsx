@@ -15,6 +15,8 @@ function amountLabel(e: EntryStat, fiat: FiatDisplay) {
       return `${Math.max(1, Math.round(Number(e.amount)))}x ${e.itemName ?? "item"}`;
     case "AREA_UNLOCK":
       return `Unlock ${e.areaName ?? "area"}`;
+    case "FREE_UNLOCK":
+      return `Fill next chest (else ${formatCredits(Math.round(Number(e.amount)))} Credits)`;
     default:
       return e.amount;
   }

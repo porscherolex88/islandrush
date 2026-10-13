@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { db, type Tx } from "@/db";
 import * as s from "@/db/schema";
 import { lootEmoji, roman } from "@/lib/adventure";
@@ -77,6 +77,16 @@ const ALTERNATIVES: [("CREDITS" | "CASH"), string][] = [
 ];
 const PIECES_REQUIRED = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2];
 
+/** Fills the player's next chest. If nothing is left to unlock it pays the box price back in Credits. */
+const freeUnlock = (price: number) => ({
+  label: "Free unlock",
+  rewardType: "FREE_UNLOCK" as const,
+  amount: String(price),
+  weight: 8,
+  rarity: "EPIC" as const,
+  reveal: { headline: "Free unlock!" },
+});
+
 export async function seedAdventure(log: (msg: string) => void = () => {}) {
   const [already] = await db.select().from(s.appConfig).where(eq(s.appConfig.key, "adventure_seed_version"));
   if (already) {
@@ -136,12 +146,13 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
       cash(Math.max(1, Math.round(rmValue * 0.5)), 10, "UNCOMMON"),
       cash(Math.max(1, Math.round(rmValue * 1.5)), 4, "RARE"),
       cash(Math.max(1, Math.round(rmValue * 5)), 1, "LEGENDARY"),
-    ], `Bonus reward table for Mystery Box ${r}.`);
+      freeUnlock(price),
+    ], `Lucky drop table for Mystery Box ${r}: Credits, Cash or a Free unlock.`);
 
     await db.insert(s.mysteryBoxes).values({
       slug: `mystery-box-${level}`,
       name: `Mystery Box ${r}`,
-      description: `Sealed on the ${m.name}. Every box holds ${m.name} Loot plus a bonus reward.`,
+      description: `Sealed on the ${m.name}. Every box holds ${m.name} Loot plus a lucky drop: Credits, Cash or a Free unlock.`,
       priceCredits: price,
       rewardPoolId: rewardPool.id,
       lootPoolId: lootPool.id,
@@ -278,6 +289,24 @@ const UPDATES: { id: string; run: (tx: Tx, log: (msg: string) => void) => Promis
     id: "shore-style-art",
     run: async (tx, log) => {
       for (let level = 2; level <= MAPS.length; level++) await realignStops(tx, level, log);
+    },
+  },
+  {
+    id: "box-free-unlock",
+    run: async (tx, log) => {
+      const boxes = await tx.select().from(s.mysteryBoxes).where(isNotNull(s.mysteryBoxes.level));
+      for (const box of boxes) {
+        const entries = await tx.select().from(s.rewardPoolEntries).where(eq(s.rewardPoolEntries.poolId, box.rewardPoolId));
+        if (entries.some((e) => e.rewardType === "FREE_UNLOCK")) continue;
+        const sortOrder = Math.max(0, ...entries.map((e) => e.sortOrder)) + 1;
+        await tx.insert(s.rewardPoolEntries).values({ ...freeUnlock(box.priceCredits), poolId: box.rewardPoolId, sortOrder });
+        const map = MAPS[(box.level as number) - 1];
+        if (map && box.description === `Sealed on the ${map.name}. Every box holds ${map.name} Loot plus a bonus reward.`) {
+          const description = `Sealed on the ${map.name}. Every box holds ${map.name} Loot plus a lucky drop: Credits, Cash or a Free unlock.`;
+          await tx.update(s.mysteryBoxes).set({ description, updatedAt: new Date() }).where(eq(s.mysteryBoxes.id, box.id));
+        }
+        log(`${box.name} can now drop a Free unlock.`);
+      }
     },
   },
 ];

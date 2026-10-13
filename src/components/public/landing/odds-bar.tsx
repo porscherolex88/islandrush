@@ -17,12 +17,12 @@ export function OddsBar() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
   return (
-    <div ref={ref} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+    <div ref={ref} className="rounded-3xl border bg-card p-5">
       <div className="flex items-baseline justify-between">
         <p className="font-heading text-lg font-extrabold">Odds, before you open</p>
-        <p className="text-xs text-white/55">Example box</p>
+        <p className="text-xs text-muted-foreground">Example box</p>
       </div>
-      <div className="mt-4 flex h-4 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-4 flex h-4 overflow-hidden rounded-full bg-muted">
         {EXAMPLE.map(([k, pct], i) => (
           <motion.span
             key={k}
@@ -38,7 +38,7 @@ export function OddsBar() {
         {EXAMPLE.map(([k, pct]) => (
           <li key={k} className="flex items-center gap-2">
             <span className="size-2.5 rounded-full" style={{ backgroundColor: RARITY[k].hex }} />
-            <span className="text-white/80">{RARITY[k].label}</span>
+            <span className="text-muted-foreground">{RARITY[k].label}</span>
             <span className="ml-auto font-semibold tabular sm:ml-0">{pct}%</span>
           </li>
         ))}

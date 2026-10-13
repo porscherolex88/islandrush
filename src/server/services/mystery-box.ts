@@ -110,16 +110,17 @@ export async function playMysteryBox(
         ],
       });
 
+      const loot = await grantPool(tx, userId, box.lootPoolId, {
+        sourceType: "mystery_box_play",
+        sourceId: playId,
+        key: `box:${userId}:${input.idempotencyKey}:loot`,
+      });
       const entry = await pickPoolEntry(tx, box.rewardPoolId);
       const reward = await grantReward(tx, userId, entry, {
         sourceType: "mystery_box_play",
         sourceId: playId,
         key: `box:${userId}:${input.idempotencyKey}`,
-      });
-      const loot = await grantPool(tx, userId, box.lootPoolId, {
-        sourceType: "mystery_box_play",
-        sourceId: playId,
-        key: `box:${userId}:${input.idempotencyKey}:loot`,
+        level: box.level,
       });
       const configSnapshot = {
         priceCredits: box.priceCredits,
@@ -205,7 +206,7 @@ export async function boxOdds(poolId: string) {
 export const poolOdds = boxOdds;
 export type PoolOdds = Awaited<ReturnType<typeof boxOdds>>;
 
-const TYPE_ICON: Record<string, string> = { CREDITS: "🪙", CASH: "💵", ITEM: "🎁", AREA_UNLOCK: "🗺️" };
+const TYPE_ICON: Record<string, string> = { CREDITS: "🪙", CASH: "💵", ITEM: "🎁", AREA_UNLOCK: "🗺️", FREE_UNLOCK: "🔓" };
 
 export async function playHistory(userId: string, limit = 30, offset = 0) {
   return db

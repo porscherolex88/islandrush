@@ -100,7 +100,7 @@ export default async function LandingPage() {
       {activity.length >= MIN_ACTIVITY && <LiveTicker events={activity} />}
 
       {showStats && (
-        <section className="bg-ink text-white">
+        <section className="border-b bg-surface">
           <Container className="grid grid-cols-3 gap-4 py-8 sm:py-14">
             <StatCounter value={stats.boxesOpened} label="boxes opened" />
             <StatCounter value={stats.prizesUnlocked} label="prizes unlocked" />
@@ -173,12 +173,11 @@ export default async function LandingPage() {
         </Container>
       </section>
 
-      <section className="bg-ink py-14 text-white sm:py-24">
+      <section className="bg-surface py-14 sm:py-24">
         <Container className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
           <div>
             <SectionHeading
               eyebrow="Trust"
-              tone="dark"
               title="Fair by design, open by default"
               description="Every Mystery Box lists its possible rewards and their chances before you choose a spot. No hidden tables."
               className="mb-0 sm:mb-0"
@@ -186,12 +185,12 @@ export default async function LandingPage() {
             <ul className="mt-8 space-y-5">
               {TRUST.map(({ icon: Icon, title, body }) => (
                 <li key={title} className="flex gap-4">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-amber-300">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl border bg-card text-primary">
                     <Icon className="size-5" aria-hidden />
                   </span>
                   <span>
                     <span className="block font-bold">{title}</span>
-                    <span className="mt-0.5 block text-sm text-white/65">{body}</span>
+                    <span className="mt-0.5 block text-sm text-muted-foreground">{body}</span>
                   </span>
                 </li>
               ))}

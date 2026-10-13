@@ -231,7 +231,7 @@ export function DailyHeader({ timeZone, streak, done, total }: { timeZone: strin
       <header className="px-4 pt-1 md:px-5">
         <div className="relative isolate overflow-hidden rounded-3xl border border-amber-200/70 bg-[linear-gradient(180deg,var(--gold-soft),var(--warm-soft))] p-4">
           <Sun aria-hidden className="absolute top-3 right-3 -z-10 size-14 text-amber-400/40" strokeWidth={1.25} />
-          <p className="text-xs font-bold tracking-widest text-orange-800 uppercase">Today</p>
+          <p className="text-xs font-bold text-orange-800">Today</p>
           <p className="font-heading text-xl leading-tight font-extrabold">
             <time dateTime={now.toISOString()}>{fullDate}</time>
           </p>

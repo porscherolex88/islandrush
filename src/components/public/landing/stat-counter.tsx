@@ -26,7 +26,7 @@ export function StatCounter({ value, label }: { value: number; label: string }) 
       <span ref={ref} aria-hidden className="block font-heading text-4xl font-extrabold tracking-tight tabular sm:text-5xl">
         {fmt.format(shown)}
       </span>
-      <span aria-hidden className="mt-1 block text-sm text-white/65">
+      <span aria-hidden className="mt-1 block text-sm text-muted-foreground">
         {label}
       </span>
     </div>

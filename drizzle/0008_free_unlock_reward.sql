@@ -1,0 +1,1 @@
+ALTER TYPE "public"."reward_type" ADD VALUE 'FREE_UNLOCK';

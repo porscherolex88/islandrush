@@ -32,7 +32,7 @@ export function SectionHeading({
 }) {
   return (
     <div className={cn("mb-8 max-w-2xl sm:mb-12", align === "center" && "mx-auto text-center", className)}>
-      {eyebrow && <p className={cn("mb-2 text-xs font-bold tracking-widest uppercase", tone === "dark" ? "text-amber-300" : "text-primary")}>{eyebrow}</p>}
+      {eyebrow && <p className={cn("mb-2 text-xs font-bold", tone === "dark" ? "text-amber-300" : "text-primary")}>{eyebrow}</p>}
       <h2 className="text-3xl leading-[1.1] font-bold tracking-tight sm:text-5xl">{title}</h2>
       {description && <p className={cn("mt-3 text-base sm:mt-4 sm:text-lg", tone === "dark" ? "text-white/70" : "text-muted-foreground")}>{description}</p>}
     </div>
@@ -46,7 +46,7 @@ export function PageHero({ eyebrow, title, description, art, children }: { eyebr
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_50%_70%_at_85%_30%,var(--brand-soft),transparent_70%)]" />
       <Container className={cn("grid items-center gap-6 py-10 sm:py-16", art && "md:grid-cols-[1.4fr_1fr]")}>
         <div>
-          {eyebrow && <p className="mb-3 text-xs font-bold tracking-widest text-primary uppercase">{eyebrow}</p>}
+          {eyebrow && <p className="mb-3 text-xs font-bold text-primary">{eyebrow}</p>}
           <h1 className="max-w-3xl text-[2.25rem] leading-[1.05] font-extrabold tracking-[-0.02em] sm:text-6xl">{title}</h1>
           {description && <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">{description}</p>}
           {children && <div className="mt-6">{children}</div>}

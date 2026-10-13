@@ -17,14 +17,15 @@ import type { AdventureBoxView, AdventureMapView } from "@/server/services/adven
 import type { BoxPlayResult, PoolOdds } from "@/server/services/mystery-box";
 import { ART } from "../art";
 import { LootMeter, LootToken } from "./loot";
-import { BoxOddsSheet, RewardGlyph, useOddLabel } from "./odds";
+import { BoxContents, BoxOddsSheet, RewardGlyph, useOddLabel } from "./odds";
 
 function qty(amount: string) {
   return Math.max(1, Math.floor(Number(amount) || 1));
 }
 
 function lootIn(result: BoxPlayResult) {
-  return result.loot.reduce((s, l) => s + (l.type === "ITEM" ? qty(l.amount) : 0), 0);
+  const unlocked = result.reward.type === "FREE_UNLOCK" && result.reward.itemId ? qty(result.reward.amount) : 0;
+  return result.loot.reduce((s, l) => s + (l.type === "ITEM" ? qty(l.amount) : 0), unlocked);
 }
 
 export function BoxShop({
@@ -90,6 +91,7 @@ export function BoxShop({
   const target = map ? (map.state === "exploring" ? map.nextLootTarget : map.lootRequired) : 0;
   const readyCp = phase === "idle" && map?.state === "exploring" ? (map.checkpoints.find((c) => c.state === "available") ?? null) : null;
   const mapReadyNow = map && map.state === "collecting" && lootBefore + lootGained >= map.lootRequired;
+  const chestFullNow = map && map.state === "exploring" && target > lootBefore && lootBefore + lootGained >= target;
 
   function confirm() {
     keyRef.current ??= newKey();
@@ -111,7 +113,7 @@ export function BoxShop({
     <div className="space-y-4">
       <div className="relative isolate overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_15%,var(--ocean),var(--ocean-deep)_75%)] px-5 pt-5 pb-6 text-center text-white">
         <div aria-hidden className="pointer-events-none absolute -top-20 left-1/2 -z-10 size-72 -translate-x-1/2 rounded-full bg-amber-200/20 blur-3xl" />
-        <p className="text-xs font-bold tracking-wide text-amber-200 uppercase">{map?.name ?? `Adventure Level ${box.level}`}</p>
+        <p className="text-xs font-bold text-amber-200">{map?.name ?? `Adventure Level ${box.level}`}</p>
         <h2 className="font-heading text-2xl font-extrabold">{box.name}</h2>
         <motion.div
           className="relative mx-auto mt-3 aspect-square w-44"
@@ -136,20 +138,11 @@ export function BoxShop({
           )}
         </motion.div>
         <p className="mx-auto mt-3 max-w-xs text-sm text-white/80">{box.description}</p>
-        {map && map.lootItems.length > 0 && (
-          <div className="mt-4 rounded-2xl bg-white/10 p-3 text-left ring-1 ring-white/10">
-            <p className="text-xs font-bold text-amber-200">Inside every box</p>
-            <div className="mt-2 flex items-center gap-2">
-              {map.lootItems.map((it) => (
-                <LootToken key={it.id} icon={it.icon} rarity={it.rarity} size="sm" className="bg-white/90" />
-              ))}
-              <span className="text-sm leading-tight text-white/85">
-                {map.name} Loot
-                <span className="block text-xs text-white/60">plus a bonus reward</span>
-              </span>
-            </div>
-          </div>
-        )}
+        <div className="mt-4 text-left">
+          <p className="text-xs font-bold text-amber-200">What you can win</p>
+          <p className="text-xs text-white/70">{map?.name ?? "Map"} Loot every time, plus one lucky drop</p>
+          <BoxContents tone="dark" rewards={odds.rewards} loot={odds.loot} className="mt-2" />
+        </div>
       </div>
 
       {map && (
@@ -232,7 +225,7 @@ export function BoxShop({
         <SheetContent side="bottom">
           <SheetHeader>
             <SheetTitle className="font-heading text-xl">Open {box.name}?</SheetTitle>
-            <SheetDescription>You&apos;ll receive one {map?.name ?? ""} Loot drop and one bonus reward.</SheetDescription>
+            <SheetDescription>You&apos;ll get one {map?.name ?? ""} Loot drop plus one lucky drop: free Credits, free Cash or a Free unlock.</SheetDescription>
           </SheetHeader>
           <dl className="mx-4 divide-y rounded-2xl border bg-card text-sm">
             <div className="flex justify-between px-4 py-3">
@@ -317,10 +310,11 @@ export function BoxShop({
                   <RewardGlyph type={result.reward.type} icon={result.reward.icon} rarity={result.reward.rarity} size="md" />
                   <div className="min-w-0">
                     <p className="text-xs font-semibold" style={{ color: rarityOf(result.reward.rarity).hex === "#64748b" ? "#cbd5e1" : rarityOf(result.reward.rarity).hex }}>
-                      Bonus reward · {rarityOf(result.reward.rarity).label}
+                      Lucky drop · {rarityOf(result.reward.rarity).label}
                     </p>
-                    <p className="font-heading text-lg leading-tight font-extrabold">{result.reward.type === "ITEM" ? result.reward.display : label(result.reward)}</p>
+                    <p className="font-heading text-lg leading-tight font-extrabold">{result.reward.type === "ITEM" || result.reward.type === "FREE_UNLOCK" ? result.reward.display : label(result.reward)}</p>
                     {result.reward.type === "CASH" && <p className="text-xs text-white/70">Cash rewards are under review before becoming available to withdraw.</p>}
+                    {result.reward.type === "FREE_UNLOCK" && result.reward.headline && <p className="text-xs text-white/70">{result.reward.headline}</p>}
                   </div>
                 </motion.div>
               </div>
@@ -330,16 +324,16 @@ export function BoxShop({
                 </div>
               )}
               <div className="mt-5 grid gap-2">
-                {mapReadyNow ? (
+                {mapReadyNow || chestFullNow ? (
                   <Link href={`/play/map?level=${box.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
-                    Map {box.level} is ready to unlock <ArrowRight className="size-4" aria-hidden />
+                    {mapReadyNow ? `Map ${box.level} is ready to unlock` : "Your chest is full: go to the map"} <ArrowRight className="size-4" aria-hidden />
                   </Link>
                 ) : (
                   <Button size="pill" variant="gold" className="h-12 text-base" onClick={close}>
                     Collect
                   </Button>
                 )}
-                {mapReadyNow ? (
+                {mapReadyNow || chestFullNow ? (
                   <Button size="pill" variant="ghost" className="text-white hover:bg-white/10 hover:text-white" onClick={close}>
                     Stay here
                   </Button>

@@ -133,7 +133,7 @@ const VALIDATORS: Partial<Record<ResourceKey, (v: Values) => void>> = {
     if (v.rewardType === "AREA_UNLOCK" && !v.areaId) throw new AppError("Choose an area for AREA_UNLOCK rewards");
     if (Number(v.weight) < 0) throw new AppError("Weight cannot be negative");
     if (["CREDITS", "CASH"].includes(String(v.rewardType)) && Number(v.amount) <= 0) throw new AppError("Amount must be greater than zero");
-    if (v.rewardType === "CREDITS" && !Number.isInteger(Number(v.amount))) throw new AppError("Credits amounts must be whole numbers");
+    if ((v.rewardType === "CREDITS" || v.rewardType === "FREE_UNLOCK") && !Number.isInteger(Number(v.amount))) throw new AppError("Credits amounts must be whole numbers");
   },
   boxes: (v) => {
     if (Number(v.priceCredits) <= 0) throw new AppError("Price must be greater than zero");

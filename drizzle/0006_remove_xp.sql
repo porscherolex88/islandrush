@@ -1,5 +1,5 @@
 UPDATE "reward_pools" SET "status" = 'ARCHIVED', "updated_at" = now() WHERE "id" IN (SELECT "reward_pool_id" FROM "xp_levels" WHERE "reward_pool_id" IS NOT NULL);--> statement-breakpoint
-DELETE FROM "reward_pool_entries" WHERE "reward_type" = 'XP';--> statement-breakpoint
+UPDATE "reward_pool_entries" SET "reward_type" = 'CREDITS', "amount" = '0', "active" = false WHERE "reward_type" = 'XP';--> statement-breakpoint
 DELETE FROM "user_achievements" WHERE "achievement_id" IN (SELECT "id" FROM "achievements" WHERE "condition" = 'XP_LEVEL');--> statement-breakpoint
 DELETE FROM "achievements" WHERE "condition" = 'XP_LEVEL';--> statement-breakpoint
 DELETE FROM "requirements" WHERE "type" = 'XP_LEVEL';--> statement-breakpoint

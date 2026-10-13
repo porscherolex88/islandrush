@@ -29,7 +29,7 @@ export default async function PrizesPage() {
         <div className="relative isolate flex items-center gap-4 overflow-hidden rounded-3xl bg-ocean-deep p-4 text-white">
           <Image src={ART.bigBox} alt="" width={88} height={88} className="size-22 shrink-0 object-contain drop-shadow-lg" />
           <div className="min-w-0">
-            <p className="text-xs font-bold tracking-widest text-amber-200 uppercase">Puzzle Pieces</p>
+            <p className="text-xs font-bold text-amber-200">Puzzle pieces</p>
             <p className="font-heading text-3xl leading-tight font-extrabold tabular">{s.totalPieces}</p>
             <p className="text-xs leading-snug text-white/75">Open the Big Mystery Box at the end of each map to find pieces. Pieces fill puzzles in level order.</p>
           </div>

@@ -52,6 +52,24 @@ function ItemRow({ icon, rarity, name, detail, right }: { icon: string; rarity: 
   );
 }
 
+function ItemCard({ icon, rarity, name, detail, price, action }: { icon: string; rarity: string; name: string; detail: React.ReactNode; price: React.ReactNode; action: React.ReactNode }) {
+  const r = rarityOf(rarity);
+  return (
+    <li className="flex min-w-0 flex-col items-center gap-2 rounded-3xl border bg-card p-3 text-center">
+      <Token icon={icon} rarity={rarity} size="lg" />
+      <div className="w-full min-w-0">
+        <p className="truncate font-semibold">{name}</p>
+        <p className={cn("text-xs font-semibold", r.text)}>{r.label}</p>
+        <p className="truncate text-xs text-muted-foreground">{detail}</p>
+      </div>
+      <div className="mt-auto flex w-full flex-col items-center gap-2">
+        {price}
+        <div className="w-full [&>button]:w-full">{action}</div>
+      </div>
+    </li>
+  );
+}
+
 export default async function MarketPage({ searchParams }: PageProps<"/market">) {
   const user = await requireUser();
   const sp = await searchParams;
@@ -129,9 +147,9 @@ export default async function MarketPage({ searchParams }: PageProps<"/market">)
               description={q || rarity ? "Try a different search or rarity." : "When other players list items, they'll show up here."}
             />
           ) : (
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-3 grid grid-cols-2 gap-2">
               {listings.map((l) => (
-                <ItemRow
+                <ItemCard
                   key={l.id}
                   icon={l.item.icon}
                   rarity={l.item.rarity}
@@ -141,12 +159,8 @@ export default async function MarketPage({ searchParams }: PageProps<"/market">)
                       {l.quantity} available · {maskName(l.sellerName)}
                     </>
                   }
-                  right={
-                    <>
-                      <Price value={l.unitPrice} />
-                      <BuySheet listingId={l.id} item={l.item} available={l.quantity} unitPrice={l.unitPrice} seller={maskName(l.sellerName)} />
-                    </>
-                  }
+                  price={<Price value={l.unitPrice} />}
+                  action={<BuySheet listingId={l.id} item={l.item} available={l.quantity} unitPrice={l.unitPrice} seller={maskName(l.sellerName)} />}
                 />
               ))}
             </ul>

@@ -150,7 +150,7 @@ export function LootMeter({
         aria-valuenow={Math.min(total, target)}
         aria-label={label ?? "Loot collected"}
       >
-        <div className={cn("h-full rounded-full transition-[width] duration-700", done ? "bg-success" : "bg-[linear-gradient(90deg,var(--color-amber-300),var(--color-amber-500))]")} style={{ width: `${pct}%` }} />
+        <div className={cn("h-full rounded-full transition-[width] duration-700", done ? "bg-success" : "bg-primary")} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

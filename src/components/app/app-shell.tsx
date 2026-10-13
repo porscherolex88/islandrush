@@ -16,7 +16,7 @@ const THEME = "theme-coinbase";
  */
 export function AppShell({ children, banner, drawer }: { children: ReactNode; banner?: ReactNode; drawer: ReactNode }) {
   return (
-    <div className={`${THEME} min-h-dvh bg-surface text-foreground desktop:flex desktop:items-center desktop:justify-center desktop:bg-[radial-gradient(circle_at_20%_10%,var(--brand-soft),transparent_45%),radial-gradient(circle_at_80%_90%,var(--gold-soft),transparent_40%)] desktop:py-6`}>
+    <div className={`${THEME} min-h-dvh bg-background text-foreground desktop:flex desktop:bg-surface desktop:items-center desktop:justify-center desktop:bg-[radial-gradient(circle_at_20%_10%,var(--brand-soft),transparent_45%),radial-gradient(circle_at_80%_90%,var(--gold-soft),transparent_40%)] desktop:py-6`}>
       <BodyTheme className={THEME} />
       <div
         data-sheet-host

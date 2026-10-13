@@ -105,8 +105,14 @@ export const RESOURCES = {
     fields: [
       pool("poolId", "Pool", true),
       { name: "label", label: "Label", type: "text", required: true },
-      { name: "rewardType", label: "Reward type", type: "select", options: ["CREDITS", "CASH", "ITEM", "AREA_UNLOCK"], required: true, default: "CREDITS" },
-      { name: "amount", label: "Amount", type: "money", default: "0", help: "Credits for CREDITS, RM for CASH, quantity for ITEM." },
+      { name: "rewardType", label: "Reward type", type: "select", options: ["CREDITS", "CASH", "ITEM", "AREA_UNLOCK", "FREE_UNLOCK"], required: true, default: "CREDITS" },
+      {
+        name: "amount",
+        label: "Amount",
+        type: "money",
+        default: "0",
+        help: "Credits for CREDITS, RM for CASH, quantity for ITEM. For FREE_UNLOCK (fills the player's next map chest with Loot), the Credits paid instead when nothing is left to unlock.",
+      },
       { name: "itemId", label: "Item", type: "relation", relation: "items", help: "Required for ITEM rewards." },
       { name: "areaId", label: "Area", type: "relation", relation: "areas", help: "Required for AREA_UNLOCK rewards." },
       { name: "rarity", label: "Rarity", type: "select", options: RARITY, default: "COMMON", required: true },
