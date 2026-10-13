@@ -96,7 +96,7 @@ export function ActionButton({ href, label, icon: Icon, primary, className }: { 
       <span
         className={cn(
           "grid size-14 place-items-center rounded-full transition-colors",
-          primary ? "bg-[linear-gradient(180deg,var(--gold-hi),var(--gold-lo))] text-[var(--gold-ink)] group-hover:brightness-105" : "border bg-card text-primary group-hover:bg-surface",
+          primary ? "bg-gold text-[var(--gold-ink)] group-hover:bg-gold/90" : "border bg-card text-primary group-hover:bg-surface",
         )}
       >
         <Icon className="size-6" aria-hidden />

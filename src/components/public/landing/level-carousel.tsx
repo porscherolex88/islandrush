@@ -2,7 +2,8 @@
 
 import { ChevronLeft, ChevronRight, Flag, Lock, Sparkles } from "lucide-react";
 import Image from "next/image";
-import { useRef, type PointerEvent } from "react";
+import { useInView, useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useRef, type PointerEvent } from "react";
 import { mapArt } from "@/components/app/art";
 import { Button } from "@/components/ui/button";
 import type { LandingMap } from "@/server/queries/landing";
@@ -24,8 +25,8 @@ function TiltCard({ m }: { m: LandingMap }) {
   };
   const first = m.level === 1;
   return (
-    <li ref={ref} onPointerMove={onMove} onPointerLeave={reset} className="w-[78%] shrink-0 snap-start [perspective:900px] sm:w-[46%] lg:w-[31%]">
-      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-[1.75rem] text-white shadow-[0_24px_50px_-20px_rgb(10_11_13/0.35)] transition-transform duration-300 ease-out [transform:rotateX(var(--rx,0deg))_rotateY(var(--ry,0deg))]">
+    <li ref={ref} onPointerMove={onMove} onPointerLeave={reset} className="w-[78%] shrink-0 snap-start [perspective:900px] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/4)]">
+      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-[1.75rem] text-white transition-transform duration-300 ease-out [transform:rotateX(var(--rx,0deg))_rotateY(var(--ry,0deg))]">
         <Image src={mapArt(m.level, m.artwork)} alt={`${m.name} map`} fill sizes="(min-width: 1024px) 360px, 78vw" className="-z-10 object-cover" />
         <div aria-hidden className="art-scrim-b absolute inset-0 -z-10" />
         <div className="flex items-center justify-between p-4">
@@ -55,23 +56,73 @@ function TiltCard({ m }: { m: LandingMap }) {
   );
 }
 
+const AUTO_MS = 5000;
+
 export function LevelCarousel({ maps }: { maps: LandingMap[] }) {
   const track = useRef<HTMLUListElement>(null);
-  const scroll = (dir: 1 | -1) => {
+  const reduced = useReducedMotion();
+  const inView = useInView(track, { amount: 0.4 });
+  const held = useRef(false);
+  const touchedAt = useRef(0);
+
+  const step = useCallback((dir: 1 | -1) => {
     const el = track.current;
-    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+    const card = el?.firstElementChild as HTMLElement | null;
+    if (!el || !card) return;
+    const size = card.offsetWidth + parseFloat(getComputedStyle(el).columnGap || "0");
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+    const atStart = el.scrollLeft <= 4;
+    const left = dir === 1 && atEnd ? 0 : dir === -1 && atStart ? el.scrollWidth : (Math.round(el.scrollLeft / size) + dir) * size;
+    el.scrollTo({ left, behavior: "smooth" });
+  }, []);
+
+  const manual = (dir: 1 | -1) => {
+    touchedAt.current = Date.now();
+    step(dir);
   };
+
+  useEffect(() => {
+    if (reduced || !inView) return;
+    const id = window.setInterval(() => {
+      if (held.current || Date.now() - touchedAt.current < AUTO_MS) return;
+      step(1);
+    }, AUTO_MS);
+    return () => window.clearInterval(id);
+  }, [reduced, inView, step]);
+
+  const touched = () => {
+    touchedAt.current = Date.now();
+  };
+
   return (
     <div>
       <div className="mb-6 hidden justify-end gap-2 md:flex">
-        <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll(-1)} aria-label="Previous levels">
+        <Button variant="outline" size="icon" className="rounded-full" onClick={() => manual(-1)} aria-label="Previous levels">
           <ChevronLeft />
         </Button>
-        <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll(1)} aria-label="Next levels">
+        <Button variant="outline" size="icon" className="rounded-full" onClick={() => manual(1)} aria-label="Next levels">
           <ChevronRight />
         </Button>
       </div>
-      <ul ref={track} className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pt-4 pb-12 sm:-mx-6 sm:scroll-px-6 sm:px-6">
+      <ul
+        ref={track}
+        onPointerEnter={() => {
+          held.current = true;
+        }}
+        onPointerLeave={() => {
+          held.current = false;
+        }}
+        onFocus={() => {
+          held.current = true;
+        }}
+        onBlur={() => {
+          held.current = false;
+        }}
+        onPointerDown={touched}
+        onWheel={touched}
+        onTouchStart={touched}
+        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pt-4 pb-4 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:mx-0 lg:scroll-px-0 lg:px-0"
+      >
         {maps.map((m) => (
           <TiltCard key={m.level} m={m} />
         ))}

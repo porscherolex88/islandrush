@@ -127,7 +127,7 @@ export function PromoPopup({ promos, signedIn }: { promos: Promo[]; signedIn: bo
               )}
               <LandingButton
                 asChild
-                className="mt-7 w-full bg-white bg-none text-primary shadow-[0_12px_28px_-10px_rgb(10_11_13/0.45)] hover:bg-white/90 hover:brightness-100 focus-visible:ring-white/60"
+                className="mt-7 w-full bg-white text-primary shadow-[0_12px_28px_-10px_rgb(10_11_13/0.45)] hover:bg-white/90 focus-visible:ring-white/60"
               >
                 <Link href={href} onClick={() => setOpen(false)}>
                   {cta}

@@ -15,17 +15,17 @@ const STEPS = [
   { title: "Prize", art: "/illustrations/3d/prize-gift.webp", body: "A finished puzzle unlocks that level's prize. Then the next island opens up." },
 ] as const;
 
-/** One step's artwork inside the shared ocean panel. */
+/** One step's artwork inside the shared panel. */
 function StepArt({ step, sizes, priority }: { step: (typeof STEPS)[number]; sizes: string; priority?: boolean }) {
   return (
     <span className="absolute inset-[14%]">
-      <Image src={step.art} alt="" fill sizes={sizes} priority={priority} className="object-contain drop-shadow-[0_24px_30px_rgb(0_0_0/0.45)]" />
+      <Image src={step.art} alt="" fill sizes={sizes} priority={priority} className="object-contain drop-shadow-[0_24px_30px_rgb(10_11_13/0.18)]" />
     </span>
   );
 }
 
 function Panel({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_50%_60%,var(--ocean),var(--ocean-deep)_75%)]", className)}>{children}</div>;
+  return <div className={cn("relative overflow-hidden", className)}>{children}</div>;
 }
 
 function Step({ i, active }: { i: number; active: boolean }) {
@@ -103,7 +103,7 @@ export function LoopJourney() {
           </AnimatePresence>
           <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1.5 p-5">
             {STEPS.map((x, i) => (
-              <span key={x.title} className={cn("h-1.5 rounded-full transition-all duration-300", i === active ? "w-8 bg-white" : "w-1.5 bg-white/45")} />
+              <span key={x.title} className={cn("h-1.5 rounded-full transition-all duration-300", i === active ? "w-8 bg-primary" : "w-1.5 bg-border")} />
             ))}
           </div>
         </Panel>

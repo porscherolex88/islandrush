@@ -137,7 +137,7 @@ export function CtaBand({
           <h2 className="text-3xl font-bold sm:text-5xl">{title}</h2>
           <p className="mx-auto mt-3 max-w-xl text-white/85">{description}</p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <LandingButton asChild className="bg-white bg-none text-primary hover:bg-white/90 hover:brightness-100">
+            <LandingButton asChild className="bg-white text-primary hover:bg-white/90">
               <Link href={signedIn ? "/home" : "/register"}>{signedIn ? "Continue my adventure" : "Get started free"}</Link>
             </LandingButton>
             <LandingButton asChild variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white">

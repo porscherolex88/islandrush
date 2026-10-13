@@ -226,8 +226,8 @@ function MarketPreview() {
     later(() => setCursor((c) => ({ ...c, shown: false })), 1500);
 
     later(() => {
-      const onShelf = new Set(shelf.current.map((l) => l.item.name));
-      const item = pick(ITEMS.filter((it) => !onShelf.has(it.name))) ?? pick(ITEMS);
+      const onShelf = new Set(shelf.current.filter((_, i) => i !== slot).map((l) => l.item.name));
+      const item = pick(ITEMS.filter((it) => !onShelf.has(it.name)));
       const fresh: Listing = { id: nextId.current++, item, price: priceFor(item), seller: pick(NAMES.filter((n) => n !== buyer)), fresh: true };
       pushTrade({ kind: "listed", who: fresh.seller, item, price: fresh.price });
       setListings((all) => all.map((l, i) => (i === slot ? fresh : l)));
@@ -305,7 +305,7 @@ function MarketPreview() {
               Example
             </span>
           </div>
-          <ul className="flex flex-1 flex-col gap-2 overflow-hidden max-lg:[&>li:nth-child(n+5)]:hidden">
+          <ul className="flex h-[16.5rem] flex-col gap-2 overflow-hidden lg:h-auto lg:min-h-0 lg:flex-1 lg:contain-size">
             <AnimatePresence initial={false} mode="popLayout">
               {trades.map((t) => (
                 <TradeRow key={t.id} trade={t} />
