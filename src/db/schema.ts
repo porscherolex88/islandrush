@@ -113,7 +113,6 @@ export const missionActionEnum = pgEnum("mission_action", [
   "OPEN_BOX",
   "DISCOVER_TILE",
   "CONVERT_CREDITS",
-  "DAILY_EVENT",
   "UNLOCK_AREA",
   "COLLECT_ITEM",
 ]);
@@ -761,6 +760,10 @@ export const mysteryBoxes = pgTable(
     /** Guaranteed Loot drop granted on every open, in addition to the reward pool. */
     lootPoolId: uuid("loot_pool_id").references(() => rewardPools.id),
     artwork: text("artwork"),
+    /** Plays of this box that fill a player's jackpot meter. 0 turns the jackpot off. */
+    jackpotPlays: integer("jackpot_plays").notNull().default(50),
+    /** Free spins the jackpot gives when the meter is full. */
+    jackpotSpins: integer("jackpot_spins").notNull().default(10),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -794,14 +797,61 @@ export const mysteryBoxPlays = pgTable(
     loot: jsonb("loot").$type<Record<string, unknown>[]>().notNull().default([]),
     /** Box configuration at the moment of opening, so later edits never change history. */
     configSnapshot: jsonb("config_snapshot").$type<Record<string, unknown>>().notNull().default({}),
+    /** Set on the free spins a jackpot gives. These never count toward the jackpot meter or limits. */
+    jackpotId: uuid("jackpot_id"),
+    /** Order of this spin within its jackpot. */
+    jackpotSpin: integer("jackpot_spin"),
     createdAt: createdAt(),
   },
   (t) => [
     uniqueIndex("mbp_user_idem_uq").on(t.userId, t.idempotencyKey),
+    index("mbp_jackpot_idx").on(t.jackpotId),
     index("mbp_user_idx").on(t.userId, t.createdAt),
     index("mbp_box_idx").on(t.boxId, t.createdAt),
     check("mbp_index_range", sql`${t.selectedIndex} between 0 and 8`),
   ],
+);
+
+/** A jackpot a player hit on a box: the meter filled up and the box spun for free several times. */
+export const boxJackpots = pgTable(
+  "box_jackpots",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    boxId: uuid("box_id")
+      .notNull()
+      .references(() => mysteryBoxes.id),
+    /** The play that filled the meter. */
+    triggerPlayId: uuid("trigger_play_id").notNull(),
+    /** The player's total plays of this box when it hit, so the meter starts again from here. */
+    playsAt: integer("plays_at").notNull(),
+    spins: integer("spins").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("bj_trigger_uq").on(t.triggerPlayId), index("bj_user_box_idx").on(t.userId, t.boxId)],
+);
+
+/** A Free unlock won in a box: one more play of that same box without paying Credits. */
+export const freeBoxPlays = pgTable(
+  "free_box_plays",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    boxId: uuid("box_id")
+      .notNull()
+      .references(() => mysteryBoxes.id),
+    /** The play that won it. */
+    sourcePlayId: uuid("source_play_id").notNull(),
+    /** The play that used it, once used. */
+    usedByPlayId: uuid("used_by_play_id"),
+    usedAt: ts("used_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("fbp_source_uq").on(t.sourcePlayId), uniqueIndex("fbp_used_by_uq").on(t.usedByPlayId), index("fbp_user_box_idx").on(t.userId, t.boxId)],
 );
 
 /* ----------------------------------------------------------------------------
@@ -1025,7 +1075,13 @@ export const userMapProgress = pgTable(
     level: integer("level").notNull(),
     lootAtUnlock: integer("loot_at_unlock").notNull(),
     unlockedAt: ts("unlocked_at").notNull().defaultNow(),
+    /** First time the map was finished. The next map's unlock is based on this. */
     completedAt: ts("completed_at"),
+    /** Maps can be replayed: each round resets the checkpoints and gives another Big Mystery Box. */
+    round: integer("round").notNull().default(1),
+    /** Loot total the current round counts from. Checkpoint thresholds apply to Loot above it. */
+    roundLootBase: integer("round_loot_base").notNull().default(0),
+    roundCompletedAt: ts("round_completed_at"),
   },
   (t) => [primaryKey({ columns: [t.userId, t.mapId] }), index("ump_user_idx").on(t.userId)],
 );
@@ -1045,9 +1101,10 @@ export const userCheckpoints = pgTable(
       .references(() => maps.id),
     lootRequired: integer("loot_required").notNull(),
     lootAtUnlock: integer("loot_at_unlock").notNull(),
+    round: integer("round").notNull().default(1),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("uc_user_cp_uq").on(t.userId, t.checkpointId), index("uc_user_map_idx").on(t.userId, t.mapId)],
+  (t) => [uniqueIndex("uc_user_cp_round_uq").on(t.userId, t.checkpointId, t.round), index("uc_user_map_idx").on(t.userId, t.mapId)],
 );
 
 export const bigMysteryBoxes = pgTable(
@@ -1092,9 +1149,10 @@ export const bigBoxOpenings = pgTable(
     pieces: integer("pieces").notNull(),
     odds: jsonb("odds").$type<Record<string, unknown>>().notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
+    round: integer("round").notNull().default(1),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("bbo_user_map_uq").on(t.userId, t.mapId), check("bbo_pieces_range", sql`${t.pieces} between 1 and 3`)],
+  (t) => [uniqueIndex("bbo_user_map_round_uq").on(t.userId, t.mapId, t.round), check("bbo_pieces_range", sql`${t.pieces} between 1 and 3`)],
 );
 
 export const prizes = pgTable(
@@ -1303,11 +1361,6 @@ export const dailySchedules = pgTable(
     mission2Id: uuid("mission2_id").references(() => missionDefinitions.id),
     mission3Id: uuid("mission3_id").references(() => missionDefinitions.id),
     missionBonusPoolId: uuid("mission_bonus_pool_id").references(() => rewardPools.id),
-    eventTitle: text("event_title"),
-    eventDescription: text("event_description"),
-    eventIcon: text("event_icon"),
-    eventPoolId: uuid("event_pool_id").references(() => rewardPools.id),
-    eventCostCredits: credits("event_cost_credits").notNull().default(0),
     freeDiscoveries: integer("free_discoveries"),
     notes: text("notes"),
     createdAt: createdAt(),
@@ -1375,21 +1428,6 @@ export const missionBonusClaims = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("mbc_user_day_uq").on(t.userId, t.day)],
-);
-
-export const dailyEventClaims = pgTable(
-  "daily_event_claims",
-  {
-    id: id(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id),
-    day: date("day").notNull(),
-    creditsSpent: credits("credits_spent").notNull().default(0),
-    reward: jsonb("reward").$type<Record<string, unknown>>().notNull(),
-    createdAt: createdAt(),
-  },
-  (t) => [uniqueIndex("dec_user_day_uq").on(t.userId, t.day)],
 );
 
 export const userStreaks = pgTable("user_streaks", {

@@ -27,10 +27,6 @@ export type ConfigShape = {
     spinPoolId: string | null;
     missionKeys: string[];
     missionBonusPoolId: string | null;
-    eventTitle: string;
-    eventDescription: string;
-    eventIcon: string;
-    eventPoolId: string | null;
     streakGraceDays: number;
     streakSpinMinDays: number;
     streakSpinPoolId: string | null;
@@ -61,10 +57,6 @@ export const CONFIG_DEFAULTS: ConfigShape = {
     spinPoolId: null,
     missionKeys: [],
     missionBonusPoolId: null,
-    eventTitle: "Tide Pool Treasure",
-    eventDescription: "The tide has pulled back. Search the pools for something washed ashore.",
-    eventIcon: "🌊",
-    eventPoolId: null,
     streakGraceDays: 0,
     streakSpinMinDays: 7,
     streakSpinPoolId: null,

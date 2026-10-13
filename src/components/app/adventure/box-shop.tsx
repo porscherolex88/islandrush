@@ -1,32 +1,33 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, CheckCircle2, Coins, Loader2, Lock, Map as MapIcon, Sparkles, X } from "lucide-react";
-import Image from "next/image";
+import { Coins, Flame, Info, Loader2, LockOpen, Map as MapIcon, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { newKey, useAction } from "@/hooks/use-action";
 import { cashMinorToCredits, formatCredits, toDecimal } from "@/lib/money";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
 import { openBoxAction } from "@/server/actions/games";
 import type { AdventureBoxView, AdventureMapView } from "@/server/services/adventure";
-import type { BoxPlayResult, PoolOdds } from "@/server/services/mystery-box";
-import { ART } from "../art";
-import { LootMeter, LootToken } from "./loot";
-import { BoxContents, BoxOddsSheet, RewardGlyph, useOddLabel } from "./odds";
+import type { BoxPlayResult, JackpotSpin, PrizeList } from "@/server/services/mystery-box";
+import { boxArt, boxOpenArt } from "../art";
+import { BoxChest } from "./box-chest";
+import { JackpotFire } from "./jackpot-fire";
+import { LootToken } from "./loot";
+import { BoxPrizesSheet, prizeKeyOf, RewardGlyph, useOddLabel, usePrizeTiles } from "./prizes-list";
+import { PrizeReel, type ReelStop } from "./prize-reel";
 
 function qty(amount: string) {
   return Math.max(1, Math.floor(Number(amount) || 1));
 }
 
-function lootIn(result: BoxPlayResult) {
-  const unlocked = result.reward.type === "FREE_UNLOCK" && result.reward.itemId ? qty(result.reward.amount) : 0;
-  return result.loot.reduce((s, l) => s + (l.type === "ITEM" ? qty(l.amount) : 0), unlocked);
-}
+type Phase = "idle" | "unlocking" | "opened" | "revealed" | "jackpot" | "jackpotDone";
+
+/** Shortest time the chest shakes before it bursts open, so the unlock always reads. */
+const UNLOCK_MS = 1100;
 
 export function BoxShop({
   box,
@@ -34,9 +35,9 @@ export function BoxShop({
   credits,
   cashMinor,
   rate,
-  odds,
+  prizes,
   enabled,
-  nextHref,
+  className,
 }: {
   box: AdventureBoxView;
   map: AdventureMapView | null;
@@ -44,39 +45,78 @@ export function BoxShop({
   /** Cash Wallet balance in minor units, used to decide whether "Get Credits" converts or deposits. */
   cashMinor: string;
   rate: { cashMinor: string; credits: number };
-  odds: { rewards: PoolOdds; loot: PoolOdds };
+  prizes: { rewards: PrizeList; loot: PrizeList };
   enabled: boolean;
-  nextHref: string | null;
+  className?: string;
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
   const label = useOddLabel();
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "opening" | "revealed">("idle");
+  const tiles = usePrizeTiles(prizes.rewards, prizes.loot);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<BoxPlayResult | null>(null);
+  const [land, setLand] = useState<ReelStop | null>(null);
+  const [prizeOut, setPrizeOut] = useState(false);
   const [balance, setBalance] = useState(credits);
+  const [freePlays, setFreePlays] = useState(box.freePlays);
+  const [meter, setMeter] = useState(box.jackpot);
+  const [jpIndex, setJpIndex] = useState(0);
+  const [jpWon, setJpWon] = useState<JackpotSpin[]>([]);
   const keyRef = useRef<string | null>(null);
+  const spinId = useRef(0);
   const startedAt = useRef(0);
-  // The server count only updates on refresh, so back-to-back opens track Loot locally.
-  const [localLoot, setLocalLoot] = useState(map?.lootCollected ?? 0);
-  const [lootAtOpen, setLootAtOpen] = useState(0);
-  const openBase = useRef(0);
-  const knownLoot = Math.max(map?.lootCollected ?? 0, localLoot);
 
   const { run, pending } = useAction(openBoxAction, {
     refresh: false,
     onSuccess: (d) => {
       keyRef.current = null;
       setBalance(Number(d.creditsBalance));
-      setLocalLoot(openBase.current + lootIn(d));
+      setFreePlays(d.freePlaysLeft);
+      setMeter(d.jackpot && d.meter ? { ...d.meter, plays: d.meter.target } : d.meter);
       setResult(d);
-      const wait = reduce ? 0 : Math.max(0, 1100 - (Date.now() - startedAt.current));
-      setTimeout(() => setPhase("revealed"), wait);
+      const wait = reduce ? 0 : Math.max(0, UNLOCK_MS - (Date.now() - startedAt.current));
+      setTimeout(() => {
+        setPhase("opened");
+        setLand({ key: prizeKeyOf(d.reward.type), id: ++spinId.current });
+      }, wait);
     },
     onError: () => setPhase("idle"),
   });
 
-  const affordable = balance >= box.priceCredits;
+  const onLanded = useCallback(() => {
+    setPrizeOut(true);
+    setTimeout(() => setPhase("revealed"), reduce ? 0 : 1100);
+  }, [reduce]);
+
+  const jpSpins = useMemo(() => result?.jackpot?.spins ?? [], [result]);
+
+  function startJackpot() {
+    if (!jpSpins.length) return;
+    setPhase("jackpot");
+    setPrizeOut(false);
+    setJpIndex(0);
+    setJpWon([]);
+    setLand(null);
+    setTimeout(() => setLand({ key: prizeKeyOf(jpSpins[0].reward.type), id: ++spinId.current }), reduce ? 0 : 700);
+  }
+
+  const onJackpotLanded = useCallback(() => {
+    const next = jpIndex + 1;
+    setJpWon(jpSpins.slice(0, next));
+    setTimeout(
+      () => {
+        if (next < jpSpins.length) {
+          setJpIndex(next);
+          setLand({ key: prizeKeyOf(jpSpins[next].reward.type), id: ++spinId.current });
+        } else {
+          setPhase("jackpotDone");
+        }
+      },
+      reduce ? 0 : 450,
+    );
+  }, [jpIndex, jpSpins, reduce]);
+
+  const affordable = freePlays > 0 || balance >= box.priceCredits;
   const shortfall = Math.max(0, box.priceCredits - balance);
   const rateCash = BigInt(rate.cashMinor);
   const rateCredits = BigInt(rate.credits);
@@ -84,183 +124,117 @@ export function BoxShop({
   if (rateCash > 0n && cashMinorToCredits(cashNeeded, rateCash, rateCredits) < BigInt(shortfall)) cashNeeded += 1n;
   const canConvert = cashNeeded > 0n && cashNeeded <= BigInt(cashMinor);
   const getCreditsHref = canConvert ? `/wallet/convert?amount=${toDecimal(cashNeeded)}` : "/wallet/deposit";
-  const art = box.artwork ?? ART.crate;
-  const lootGained = result ? lootIn(result) : 0;
-  const lootBefore = phase === "idle" ? knownLoot : lootAtOpen;
-  const lootNow = lootBefore + (phase === "revealed" ? lootGained : 0);
-  const target = map ? (map.state === "exploring" ? map.nextLootTarget : map.lootRequired) : 0;
-  const readyCp = phase === "idle" && map?.state === "exploring" ? (map.checkpoints.find((c) => c.state === "available") ?? null) : null;
-  const mapReadyNow = map && map.state === "collecting" && lootBefore + lootGained >= map.lootRequired;
-  const chestFullNow = map && map.state === "exploring" && target > lootBefore && lootBefore + lootGained >= target;
+  const art = boxArt(box.level, box.artwork);
+  const openArt = boxOpenArt(box.level, box.artwork);
+  const mapHref = `/play/map?level=${map?.level ?? box.level}`;
+  const busy = phase !== "idle" || pending;
+  const playable = !box.locked && enabled;
 
-  function confirm() {
+  function open(force = false) {
+    if ((busy && !force) || !affordable) return;
     keyRef.current ??= newKey();
-    openBase.current = knownLoot;
-    setLootAtOpen(knownLoot);
-    setConfirmOpen(false);
-    setPhase("opening");
+    setLand(null);
+    setPrizeOut(false);
+    setPhase("unlocking");
     startedAt.current = Date.now();
     run({ boxId: box.id, idempotencyKey: keyRef.current });
   }
 
   function close() {
     setPhase("idle");
+    setLand(null);
+    setPrizeOut(false);
+    if (result?.jackpot) setMeter(result.meter);
     setResult(null);
+    setJpWon([]);
     router.refresh();
   }
 
+  function playAgain() {
+    setResult(null);
+    open(true);
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="relative isolate overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_15%,var(--ocean),var(--ocean-deep)_75%)] px-5 pt-5 pb-6 text-center text-white">
-        <div aria-hidden className="pointer-events-none absolute -top-20 left-1/2 -z-10 size-72 -translate-x-1/2 rounded-full bg-amber-200/20 blur-3xl" />
-        <p className="text-xs font-bold text-amber-200">{map?.name ?? `Adventure Level ${box.level}`}</p>
-        <h2 className="font-heading text-2xl font-extrabold">{box.name}</h2>
-        <motion.div
-          className="relative mx-auto mt-3 aspect-square w-44"
-          animate={phase === "opening" && !reduce ? { rotate: [0, -4, 4, -4, 4, -2, 2, 0], scale: [1, 1.04, 1.02, 1.06] } : { rotate: 0, scale: 1 }}
-          transition={phase === "opening" ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" } : { type: "spring", stiffness: 300, damping: 20 }}
-        >
-          <Image
-            src={phase === "revealed" ? ART.crateOpen : art}
-            alt=""
-            fill
-            sizes="176px"
-            priority
-            unoptimized={/^https?:/.test(art)}
-            className={cn("rounded-3xl object-cover shadow-2xl", box.locked && "opacity-50 grayscale")}
-          />
-          {box.locked && (
-            <span className="absolute inset-0 grid place-items-center">
-              <span className="grid size-14 place-items-center rounded-full bg-black/55 ring-2 ring-white/30">
-                <Lock className="size-6" aria-hidden />
-              </span>
-            </span>
-          )}
-        </motion.div>
-        <p className="mx-auto mt-3 max-w-xs text-sm text-white/80">{box.description}</p>
-        <div className="mt-4 text-left">
-          <p className="text-xs font-bold text-amber-200">What you can win</p>
-          <p className="text-xs text-white/70">{map?.name ?? "Map"} Loot every time, plus one lucky drop</p>
-          <BoxContents tone="dark" rewards={odds.rewards} loot={odds.loot} className="mt-2" />
-        </div>
-      </div>
-
-      {map && (
-        <div className="rounded-2xl border bg-card p-4">
-          <LootMeter
-            total={lootNow}
-            target={target}
-            label={map.state === "collecting" || map.state === "locked" ? `Loot to unlock Map ${map.level}` : map.state === "exploring" ? "Loot for your next checkpoint" : `Map ${map.level} Loot`}
-          />
-          {readyCp ? (
-            <Link href={`/play/map?level=${map.level}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "mt-3 w-full")}>
-              <MapIcon className="size-4" aria-hidden /> {readyCp.name} is ready on Map {map.level}
-            </Link>
-          ) : (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Loot is a milestone. It is never used up, so every piece keeps counting toward this map&apos;s checkpoints.
-            </p>
-          )}
-        </div>
-      )}
-
-      {box.completed ? (
-        <div className="space-y-3 rounded-2xl border border-success/30 bg-success/10 p-4 text-center">
-          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold">
-            <CheckCircle2 className="size-4 text-success" aria-hidden /> Map {box.level} complete. This box is retired.
-          </p>
-          <p className="text-xs text-muted-foreground">Its Loot can&apos;t move you forward any more, so it can no longer be opened.</p>
-          <Link href={nextHref ?? "/play/prizes"} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "w-full")}>
-            {nextHref ? `Continue to Mystery Box ${box.level + 1}` : "View your prizes"} <ArrowRight className="size-4" aria-hidden />
+    <>
+      <section
+        style={{ "--box": box.theme?.color ?? "#2563eb" } as CSSProperties}
+        className={cn(
+          "relative isolate flex min-h-0 flex-col overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_18%,color-mix(in_oklab,var(--box)_70%,white)_0%,var(--box)_38%,color-mix(in_oklab,var(--box)_40%,black)_100%)] px-3 pt-3 pb-3 text-white",
+          className,
+        )}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <Link href={mapHref} className="flex h-8 min-w-0 items-center gap-1.5 rounded-full bg-black/25 px-3 text-xs font-bold hover:bg-black/35">
+            <MapIcon className="size-3.5 shrink-0" aria-hidden />
+            <span className="truncate">{map?.name ?? `Map ${box.level}`}</span>
           </Link>
-        </div>
-      ) : box.locked ? (
-        <div className="space-y-3 rounded-2xl border border-dashed bg-surface p-4 text-center">
-          <p className="text-sm font-semibold">{box.lockReason}</p>
-          {box.requiresMapLevel && (
-            <Link href={`/play/map?level=${box.requiresMapLevel}`} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "w-full")}>
-              <MapIcon className="size-4" aria-hidden /> Go to Map {box.requiresMapLevel}
-            </Link>
-          )}
-        </div>
-      ) : !enabled ? (
-        <p className="rounded-2xl border bg-surface p-4 text-center text-sm text-muted-foreground">Mystery Boxes are taking a short break. Your Credits are safe.</p>
-      ) : (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3">
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground">Price</p>
-              <p className="flex items-center gap-1.5 font-heading text-xl font-extrabold tabular">
-                <Coins className="size-5 text-gold" aria-hidden />
-                {formatCredits(box.priceCredits)} Credits
-              </p>
-            </div>
-            <div className="text-right text-xs text-muted-foreground tabular">
-              You have
-              <span className="block text-sm font-bold text-foreground">{formatCredits(balance)} Credits</span>
-              {!affordable && (
-                <span className="mt-0.5 block font-semibold text-gold-foreground">Need {formatCredits(shortfall)} more</span>
-              )}
-            </div>
-          </div>
-          {affordable ? (
-            <Button size="pill" variant="gold" className="h-12 w-full text-base" disabled={pending || phase === "opening"} onClick={() => setConfirmOpen(true)}>
-              {phase === "opening" ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
-              {phase === "opening" ? "Opening..." : "Open Mystery Box"}
-            </Button>
-          ) : (
-            <div className="space-y-2 rounded-2xl border border-gold/40 bg-gold-soft p-3">
-              <Link href={getCreditsHref} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 w-full text-base")}>
-                Get Credits
-              </Link>
-              <p className="text-center text-xs text-muted-foreground">{canConvert ? "Convert from your Cash Wallet. You have enough Cash to cover it." : "Add money with a deposit, then convert it to Credits."}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      <BoxOddsSheet name={box.name} rewards={odds.rewards} loot={odds.loot} />
-
-      <Sheet open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <SheetContent side="bottom">
-          <SheetHeader>
-            <SheetTitle className="font-heading text-xl">Open {box.name}?</SheetTitle>
-            <SheetDescription>You&apos;ll get one {map?.name ?? ""} Loot drop plus one lucky drop: free Credits, free Cash or a Free unlock.</SheetDescription>
-          </SheetHeader>
-          <dl className="mx-4 divide-y rounded-2xl border bg-card text-sm">
-            <div className="flex justify-between px-4 py-3">
-              <dt className="text-muted-foreground">Cost</dt>
-              <dd className="font-bold tabular">{formatCredits(box.priceCredits)} Credits</dd>
-            </div>
-            <div className="flex justify-between px-4 py-3">
-              <dt className="text-muted-foreground">Your Credits</dt>
-              <dd className="font-semibold tabular">{formatCredits(balance)}</dd>
-            </div>
-            <div className="flex justify-between px-4 py-3">
-              <dt className="text-muted-foreground">After opening</dt>
-              <dd className="font-semibold tabular">{formatCredits(Math.max(0, balance - box.priceCredits))}</dd>
-            </div>
-          </dl>
-          <BoxOddsSheet
+          <BoxPrizesSheet
             name={box.name}
-            rewards={odds.rewards}
-            loot={odds.loot}
+            rewards={prizes.rewards}
+            loot={prizes.loot}
             trigger={
-              <button type="button" className="mx-auto flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-primary hover:bg-brand-soft">
-                View prizes & odds
+              <button type="button" className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-black/25 px-3 text-xs font-bold hover:bg-black/35">
+                <Info className="size-3.5" aria-hidden /> Prizes
               </button>
             }
           />
-          <SheetFooter className="grid gap-2">
-            <Button size="pill" variant="gold" className="h-12 text-base" onClick={confirm} disabled={pending}>
-              Open for {formatCredits(box.priceCredits)} Credits
+        </div>
+
+        <BoxChest
+          closed={art}
+          open={openArt}
+          name={box.name}
+          stage={phase === "unlocking" ? "unlocking" : phase === "idle" ? "idle" : "opened"}
+          playable={playable}
+          locked={box.locked}
+          prize={phase === "jackpot" ? (jpWon.at(-1)?.reward ?? null) : prizeOut && result ? result.reward : null}
+          className="mx-auto my-1 min-h-20 w-full max-w-64 flex-1"
+        />
+        <h2 className="truncate text-center font-heading text-xl leading-tight font-extrabold">{box.name}</h2>
+
+        <div className="mt-2.5">
+          <PrizeReel
+            tiles={tiles}
+            spinning={phase === "unlocking" || phase === "opened" || phase === "jackpot"}
+            landOn={land}
+            onLanded={phase === "jackpot" ? onJackpotLanded : onLanded}
+            fast={phase === "jackpot"}
+          />
+        </div>
+        {meter && !box.locked && <JackpotFire className="mt-2.5" plays={meter.plays} target={meter.target} spins={meter.spins} blazing={phase === "jackpot" || phase === "jackpotDone"} />}
+
+        <div className="mt-2.5">
+          {phase === "jackpot" ? (
+            <div className="flex h-14 items-center justify-center gap-2 rounded-full bg-orange-500 text-lg font-extrabold" aria-live="polite">
+              <Flame className="size-5 fill-amber-200" aria-hidden /> Free spin {Math.min(jpIndex + 1, jpSpins.length)} of {jpSpins.length}
+            </div>
+          ) : box.locked ? (
+            <div className="space-y-2 text-center">
+              <p className="text-sm font-semibold text-white/85">{box.lockReason}</p>
+              {box.unlockMapLevel && (
+                <Link href={`/play/map?level=${box.unlockMapLevel}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-14 w-full text-lg")}>
+                  <MapIcon className="size-5" aria-hidden /> Go to Map {box.unlockMapLevel}
+                </Link>
+              )}
+            </div>
+          ) : !enabled ? (
+            <p className="rounded-2xl bg-black/25 p-4 text-center text-sm">Mystery Boxes are taking a short break. Your Credits are safe.</p>
+          ) : affordable ? (
+            <Button size="pill" variant="gold" className="h-14 w-full text-lg" disabled={busy} onClick={() => open()}>
+              {busy ? <Loader2 className="size-5 animate-spin" aria-hidden /> : freePlays > 0 ? <LockOpen className="size-5" aria-hidden /> : <Coins className="size-5" aria-hidden />}
+              {busy ? "Opening..." : freePlays > 0 ? `Open for free${freePlays > 1 ? ` (${freePlays} left)` : ""}` : `Open for ${formatCredits(box.priceCredits)}`}
             </Button>
-            <Button size="pill" variant="ghost" onClick={() => setConfirmOpen(false)}>
-              Not now
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          ) : (
+            <div className="space-y-1.5">
+              <Link href={getCreditsHref} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-14 w-full text-lg")}>
+                Get {formatCredits(shortfall)} more Credits
+              </Link>
+              <p className="text-center text-xs text-white/75">{canConvert ? "Convert from your Cash Wallet" : "Add money, then convert it to Credits"}</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       <AnimatePresence>
         {phase === "revealed" && result && (
@@ -274,82 +248,134 @@ export function BoxShop({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_25%,var(--ocean),var(--ocean-deep))] p-6 text-white ring-1 ring-white/10"
-              initial={reduce ? { opacity: 0 } : { scale: 0.85, y: 24, opacity: 0 }}
+              className="relative w-full max-w-sm overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_20%,var(--ocean),var(--ocean-deep))] p-6 text-center text-white ring-1 ring-white/10"
+              initial={reduce ? { opacity: 0 } : { scale: 0.8, y: 24, opacity: 0 }}
               animate={reduce ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 280, damping: 24 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}
             >
               <button onClick={close} className="absolute top-3 right-3 grid size-11 place-items-center rounded-full text-white/70 hover:bg-white/10" aria-label="Close">
                 <X className="size-5" />
               </button>
-              <p id="box-reveal-title" className="text-center text-sm font-bold text-amber-200">
-                {box.name} opened
+              <p id="box-reveal-title" className="text-sm font-bold text-amber-200">
+                You won
               </p>
-              <div className="mt-4 space-y-2" aria-live="polite">
-                {result.loot.map((l, i) => (
-                  <motion.div
-                    key={`loot-${i}`}
-                    className="flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"
-                    initial={reduce ? false : { opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.15 }}
-                  >
-                    <LootToken icon={l.icon} rarity={l.rarity} size="md" className="bg-white/95" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-amber-200">Loot</p>
-                      <p className="font-heading text-lg leading-tight font-extrabold">+{qty(l.amount)} {l.itemName ?? l.label}</p>
-                    </div>
-                  </motion.div>
-                ))}
+              <div className="relative mx-auto mt-1 grid size-36 place-items-center" aria-hidden>
+                <motion.span
+                  className="absolute -inset-6"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1, rotate: reduce ? 0 : 360 }}
+                  transition={{ opacity: { duration: 0.4 }, scale: { duration: 0.5 }, rotate: { duration: 16, ease: "linear", repeat: Infinity } }}
+                  style={{
+                    background: "repeating-conic-gradient(from 0deg at 50% 50%, rgb(255 236 160 / 0.28) 0deg 10deg, transparent 10deg 26deg)",
+                    maskImage: "radial-gradient(circle at 50% 50%, #000 18%, transparent 68%)",
+                    WebkitMaskImage: "radial-gradient(circle at 50% 50%, #000 18%, transparent 68%)",
+                  }}
+                />
+                <span className="absolute inset-8 rounded-full bg-amber-200/30 blur-xl" />
                 <motion.div
-                  className="flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"
-                  initial={reduce ? false : { opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.35 }}
+                  className="relative"
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.2, rotate: -12 }}
+                  animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1.25, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 14, delay: 0.1 }}
                 >
-                  <RewardGlyph type={result.reward.type} icon={result.reward.icon} rarity={result.reward.rarity} size="md" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold" style={{ color: rarityOf(result.reward.rarity).hex === "#64748b" ? "#cbd5e1" : rarityOf(result.reward.rarity).hex }}>
-                      Lucky drop · {rarityOf(result.reward.rarity).label}
-                    </p>
-                    <p className="font-heading text-lg leading-tight font-extrabold">{result.reward.type === "ITEM" || result.reward.type === "FREE_UNLOCK" ? result.reward.display : label(result.reward)}</p>
-                    {result.reward.type === "CASH" && <p className="text-xs text-white/70">Cash rewards are under review before becoming available to withdraw.</p>}
-                    {result.reward.type === "FREE_UNLOCK" && result.reward.headline && <p className="text-xs text-white/70">{result.reward.headline}</p>}
-                  </div>
+                  <RewardGlyph type={result.reward.type} icon={result.reward.icon} rarity={result.reward.rarity} size="lg" />
                 </motion.div>
               </div>
-              {map && (
-                <div className="mt-4 rounded-2xl bg-black/20 p-3">
-                  <LootMeter tone="dark" total={lootNow} target={target} label={`${map.name} Loot`} />
+              <p className="mt-1 font-heading text-2xl leading-tight font-extrabold" aria-live="polite">
+                {result.reward.type === "ITEM" || result.reward.type === "FREE_UNLOCK" ? result.reward.display : label(result.reward)}
+              </p>
+              <p className="mt-1 text-xs font-semibold" style={{ color: rarityOf(result.reward.rarity).hex === "#64748b" ? "#cbd5e1" : rarityOf(result.reward.rarity).hex }}>
+                {rarityOf(result.reward.rarity).label}
+              </p>
+              {result.reward.type === "CASH" && <p className="mt-1 text-xs text-white/70">Cash rewards are reviewed before you can withdraw them.</p>}
+              {result.reward.type === "FREE_UNLOCK" && result.reward.headline && <p className="mt-1 text-xs text-white/70">{result.reward.headline}</p>}
+
+              {result.loot.map((l, i) => (
+                <div key={i} className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/10 p-2.5 ring-1 ring-white/10">
+                  <LootToken icon={l.icon} rarity={l.rarity} size="sm" className="bg-white/95" />
+                  <span className="text-sm font-bold">
+                    +{qty(l.amount)} {l.itemName ?? l.label}
+                  </span>
+                </div>
+              ))}
+              {result.jackpot && (
+                <div className="mt-4 flex items-center gap-2 rounded-2xl bg-orange-500/25 p-3 text-left text-sm font-semibold ring-1 ring-orange-300/50">
+                  <Flame className="size-5 shrink-0 fill-orange-400 text-amber-200" aria-hidden />
+                  The jackpot fire is full! {result.jackpot.spins.length} free spins are ready.
                 </div>
               )}
               <div className="mt-5 grid gap-2">
-                {mapReadyNow || chestFullNow ? (
-                  <Link href={`/play/map?level=${box.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 text-base")} onClick={() => router.refresh()}>
-                    {mapReadyNow ? `Map ${box.level} is ready to unlock` : "Your chest is full: go to the map"} <ArrowRight className="size-4" aria-hidden />
-                  </Link>
+                {result.jackpot ? (
+                  <Button size="pill" variant="gold" className="h-12 text-base" onClick={startJackpot}>
+                    <Flame className="size-4" aria-hidden /> Start jackpot
+                  </Button>
+                ) : result.reward.type === "FREE_UNLOCK" && freePlays > 0 ? (
+                  <Button size="pill" variant="gold" className="h-12 text-base" onClick={playAgain}>
+                    <LockOpen className="size-4" aria-hidden /> Play again for free
+                  </Button>
                 ) : (
                   <Button size="pill" variant="gold" className="h-12 text-base" onClick={close}>
                     Collect
                   </Button>
                 )}
-                {mapReadyNow || chestFullNow ? (
-                  <Button size="pill" variant="ghost" className="text-white hover:bg-white/10 hover:text-white" onClick={close}>
-                    Stay here
-                  </Button>
-                ) : (
-                  map &&
-                  map.state !== "locked" && (
-                    <Link href={`/play/map?level=${box.level}`} className={cn(buttonVariants({ variant: "ghost", size: "pill" }), "text-white hover:bg-white/10 hover:text-white")}>
-                      View Map {box.level}
-                    </Link>
-                  )
-                )}
+                <Link href={mapHref} className={cn(buttonVariants({ variant: "ghost", size: "pill" }), "text-white hover:bg-white/10 hover:text-white")} onClick={() => router.refresh()}>
+                  <MapIcon className="size-4" aria-hidden /> Check your map
+                </Link>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+
+      <AnimatePresence>
+        {phase === "jackpotDone" && (
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="jackpot-title"
+            className="fixed inset-0 z-50 grid place-items-center bg-ocean-deep/70 p-5 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="relative flex max-h-[85dvh] w-full max-w-sm flex-col overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_50%_0%,#9a3412,var(--ocean-deep)_70%)] p-6 text-center text-white ring-1 ring-orange-300/30"
+              initial={reduce ? { opacity: 0 } : { scale: 0.8, y: 24, opacity: 0 }}
+              animate={reduce ? { opacity: 1 } : { scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}
+            >
+              <button onClick={close} className="absolute top-3 right-3 grid size-11 place-items-center rounded-full text-white/70 hover:bg-white/10" aria-label="Close">
+                <X className="size-5" />
+              </button>
+              <motion.span className="mx-auto" aria-hidden animate={reduce ? undefined : { scale: [1, 1.12, 1], rotate: [-3, 3, -3] }} transition={{ duration: 1, repeat: Infinity }}>
+                <Flame className="size-14 fill-orange-400 text-amber-200 drop-shadow-[0_0_14px_#f97316]" />
+              </motion.span>
+              <p id="jackpot-title" className="mt-1 font-heading text-3xl font-extrabold">
+                Jackpot!
+              </p>
+              <p className="text-sm text-white/75">You won {jpWon.length} prizes from {jpSpins.length} free spins</p>
+              <ul className="mt-4 grid min-h-0 grid-cols-2 gap-2 overflow-y-auto text-left">
+                {jpWon.map((w, i) => (
+                  <motion.li
+                    key={i}
+                    className="flex items-center gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/10"
+                    initial={reduce ? false : { opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.05 * i }}
+                  >
+                    <RewardGlyph type={w.reward.type} icon={w.reward.icon} rarity={w.reward.rarity} />
+                    <span className="min-w-0 text-xs leading-tight font-bold">{w.reward.type === "ITEM" || w.reward.type === "FREE_UNLOCK" ? w.reward.display : label(w.reward)}</span>
+                  </motion.li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-white/70">Every spin also added Loot to your collection.</p>
+              <Button size="pill" variant="gold" className="mt-4 h-12 text-base" onClick={close}>
+                Collect all
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

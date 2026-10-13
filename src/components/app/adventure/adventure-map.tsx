@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Flag, Gift, Loader2, Lock, MapPin, Puzzle, Sparkles, Trophy, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Flag, Gift, Loader2, Lock, MapPin, Puzzle, RotateCcw, Sparkles, Trophy, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,7 +12,7 @@ import { newKey, useAction } from "@/hooks/use-action";
 import { lootEmoji, routeChests, type RouteChest } from "@/lib/adventure";
 import { defaultTrail, densify, pointAt, progressOf, slice, toPoints, type Pt } from "@/lib/adventure-trails";
 import { cn } from "@/lib/utils";
-import { openBigBoxAction, unlockCheckpointAction, unlockMapAction } from "@/server/actions/games";
+import { openBigBoxAction, unlockCheckpointAction, replayMapAction, unlockMapAction } from "@/server/actions/games";
 import type { AdventureMapView, BigBoxResult, CheckpointResult, CheckpointView, LootItemView } from "@/server/services/adventure";
 import { ART, mapArt } from "../art";
 import { headerIconButton } from "../header-buttons";
@@ -26,7 +26,7 @@ type Ordered = CheckpointView & { index: number; chest: RouteChest; at: number; 
  */
 function layout(map: AdventureMapView): { line: Pt[]; cps: Ordered[] } {
   const sorted = [...map.checkpoints].sort((a, b) => Number(a.isFinal) - Number(b.isFinal) || a.position - b.position);
-  const chests = routeChests(sorted, map.lootRequired, map.lootCollected);
+  const chests = routeChests(sorted, 0, map.lootCollected);
   const trail = defaultTrail(map.level, map.artwork);
   const line = densify(trail ?? [{ x: sorted[0]?.posX ?? 50, y: 100 }, ...sorted.map((c) => ({ x: c.posX, y: c.posY }))]);
   let prev = 0;
@@ -169,6 +169,7 @@ export function AdventureMap({
   }
 
   const unlockMap = useAction(unlockMapAction, { success: (d) => (d.replayed ? null : `Map ${d.level} unlocked: ${d.name}`) });
+  const replay = useAction(replayMapAction, { success: (d) => `Round ${d.round} of ${d.name} started. The chests are empty again.` });
   const discover = useAction(unlockCheckpointAction, {
     refresh: false,
     onSuccess: (d) => {
@@ -398,27 +399,20 @@ export function AdventureMap({
       >
         {map.state === "locked" ? (
           <>
-            <PanelHead icon={<Lock className="size-6" aria-hidden />} eyebrow={`Map ${map.level}`} title="Locked" text={`Complete Adventure Level ${map.prerequisiteLevel} to reach ${map.name}.`} />
+            <PanelHead icon={<Lock className="size-6" aria-hidden />} eyebrow={`Map ${map.level}`} title="Locked" text={`Win the Big Mystery Box at the end of Map ${map.prerequisiteLevel} to unlock ${map.name} and the ${map.boxName}.`} />
             {prevLevel !== null && (
               <Button size="pill" variant="outline" className="h-12 w-full text-base" onClick={() => go(-1)}>
                 <ChevronLeft className="size-4" aria-hidden /> Back to Map {prevLevel}
               </Button>
             )}
           </>
-        ) : map.state === "collecting" || map.state === "ready" ? (
+        ) : map.state === "ready" ? (
           <>
-            <PanelHead image={ART.crate} eyebrow={`Map ${map.level}`} title={`Unlock ${map.name}`} text="Collect Loot from the Mystery Box to open this map." />
-            <LootMeter total={map.lootCollected} target={map.lootRequired} label="Loot to unlock" />
-            {map.state === "ready" ? (
-              <Button size="pill" variant="gold" className="h-12 w-full text-base" disabled={!enabled || unlockMap.pending} onClick={() => unlockMap.run(map.id)}>
-                {unlockMap.pending && <Loader2 className="animate-spin" aria-hidden />}
-                Unlock Map {map.level}
-              </Button>
-            ) : (
-              <Link href={`/play/mystery-box?level=${map.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 w-full text-base")}>
-                Find Loot in Mystery Box {map.level}
-              </Link>
-            )}
+            <PanelHead image={ART.crate} eyebrow={`Map ${map.level}`} title={`Unlock ${map.name}`} text={`You won Map ${map.prerequisiteLevel}. Unlock this map and the ${map.boxName} to keep going.`} />
+            <Button size="pill" variant="gold" className="h-12 w-full text-base" disabled={!enabled || unlockMap.pending} onClick={() => unlockMap.run(map.id)}>
+              {unlockMap.pending && <Loader2 className="animate-spin" aria-hidden />}
+              Unlock Map {map.level}
+            </Button>
           </>
         ) : unlocked && shown && (map.state === "exploring" || viewingOther) ? (
           <motion.div key={shown.id} className="space-y-3" initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -444,7 +438,7 @@ export function AdventureMap({
               </Button>
             ) : shown.chest.state === "filling" ? (
               <Link href={`/play/mystery-box?level=${map.level}`} className={cn(buttonVariants({ variant: "gold", size: "pill" }), "h-12 w-full text-base")}>
-                Find Loot in Mystery Box {map.level}
+                Find Loot in the {map.boxName}
               </Link>
             ) : (
               <Button size="pill" variant="outline" className="h-12 w-full text-base" onClick={() => setViewId(null)}>
@@ -463,16 +457,24 @@ export function AdventureMap({
           <>
             <PanelHead
               icon={<Trophy className="size-6 text-gold" aria-hidden />}
-              eyebrow={`Map ${map.level} complete`}
+              eyebrow={map.round > 1 ? `Map ${map.level} complete · Round ${map.round}` : `Map ${map.level} complete`}
               title="Puzzles unlocked"
-              text={map.bigBox?.piecesFound ? `The final checkpoint gave you ${map.bigBox.piecesFound} Puzzle ${map.bigBox.piecesFound === 1 ? "Piece" : "Pieces"}.` : "You reached the final checkpoint."}
+              text={
+                (map.bigBox?.piecesFound ? `The final checkpoint gave you ${map.bigBox.piecesFound} Puzzle ${map.bigBox.piecesFound === 1 ? "Piece" : "Pieces"}.` : "You reached the final checkpoint.") +
+                (map.canReplay ? " Play it again to refill the chests with Level " + map.level + " Loot and win another Big Mystery Box." : "")
+              }
             />
+            {map.canReplay && (
+              <Button size="pill" variant="gold" className="h-12 w-full text-base" disabled={!enabled || replay.pending} onClick={() => replay.run(map.id)}>
+                {replay.pending ? <Loader2 className="animate-spin" aria-hidden /> : <RotateCcw className="size-4" aria-hidden />} Play Map {map.level} again
+              </Button>
+            )}
             <div className={cn("grid gap-2", nextLevel !== null && "grid-cols-2")}>
-              <Link href="/play/prizes" className={cn(buttonVariants({ variant: nextLevel !== null ? "outline" : "gold", size: "pill" }), "h-12 text-base")}>
+              <Link href="/play/prizes" className={cn(buttonVariants({ variant: nextLevel !== null || map.canReplay ? "outline" : "gold", size: "pill" }), "h-12 text-base")}>
                 <Puzzle className="size-4" aria-hidden /> Puzzles
               </Link>
               {nextLevel !== null && (
-                <Button size="pill" variant="gold" className="h-12 text-base" onClick={() => go(1)}>
+                <Button size="pill" variant={map.canReplay ? "outline" : "gold"} className="h-12 text-base" onClick={() => go(1)}>
                   Map {nextLevel} <ChevronRight className="size-4" aria-hidden />
                 </Button>
               )}
@@ -483,24 +485,19 @@ export function AdventureMap({
 
       <Celebration open={completion !== null} onClose={closeAll} labelledBy="map-complete-title">
         <Trophy className="mx-auto size-14 text-amber-300" aria-hidden />
-        <p className="mt-2 text-sm font-bold text-amber-200">Map {map.level} complete</p>
+        <p className="mt-2 text-sm font-bold text-amber-200">{completion?.completion && !completion.completion.firstClear ? `Round ${completion.completion.round} of Map ${map.level} complete` : `Map ${map.level} complete`}</p>
         <p id="map-complete-title" className="font-heading text-3xl font-extrabold">
           {map.name}
         </p>
         <ul className="mt-4 space-y-2 text-left text-sm">
           {completion?.completion?.unlockedMap && (
             <li className="flex items-center gap-2 rounded-2xl bg-white/10 p-3">
-              <Sparkles className="size-4 shrink-0 text-amber-200" aria-hidden /> Map {completion.completion.unlockedMap.level}: {completion.completion.unlockedMap.name} is now reachable
+              <Sparkles className="size-4 shrink-0 text-amber-200" aria-hidden /> Map {completion.completion.unlockedMap.level}: {completion.completion.unlockedMap.name} and the {completion.completion.unlockedMap.boxName} are unlocked
             </li>
           )}
-          {completion?.completion?.unlockedBoxes.map((b) => (
-            <li key={b.level} className="flex items-center gap-2 rounded-2xl bg-white/10 p-3">
-              <Sparkles className="size-4 shrink-0 text-amber-200" aria-hidden /> {b.name} unlocked
-            </li>
-          ))}
           {completion?.bigBox && (
             <li className="flex items-center gap-2 rounded-2xl bg-white/10 p-3">
-              <Puzzle className="size-4 shrink-0 text-amber-200" aria-hidden /> Puzzles unlocked: open the Big Mystery Box for Puzzle Pieces
+              <Puzzle className="size-4 shrink-0 text-amber-200" aria-hidden /> {completion.completion?.firstClear === false ? "Open the Big Mystery Box for more Puzzle Pieces" : "Open the Big Mystery Box for Puzzle Pieces and to unlock the next map"}
             </li>
           )}
         </ul>
@@ -546,7 +543,18 @@ export function AdventureMap({
             <p className="mt-3 font-heading text-3xl font-extrabold">
               {bigBox.pieces} Puzzle {bigBox.pieces === 1 ? "Piece" : "Pieces"}
             </p>
-            <p className="text-sm text-white/75">You now have {bigBox.totalPieces} in total.</p>
+            <p className="text-sm text-white/75">
+              {bigBox.puzzle
+                ? bigBox.puzzle.have >= bigBox.puzzle.required
+                  ? `Your ${bigBox.puzzle.prizeName} puzzle is full.`
+                  : `${bigBox.puzzle.have} of ${bigBox.puzzle.required} pieces of the ${bigBox.puzzle.prizeName} puzzle. Play this map again to find more.`
+                : `You now have ${bigBox.totalPieces} in total.`}
+            </p>
+            {bigBox.unlockedMap && (
+              <p className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-white/10 p-3 text-sm font-semibold">
+                <Sparkles className="size-4 shrink-0 text-amber-200" aria-hidden /> Map {bigBox.unlockedMap.level}: {bigBox.unlockedMap.name} and the {bigBox.unlockedMap.boxName} are unlocked
+              </p>
+            )}
             {bigBox.completedPuzzles.length > 0 && (
               <p className="mt-3 rounded-2xl bg-amber-300/20 p-3 text-sm font-semibold text-amber-100">
                 {bigBox.completedPuzzles.map((p) => `Adventure Level ${p.level} puzzle complete`).join(" · ")}. One final step to unlock {bigBox.completedPuzzles[0].prizeName}.
@@ -574,18 +582,15 @@ export function AdventureMap({
         ) : (
           <>
             {map.bigBox && (
-              <ul className="mt-3 grid grid-cols-3 gap-2 text-sm" aria-label="Chance of each result">
-                {map.bigBox.odds.map((o) => (
-                  <li key={o.pieces} className="rounded-xl bg-white/10 py-2">
-                    <span className="block font-bold">
-                      {o.pieces} {o.pieces === 1 ? "piece" : "pieces"}
-                    </span>
-                    <span className="text-white/70 tabular">{o.pct}%</span>
+              <ul className="mt-3 flex justify-center gap-2 text-sm" aria-label="Possible results">
+                {map.bigBox.pieces.map((n) => (
+                  <li key={n} className="rounded-xl bg-white/10 px-3 py-2 font-bold">
+                    {n} {n === 1 ? "piece" : "pieces"}
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-3 text-xs text-white/65">Decided securely on our servers when you open it. You can open it once.</p>
+            <p className="mt-3 text-xs text-white/65">Decided securely on our servers when you open it. You can open it once{nextMap ? `, and it unlocks Map ${nextMap.level}` : ""}.</p>
             <Button size="pill" variant="gold" className="mt-4 h-12 w-full text-base" disabled={shaking || openBig.pending || !enabled} onClick={openBigBox}>
               {(shaking || openBig.pending) && <Loader2 className="animate-spin" aria-hidden />}
               {shaking ? "Opening..." : "Open Big Mystery Box"}

@@ -5,17 +5,14 @@ import Link from "next/link";
 import { LootToken } from "@/components/app/adventure/loot";
 import { mapArt, Token } from "@/components/app/art";
 import { ListCard, SegmentedNav, StatTile } from "@/components/app/kit";
-import { CancelListingButton, SellSheet } from "@/components/app/market";
 import { Section } from "@/components/app/mobile-header";
 import { CollectionsHeader } from "@/components/app/root-page-header";
 import { EmptyState } from "@/components/shared/states";
 import { Progress } from "@/components/ui/progress";
 import { requireUser } from "@/lib/auth/session";
-import { formatCredits } from "@/lib/money";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
 import { getCollection, type CollectionData } from "@/server/queries/collection";
-import { getConfig } from "@/server/services/config";
 
 export const metadata: Metadata = { title: "Collections" };
 
@@ -25,8 +22,6 @@ const VIEWS = [
   { key: "keepsakes", label: "Keepsakes" },
 ] as const;
 type ViewKey = (typeof VIEWS)[number]["key"];
-
-type MarketCfg = { feePct: number; minPrice: number; maxPrice: number };
 
 function SellableBadge() {
   return <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-bold text-success">Sellable</span>;
@@ -51,7 +46,7 @@ function SubHeading({ icon: Icon, title, meta }: { icon: typeof Gem; title: stri
   );
 }
 
-function LootAlbum({ data, market }: { data: CollectionData; market: MarketCfg }) {
+function LootAlbum({ data }: { data: CollectionData }) {
   return (
     <div className="space-y-2">
       {data.lootMaps.map((m) => {
@@ -84,7 +79,6 @@ function LootAlbum({ data, market }: { data: CollectionData; market: MarketCfg }
                           {it.listed > 0 && <span className="font-semibold text-primary">· {it.listed} listed</span>}
                         </span>
                       </span>
-                      {it.owned > 0 && <SellSheet itemId={it.id} item={{ name: it.name, icon: it.icon, rarity: it.rarity }} owned={it.owned} {...market} />}
                     </li>
                   );
                 })}
@@ -103,7 +97,7 @@ function LootAlbum({ data, market }: { data: CollectionData; market: MarketCfg }
   );
 }
 
-function SellableSection({ data, market }: { data: CollectionData; market: MarketCfg }) {
+function SellableSection({ data }: { data: CollectionData }) {
   return (
     <Section
       id="sellable"
@@ -114,19 +108,19 @@ function SellableSection({ data, market }: { data: CollectionData; market: Marke
         </>
       }
       action={
-        <Link href="/market?tab=sell" className="flex h-11 items-center text-sm font-semibold text-primary">
-          Market
+        <Link href="/market/sell" className="flex h-11 items-center text-sm font-semibold text-primary">
+          Sell
         </Link>
       }
     >
-      <p className="-mt-1 mb-3 text-sm text-muted-foreground">Items you can keep or list on the Market for Credits.</p>
+      <p className="-mt-1 mb-3 text-sm text-muted-foreground">Items you can keep, or sell on the Market for Credits.</p>
 
       <SubHeading icon={Gem} title="Adventure Loot" />
-      <LootAlbum data={data} market={market} />
+      <LootAlbum data={data} />
 
       <SubHeading icon={Package} title="Items" meta={data.otherItems.length ? `${data.otherItems.length} kinds` : undefined} />
       {data.otherItems.length === 0 ? (
-        <p className="rounded-3xl border border-dashed p-4 text-center text-sm text-muted-foreground">Bonus items from boxes, spins and daily events land here.</p>
+        <p className="rounded-3xl border border-dashed p-4 text-center text-sm text-muted-foreground">Bonus items from boxes and spins land here.</p>
       ) : (
         <ul className="grid grid-cols-2 gap-2">
           {data.otherItems.map((i) => {
@@ -144,9 +138,6 @@ function SellableSection({ data, market }: { data: CollectionData; market: Marke
                     <span className="text-muted-foreground tabular"> · ×{i.quantity}</span>
                   </p>
                 </div>
-                <div className="mt-auto">
-                  <SellSheet itemId={i.id} item={{ name: i.name, icon: i.icon, rarity: i.rarity }} owned={i.quantity} {...market} />
-                </div>
               </li>
             );
           })}
@@ -154,23 +145,11 @@ function SellableSection({ data, market }: { data: CollectionData; market: Marke
       )}
 
       {data.listings.length > 0 && (
-        <>
-          <SubHeading icon={Store} title="On the Market" meta={`${data.counts.listed} listed`} />
-          <ul className="space-y-2">
-            {data.listings.map((l) => (
-              <li key={l.id} className="flex items-center gap-3 rounded-3xl border bg-card p-3">
-                <Token icon={l.item.icon} rarity={l.item.rarity} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{l.item.name}</p>
-                  <p className="truncate text-xs text-muted-foreground tabular">
-                    {l.quantity} of {l.listedQuantity} left · {formatCredits(l.unitPrice)} Credits each
-                  </p>
-                </div>
-                <CancelListingButton listingId={l.id} />
-              </li>
-            ))}
-          </ul>
-        </>
+        <Link href="/market/sell" className="mt-3 flex min-h-12 items-center gap-2 rounded-3xl border bg-card px-4 text-sm font-semibold hover:bg-surface">
+          <Store className="size-4 text-primary" aria-hidden />
+          {data.counts.listed} on the Market
+          <ChevronRight className="ml-auto size-4 text-muted-foreground" aria-hidden />
+        </Link>
       )}
     </Section>
   );
@@ -208,7 +187,7 @@ function KeepsakesSection({ data }: { data: CollectionData }) {
                       <KeepsakeBadge />
                     </div>
                     <p className="truncate text-xs text-muted-foreground">Prize: {p.prize.name}</p>
-                    <div className="mt-1.5 flex gap-1" aria-label={`${have} of ${p.piecesRequired} pieces`}>
+                    <div className="mt-1.5 flex gap-0.5" aria-label={`${have} of ${p.piecesRequired} pieces`}>
                       {Array.from({ length: p.piecesRequired }, (_, i) => (
                         <span key={i} className={cn("h-1.5 flex-1 rounded-full", i < have ? (p.complete ? "bg-success" : "bg-amber-500") : "bg-muted")} />
                       ))}
@@ -296,8 +275,7 @@ export default async function CollectionsPage({ searchParams }: PageProps<"/coll
   const user = await requireUser();
   const sp = await searchParams;
   const view: ViewKey = VIEWS.some((v) => v.key === sp.view) ? (sp.view as ViewKey) : "all";
-  const [data, cfg] = await Promise.all([getCollection(user), getConfig("market")]);
-  const market = { feePct: cfg.feePct, minPrice: cfg.minPrice, maxPrice: cfg.maxPrice };
+  const data = await getCollection(user);
   const empty = data.counts.sellable === 0 && data.counts.keepsakes === 0 && data.listings.length === 0;
 
   return (
@@ -308,7 +286,7 @@ export default async function CollectionsPage({ searchParams }: PageProps<"/coll
         <div className="grid grid-cols-3 gap-2">
           <StatTile href="/collections?view=sellable" icon={Tag} tone="bg-success-soft text-success" value={data.counts.sellable.toLocaleString("en-MY")} label="Sellable" />
           <StatTile href="/collections?view=keepsakes" icon={Lock} tone="bg-gold-soft text-gold-foreground" value={data.counts.keepsakes.toLocaleString("en-MY")} label="Keepsakes" />
-          <StatTile href="/market?tab=listings" icon={Store} value={data.counts.listed.toLocaleString("en-MY")} label="Listed" />
+          <StatTile href="/market/sell" icon={Store} value={data.counts.listed.toLocaleString("en-MY")} label="Listed" />
         </div>
         <SegmentedNav
           className="mt-3"
@@ -332,7 +310,7 @@ export default async function CollectionsPage({ searchParams }: PageProps<"/coll
         </Section>
       )}
 
-      {view !== "keepsakes" && <SellableSection data={data} market={market} />}
+      {view !== "keepsakes" && <SellableSection data={data} />}
       {view !== "sellable" && <KeepsakesSection data={data} />}
 
       <Section>

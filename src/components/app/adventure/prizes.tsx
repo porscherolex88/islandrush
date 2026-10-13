@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { newKey, useAction } from "@/hooks/use-action";
+import { puzzleColumns } from "@/lib/adventure";
 import { cn } from "@/lib/utils";
 import { claimPrizeAction, spinPrizeWheelAction } from "@/server/actions/games";
 import type { PrizeView, PuzzleView, WheelResult } from "@/server/services/adventure";
@@ -27,14 +28,31 @@ const CLAIM_LABEL: Record<string, { label: string; tone: string; text: string }>
   REJECTED: { label: "Not approved", tone: "bg-destructive/10 text-destructive", text: "This claim was not approved. Contact Support if you have questions." },
 };
 
-function PieceGrid({ have, required }: { have: number; required: number }) {
+/** The prize cut into a grid. Each piece found shows its part of the prize picture. */
+function PieceGrid({ have, required, image }: { have: number; required: number; image: string | null }) {
+  const cols = puzzleColumns(required);
+  const rows = Math.ceil(required / cols);
   return (
-    <div className="flex flex-wrap gap-1.5" role="img" aria-label={`${have} of ${required} Puzzle Pieces`}>
-      {Array.from({ length: required }, (_, i) => (
-        <span key={i} className={cn("grid size-10 place-items-center rounded-xl ring-2", i < have ? "bg-amber-50 text-amber-600 ring-amber-300" : "bg-muted text-muted-foreground/40 ring-border")}>
-          <Puzzle className="size-5" aria-hidden />
-        </span>
-      ))}
+    <div
+      className="mx-auto grid w-full max-w-60 gap-0.5 overflow-hidden rounded-2xl bg-border p-0.5"
+      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      role="img"
+      aria-label={`${have} of ${required} Puzzle Pieces`}
+    >
+      {Array.from({ length: required }, (_, i) => {
+        const found = i < have;
+        const x = cols > 1 ? ((i % cols) / (cols - 1)) * 100 : 0;
+        const y = rows > 1 ? (Math.floor(i / cols) / (rows - 1)) * 100 : 0;
+        return (
+          <span
+            key={i}
+            className={cn("grid aspect-square place-items-center rounded-[5px] bg-cover", found ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground/30")}
+            style={found && image ? { backgroundImage: `url("${image}")`, backgroundSize: `${cols * 100}% ${rows * 100}%`, backgroundPosition: `${x}% ${y}%` } : undefined}
+          >
+            {!(found && image) && <Puzzle className="size-1/2 max-h-6 max-w-6" aria-hidden />}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -73,7 +91,7 @@ export function UpcomingPrize({ puzzle }: { puzzle: PuzzleView }) {
   );
 }
 
-export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: PuzzleView; wheel: { active: boolean; prizeUnlockPct: number; alternativePct: number }; verified: boolean; enabled: boolean }) {
+export function PuzzleCard({ puzzle, verified, enabled }: { puzzle: PuzzleView; verified: boolean; enabled: boolean }) {
   const router = useRouter();
   const [wheelOpen, setWheelOpen] = useState(false);
   const [result, setResult] = useState<WheelResult | null>(null);
@@ -121,7 +139,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
             {p.piecesHave}/{p.piecesRequired} pieces
           </p>
         </div>
-        <PieceGrid have={p.piecesHave} required={p.piecesRequired} />
+        <PieceGrid have={p.piecesHave} required={p.piecesRequired} image={p.prize.image} />
 
         {p.attempt ? (
           p.attempt.outcome === "PRIZE" ? (
@@ -173,7 +191,9 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
         ) : (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Lock className="size-4 shrink-0" aria-hidden />
-            {missing > 0 ? `Find ${missing} more ${missing === 1 ? "piece" : "pieces"} in Big Mystery Boxes.` : `Finish the Adventure Level ${p.level} map to complete this puzzle.`}
+            {missing > 0
+              ? `Find ${missing} more ${missing === 1 ? "piece" : "pieces"} in the Big Mystery Box at the end of Map ${p.level}. Each one holds 1 to 3, and you can replay the map for more.`
+              : `Finish the Adventure Level ${p.level} map to complete this puzzle.`}
           </p>
         )}
       </div>
@@ -192,17 +212,16 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
                 {p.prize.name}
               </h2>
               <div className="my-4">
-                <PrizeWheel prizePct={wheel.prizeUnlockPct} outcome={result?.outcome ?? null} onDone={() => setSettled(true)} />
+                <PrizeWheel outcome={result?.outcome ?? null} onDone={() => setSettled(true)} />
               </div>
               <dl className="grid grid-cols-2 gap-2 text-left text-sm">
                 <div className="rounded-xl bg-gold-soft p-2.5">
-                  <dt className="text-xs font-semibold text-gold-foreground">Prize unlock</dt>
-                  <dd className="font-heading text-lg font-extrabold tabular">{wheel.prizeUnlockPct}%</dd>
+                  <dt className="text-xs font-semibold text-gold-foreground">Prize</dt>
+                  <dd className="text-sm font-bold">{p.prize.name}</dd>
                 </div>
                 <div className="rounded-xl bg-brand-soft p-2.5">
-                  <dt className="text-xs font-semibold text-primary">Alternative reward</dt>
-                  <dd className="font-heading text-lg font-extrabold tabular">{wheel.alternativePct}%</dd>
-                  <dd className="text-xs text-muted-foreground">{p.alternative.display}</dd>
+                  <dt className="text-xs font-semibold text-primary">Bonus reward</dt>
+                  <dd className="text-sm font-bold">{p.alternative.display}</dd>
                 </div>
               </dl>
               <div aria-live="polite" className="mt-4 min-h-6">
@@ -220,7 +239,7 @@ export function PuzzleCard({ puzzle, wheel, verified, enabled }: { puzzle: Puzzl
                       {spin.pending && <Loader2 className="animate-spin" aria-hidden />}
                       Unlock
                     </Button>
-                    <p className="text-xs text-muted-foreground">One attempt per puzzle. The result is decided securely on our servers using the odds above.</p>
+                    <p className="text-xs text-muted-foreground">One attempt per puzzle. The result is decided securely on our servers.</p>
                   </>
                 ) : settled && claimId && result.outcome === "PRIZE" ? (
                   <Button

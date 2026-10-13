@@ -3,6 +3,8 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, or, sql } from 
 import { db, type DbOrTx, type Tx } from "@/db";
 import {
   bigBoxOpenings,
+  boxJackpots,
+  freeBoxPlays,
   bigMysteryBoxes,
   inventory,
   items,
@@ -24,13 +26,13 @@ import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
 import { fmtCash } from "@/lib/format-money";
 import { formatCredits, formatMYR, toMinor } from "@/lib/money";
 import { weightedPick } from "@/lib/rng";
-import { completedMapLevels, lootCollected, lootCollectedByLevel, recordEvent } from "./adventure-core";
+import { completedMapLevels, lootCollected, lootCollectedByLevel, mapWon, recordEvent } from "./adventure-core";
 import { audit } from "./audit";
 import { getConfigWithVersion } from "./config";
 import { trackMission } from "./daily";
 import { lockPlayer } from "./guards";
 import { postTransaction } from "./ledger";
-import { boxOdds, type PoolOdds } from "./mystery-box";
+import { boxPrizes, type PrizeList } from "./mystery-box";
 import { notify } from "./notifications";
 import { createCashReward } from "./rewards";
 
@@ -38,7 +40,8 @@ import { createCashReward } from "./rewards";
  * Read model
  * ------------------------------------------------------------------------- */
 
-export type MapState = "locked" | "collecting" | "ready" | "exploring" | "completed";
+/** "ready" means the previous map is won but this one was never unlocked (players from before maps unlocked automatically). */
+export type MapState = "locked" | "ready" | "exploring" | "completed";
 
 export type LootItemView = { id: string; name: string; icon: string; rarity: string; description: string; collected: number };
 
@@ -60,7 +63,8 @@ export type BigBoxView = {
   id: string;
   name: string;
   description: string;
-  odds: { pieces: number; pct: number }[];
+  /** Piece counts the Big Box can give. */
+  pieces: number[];
   state: "hidden" | "available" | "opened" | "unavailable";
   piecesFound: number | null;
 };
@@ -72,11 +76,19 @@ export type AdventureMapView = {
   description: string;
   artwork: string | null;
   color: string;
-  lootRequired: number;
+  /** Loot collected in the current round of this map. */
   lootCollected: number;
   lootItems: LootItemView[];
+  /** "completed" means the current round is finished. */
   state: MapState;
+  /** Finished at least once, which is what unlocks the next map. */
+  cleared: boolean;
+  round: number;
+  /** The current round is finished and its Big Mystery Box opened, so another round can start. */
+  canReplay: boolean;
   prerequisiteLevel: number | null;
+  /** The name of this level's Mystery Box, e.g. "Lost Shore Box". */
+  boxName: string;
   checkpoints: CheckpointView[];
   checkpointsDone: number;
   nextLootTarget: number;
@@ -93,10 +105,15 @@ export type AdventureBoxView = {
   theme: { color: string; accent: string };
   locked: boolean;
   lockReason: string | null;
-  /** Its map is complete, so the box is retired and can no longer be opened. */
+  /** Its map is complete. The box stays open, so players can keep opening it. */
   completed: boolean;
-  requiresMapLevel: number | null;
+  /** The map to visit to unlock this box: its own map when that is ready, otherwise the map before it. */
+  unlockMapLevel: number | null;
   timesOpened: number;
+  /** Free plays won from Free unlocks, used up before any Credits are charged. */
+  freePlays: number;
+  /** The player's jackpot meter on this box, or null when the box has no jackpot. */
+  jackpot: { plays: number; target: number; spins: number } | null;
   lootLevel: number;
 };
 
@@ -188,6 +205,16 @@ async function totalPieces(tx: DbOrTx, userId: string) {
   return Number(row?.n ?? 0);
 }
 
+/** Pieces found per level. A level's Big Mystery Box only adds to that level's puzzle. */
+async function piecesByLevel(tx: DbOrTx, userId: string) {
+  const rows = await tx
+    .select({ level: puzzlePieceEvents.level, n: sql<number>`coalesce(sum(${puzzlePieceEvents.delta}), 0)::int` })
+    .from(puzzlePieceEvents)
+    .where(eq(puzzlePieceEvents.userId, userId))
+    .groupBy(puzzlePieceEvents.level);
+  return new Map(rows.filter((r) => r.level !== null).map((r) => [r.level as number, Number(r.n)]));
+}
+
 /** Puzzles in sequence: every active puzzle plus any the player already completed (using their recorded size). */
 async function puzzleSequence(tx: DbOrTx, userId: string) {
   const [all, done] = await Promise.all([
@@ -200,7 +227,7 @@ async function puzzleSequence(tx: DbOrTx, userId: string) {
 }
 
 export async function getAdventureState(userId: string, tx: DbOrTx = db) {
-  const [boxRows, mapRows, lootByLevel, lootItems, wheelCfg, pieces, { seq, doneBy }] = await Promise.all([
+  const [boxRows, mapRows, lootByLevel, lootItems, wheelCfg, byLevel, { seq, doneBy }] = await Promise.all([
     tx
       .select()
       .from(mysteryBoxes)
@@ -215,12 +242,13 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       .where(and(eq(items.kind, "LOOT"), isNotNull(items.adventureLevel), eq(items.status, "PUBLISHED")))
       .orderBy(asc(items.sortOrder)),
     getConfigWithVersion("prize_wheel", tx),
-    totalPieces(tx, userId),
+    piecesByLevel(tx, userId),
     puzzleSequence(tx, userId),
   ]);
+  const pieces = [...byLevel.values()].reduce((a, b) => a + b, 0);
   const mapIds = mapRows.map((m) => m.id);
   const boxIds = boxRows.map((b) => b.id);
-  const [cps, progress, doneCps, bigBoxes, openings, attempts, claims, prizeRows, openCounts] = await Promise.all([
+  const [cps, progress, doneCps, bigBoxes, openings, attempts, claims, prizeRows, openCounts, freeCounts, jackpotRows] = await Promise.all([
     mapIds.length
       ? tx
           .select()
@@ -229,7 +257,7 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
           .orderBy(asc(mapCheckpoints.position))
       : [],
     tx.select().from(userMapProgress).where(eq(userMapProgress.userId, userId)),
-    tx.select({ checkpointId: userCheckpoints.checkpointId }).from(userCheckpoints).where(eq(userCheckpoints.userId, userId)),
+    tx.select({ checkpointId: userCheckpoints.checkpointId, round: userCheckpoints.round }).from(userCheckpoints).where(eq(userCheckpoints.userId, userId)),
     mapIds.length ? tx.select().from(bigMysteryBoxes).where(inArray(bigMysteryBoxes.mapId, mapIds)) : [],
     tx.select().from(bigBoxOpenings).where(eq(bigBoxOpenings.userId, userId)),
     tx.select().from(prizeUnlockAttempts).where(eq(prizeUnlockAttempts.userId, userId)),
@@ -239,26 +267,41 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       ? tx
           .select({ boxId: mysteryBoxPlays.boxId, n: sql<number>`count(*)::int` })
           .from(mysteryBoxPlays)
-          .where(and(eq(mysteryBoxPlays.userId, userId), inArray(mysteryBoxPlays.boxId, boxIds)))
+          .where(and(eq(mysteryBoxPlays.userId, userId), inArray(mysteryBoxPlays.boxId, boxIds), isNull(mysteryBoxPlays.jackpotId)))
           .groupBy(mysteryBoxPlays.boxId)
       : [],
+    tx
+      .select({ boxId: freeBoxPlays.boxId, n: sql<number>`count(*)::int` })
+      .from(freeBoxPlays)
+      .where(and(eq(freeBoxPlays.userId, userId), isNull(freeBoxPlays.usedByPlayId)))
+      .groupBy(freeBoxPlays.boxId),
+    tx
+      .select({ boxId: boxJackpots.boxId, at: sql<number>`max(${boxJackpots.playsAt})::int` })
+      .from(boxJackpots)
+      .where(eq(boxJackpots.userId, userId))
+      .groupBy(boxJackpots.boxId),
   ]);
 
   const completed = new Set(progress.filter((p) => p.completedAt).map((p) => p.level));
-  const doneSet = new Set(doneCps.map((c) => c.checkpointId));
   const opened = new Map(openCounts.map((r) => [r.boxId, Number(r.n)]));
+  const free = new Map(freeCounts.map((r) => [r.boxId, Number(r.n)]));
+  const jackpotAt = new Map(jackpotRows.map((r) => [r.boxId, Number(r.at)]));
+  /** A map is won once its final checkpoint is reached and its Big Mystery Box opened (if it has an active one). */
+  const won = (m: (typeof mapRows)[number]) =>
+    completed.has(m.level as number) && (openings.some((o) => o.mapId === m.id) || !bigBoxes.find((b) => b.mapId === m.id)?.active);
 
   const mapViews: AdventureMapView[] = mapRows.map((m, i) => {
     const level = m.level as number;
     const prog = progress.find((p) => p.mapId === m.id);
     const prev = i > 0 ? mapRows[i - 1] : null;
-    const prevDone = !prev || completed.has(prev.level as number);
-    const loot = lootByLevel.get(level) ?? 0;
+    const round = prog?.round ?? 1;
+    // Loot counts from the start of the current round, so replayed rounds fill the chests again.
+    const loot = Math.max(0, (lootByLevel.get(level) ?? 0) - (prog?.roundLootBase ?? 0));
     // The first map is every player's starting point, so it is open without an unlock step.
     const open = Boolean(prog) || !prev;
-    const lootRequired = prev ? m.lootRequired : 0;
-    const state: MapState = prog?.completedAt ? "completed" : open ? "exploring" : !prevDone ? "locked" : loot >= lootRequired ? "ready" : "collecting";
+    const state: MapState = prog?.roundCompletedAt ? "completed" : open ? "exploring" : prev && won(prev) ? "ready" : "locked";
     const mine = cps.filter((c) => c.mapId === m.id);
+    const doneSet = new Set(doneCps.filter((c) => c.round === round).map((c) => c.checkpointId));
     const states = checkpointStates(mine, doneSet, loot, open);
     const nextId = mine.filter((c) => !doneSet.has(c.id)).sort((a, b) => Number(a.isFinal) - Number(b.isFinal) || a.position - b.position)[0]?.id;
     const checkpoints = mine.map((c) => ({
@@ -276,7 +319,7 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
     }));
     const next = checkpoints.find((c) => c.isNext);
     const bb = bigBoxes.find((b) => b.mapId === m.id);
-    const opening = openings.find((o) => o.mapId === m.id);
+    const opening = openings.find((o) => o.mapId === m.id && o.round === round);
     return {
       id: m.id,
       level,
@@ -284,26 +327,25 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       description: m.description,
       artwork: m.artwork,
       color: m.color,
-      lootRequired,
       lootCollected: loot,
       lootItems: lootItems
         .filter((r) => r.item.adventureLevel === level)
         .map((r) => ({ id: r.item.id, name: r.item.name, icon: r.item.icon, rarity: r.item.rarity, description: r.item.purpose, collected: r.collected ?? 0 })),
       state,
+      cleared: completed.has(level),
+      round,
+      canReplay: state === "completed" && (Boolean(opening) || !bb?.active),
       prerequisiteLevel: prev?.level ?? null,
+      boxName: boxRows.find((b) => b.level === level)?.name ?? `${m.name} Box`,
       checkpoints,
       checkpointsDone: checkpoints.filter((c) => c.state === "completed").length,
-      nextLootTarget: state === "exploring" && next ? next.lootRequired : lootRequired,
+      nextLootTarget: next?.lootRequired ?? 0,
       bigBox: bb
         ? {
             id: bb.id,
             name: bb.name,
             description: bb.description,
-            odds: [
-              { pieces: 1, pct: bb.pieces1Pct },
-              { pieces: 2, pct: bb.pieces2Pct },
-              { pieces: 3, pct: bb.pieces3Pct },
-            ],
+            pieces: [bb.pieces1Pct, bb.pieces2Pct, bb.pieces3Pct].flatMap((pct, i) => (pct > 0 ? [i + 1] : [])),
             state: opening ? "opened" : state !== "completed" ? "hidden" : bb.active ? "available" : "unavailable",
             piecesFound: opening?.pieces ?? null,
           }
@@ -312,8 +354,28 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
   });
 
   const boxViews: AdventureBoxView[] = boxRows.map((b) => {
-    const locked = b.requiresMapLevel !== null && !completed.has(b.requiresMapLevel);
-    const req = mapViews.find((m) => m.level === b.requiresMapLevel);
+    const own = mapViews.find((m) => m.level === b.level);
+    const before = own ? mapViews.filter((m) => m.level < own.level).at(-1) : undefined;
+    let locked: boolean;
+    let lockReason: string | null = null;
+    let unlockMapLevel: number | null = null;
+    if (own) {
+      locked = own.state === "locked" || own.state === "ready";
+      if (own.state === "ready") {
+        lockReason = `Unlock Map ${own.level} (${own.name}) to open this box`;
+        unlockMapLevel = own.level;
+      } else if (locked && before) {
+        lockReason = `Win the Big Mystery Box on Map ${before.level} to unlock Map ${own.level} and this box`;
+        unlockMapLevel = before.level;
+      }
+    } else {
+      locked = b.requiresMapLevel !== null && !completed.has(b.requiresMapLevel);
+      const req = mapViews.find((m) => m.level === b.requiresMapLevel);
+      if (locked) {
+        lockReason = `Complete Map ${b.requiresMapLevel}${req ? ` (${req.name})` : ""} to unlock this box`;
+        unlockMapLevel = b.requiresMapLevel;
+      }
+    }
     return {
       id: b.id,
       level: b.level as number,
@@ -323,17 +385,22 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
       artwork: b.artwork,
       theme: b.theme,
       locked,
-      lockReason: locked ? `Complete Map ${b.requiresMapLevel}${req ? ` (${req.name})` : ""} to unlock this box` : null,
+      lockReason,
       completed: completed.has(b.level as number),
-      requiresMapLevel: b.requiresMapLevel,
+      unlockMapLevel,
       timesOpened: opened.get(b.id) ?? 0,
+      freePlays: free.get(b.id) ?? 0,
+      jackpot:
+        b.jackpotPlays > 0
+          ? { plays: Math.max(0, Math.min(b.jackpotPlays, (opened.get(b.id) ?? 0) - (jackpotAt.get(b.id) ?? 0))), target: b.jackpotPlays, spins: b.jackpotSpins }
+          : null,
       lootLevel: b.level as number,
     };
   });
 
   const wheel = wheelCfg.value;
   const wheelActive = wheel.active && isValidPercentSplit([wheel.prizeUnlockPct, wheel.alternativePct]);
-  const allocation = allocatePieces(seq, pieces);
+  const allocation = allocatePieces(seq, byLevel);
   const puzzleViews: PuzzleView[] = [];
   for (const a of allocation) {
     const p = seq.find((x) => x.id === a.id)!;
@@ -362,19 +429,19 @@ export async function getAdventureState(userId: string, tx: DbOrTx = db) {
     });
   }
 
-  const currentMap = mapViews.find((m) => m.state !== "completed") ?? mapViews.at(-1) ?? null;
+  const currentMap = mapViews.find((m) => !m.cleared) ?? mapViews.at(-1) ?? null;
   const currentLevel = currentMap?.level ?? 1;
   const totalLevels = Math.max(mapViews.length, boxViews.length, 1);
   const unlockedBoxes = boxViews.filter((b) => !b.locked).length;
-  const completedMaps = mapViews.filter((m) => m.state === "completed").length;
-  const currentBox = boxViews.find((b) => !b.locked && !b.completed) ?? boxViews.at(-1) ?? null;
+  const completedMaps = mapViews.filter((m) => m.cleared).length;
+  const currentBox = boxViews.findLast((b) => !b.locked) ?? boxViews[0] ?? null;
 
   return {
     boxes: boxViews,
     maps: mapViews,
     puzzles: puzzleViews,
     totalPieces: pieces,
-    wheel: { active: wheelActive, prizeUnlockPct: wheel.prizeUnlockPct, alternativePct: wheel.alternativePct },
+    wheel: { active: wheelActive },
     currentLevel,
     totalLevels,
     unlockedBoxes,
@@ -398,11 +465,7 @@ function nextStepFor(mapViews: AdventureMapView[], puzzleViews: PuzzleView[], cu
   const href = `/play/map?level=${current.level}`;
   switch (current.state) {
     case "locked":
-      return { kind: "map", title: `Complete Adventure Level ${current.prerequisiteLevel}`, detail: `to open ${current.name}`, href };
-    case "collecting": {
-      const need = current.lootRequired - current.lootCollected;
-      return { kind: "loot", title: `Collect ${need} more Loot`, detail: `to unlock Map ${current.level}: ${current.name}`, href: `/play/mystery-box?level=${current.level}` };
-    }
+      return { kind: "map", title: `Win Adventure Level ${current.prerequisiteLevel}`, detail: `Open its Big Mystery Box to unlock ${current.name}`, href };
     case "ready":
       return { kind: "map", title: `Unlock Map ${current.level}`, detail: `${current.name} is ready to explore`, href };
     case "exploring": {
@@ -416,68 +479,134 @@ function nextStepFor(mapViews: AdventureMapView[], puzzleViews: PuzzleView[], cu
   }
 }
 
-/** Box odds for both the reward pool and the guaranteed Loot drop, for "View prizes & odds". */
-export async function adventureBoxOdds(boxId: string): Promise<{ rewards: PoolOdds; loot: PoolOdds }> {
+/** What a box can give: the lucky drop prizes and the guaranteed Loot drop, without chances. */
+export async function adventureBoxPrizes(boxId: string): Promise<{ rewards: PrizeList; loot: PrizeList }> {
   const [box] = await db.select().from(mysteryBoxes).where(eq(mysteryBoxes.id, boxId)).limit(1);
   if (!box) return { rewards: [], loot: [] };
-  return { rewards: await boxOdds(box.rewardPoolId), loot: box.lootPoolId ? await boxOdds(box.lootPoolId) : [] };
+  return { rewards: await boxPrizes(box.rewardPoolId), loot: box.lootPoolId ? await boxPrizes(box.lootPoolId) : [] };
 }
 
 /* ----------------------------------------------------------------------------
  * Map unlock & checkpoints
  * ------------------------------------------------------------------------- */
 
-export async function unlockMap(userId: string, mapId: string) {
-  try {
-    return await db.transaction(async (tx) => {
-      await lockPlayer(tx, userId);
-      const [map] = await tx.select().from(maps).where(eq(maps.id, mapId)).limit(1);
-      if (!map || map.status !== "PUBLISHED" || map.level === null) throw new NotFoundError("This map is not available");
-      const [existing] = await tx
-        .select()
-        .from(userMapProgress)
-        .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)))
-        .limit(1);
-      if (existing) return { mapId: map.id, level: map.level, name: map.name, replayed: true };
+/**
+ * Opens a map for the player and records it. The caller has already checked that the map before
+ * it is won. Returns false when the player had already unlocked it.
+ */
+/** The name of a level's Mystery Box, falling back to the map's name. */
+async function levelBoxName(tx: DbOrTx, level: number, mapName: string) {
+  const [b] = await tx
+    .select({ name: mysteryBoxes.name })
+    .from(mysteryBoxes)
+    .where(and(eq(mysteryBoxes.level, level), eq(mysteryBoxes.status, "PUBLISHED")))
+    .limit(1);
+  return b?.name ?? `${mapName} Box`;
+}
 
-      const prev = await previousMap(tx, map.level);
-      if (prev && !(await completedMapLevels(tx, userId)).has(prev.level as number)) {
-        throw new AppError(`Complete Map ${prev.level} (${prev.name}) first`, "MAP_LOCKED", 403);
-      }
-      const loot = await lootCollected(tx, userId, map.level);
-      if (prev && loot < map.lootRequired) {
-        throw new AppError(`Collect ${map.lootRequired - loot} more Loot to unlock ${map.name}`, "LOOT_REQUIRED");
-      }
-      await tx.insert(userMapProgress).values({ userId, mapId: map.id, level: map.level, lootAtUnlock: loot });
-      const actionId = `map-unlock:${userId}:${map.id}`;
-      await recordEvent(tx, {
-        userId,
-        type: "MAP_UNLOCK",
-        actionId,
-        level: map.level,
-        refType: "map",
-        refId: map.id,
-        config: { lootRequired: map.lootRequired, mapVersion: map.version },
-        result: { lootCollected: loot },
-      });
-      await trackMission(tx, userId, "UNLOCK_AREA");
-      await notify(tx, userId, "REWARD", `Map ${map.level} unlocked`, `${map.name} is open. Start exploring its checkpoints.`, `/play/map?level=${map.level}`);
-      return { mapId: map.id, level: map.level, name: map.name, replayed: false };
-    });
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      const [map] = await db.select().from(maps).where(eq(maps.id, mapId)).limit(1);
-      return { mapId, level: map?.level ?? 0, name: map?.name ?? "", replayed: true };
+async function grantMap(tx: Tx, userId: string, map: typeof maps.$inferSelect) {
+  const level = map.level as number;
+  const loot = await lootCollected(tx, userId, level);
+  const [row] = await tx.insert(userMapProgress).values({ userId, mapId: map.id, level, lootAtUnlock: loot }).onConflictDoNothing().returning();
+  if (!row) return false;
+  await recordEvent(tx, {
+    userId,
+    type: "MAP_UNLOCK",
+    actionId: `map-unlock:${userId}:${map.id}`,
+    level,
+    refType: "map",
+    refId: map.id,
+    config: { mapVersion: map.version },
+    result: { lootCollected: loot },
+  });
+  await trackMission(tx, userId, "UNLOCK_AREA");
+  await notify(tx, userId, "REWARD", `Map ${level} unlocked`, `${map.name} and the ${await levelBoxName(tx, level, map.name)} are open. Start exploring its checkpoints.`, `/play/map?level=${level}`);
+  return true;
+}
+
+/** Unlocks the map after `level`, once the player has won `level`. Returns the map it unlocked. */
+async function unlockNextMap(tx: Tx, userId: string, level: number) {
+  const [next] = await tx
+    .select()
+    .from(maps)
+    .where(and(eq(maps.status, "PUBLISHED"), gt(maps.level, level)))
+    .orderBy(asc(maps.level))
+    .limit(1);
+  if (!next) return null;
+  if (!(await grantMap(tx, userId, next))) return null;
+  return { level: next.level as number, name: next.name, boxName: await levelBoxName(tx, next.level as number, next.name) };
+}
+
+export async function unlockMap(userId: string, mapId: string) {
+  return db.transaction(async (tx) => {
+    await lockPlayer(tx, userId);
+    const [map] = await tx.select().from(maps).where(eq(maps.id, mapId)).limit(1);
+    if (!map || map.status !== "PUBLISHED" || map.level === null) throw new NotFoundError("This map is not available");
+    const prev = await previousMap(tx, map.level);
+    if (prev && !(await mapWon(tx, userId, prev))) {
+      throw new AppError(`Win the Big Mystery Box on Map ${prev.level} (${prev.name}) first`, "MAP_LOCKED", 403);
     }
-    throw err;
-  }
+    const granted = await grantMap(tx, userId, map);
+    return { mapId: map.id, level: map.level, name: map.name, replayed: !granted };
+  });
+}
+
+/**
+ * Starts another round of a finished map: its checkpoints reset and fill again from new Loot, and
+ * reaching the end gives another Big Mystery Box. Loot above the last round's final chest carries over.
+ */
+export async function replayMap(userId: string, mapId: string) {
+  return db.transaction(async (tx) => {
+    await lockPlayer(tx, userId);
+    const [map] = await tx.select().from(maps).where(eq(maps.id, mapId)).limit(1);
+    if (!map || map.status !== "PUBLISHED" || map.level === null) throw new NotFoundError("This map is not available");
+    const [prog] = await tx
+      .select()
+      .from(userMapProgress)
+      .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)))
+      .limit(1);
+    if (!prog?.roundCompletedAt) throw new AppError(`Reach the final checkpoint of ${map.name} first`, "MAP_NOT_FINISHED", 403);
+    const [[bb], [opening], [final]] = await Promise.all([
+      tx.select().from(bigMysteryBoxes).where(eq(bigMysteryBoxes.mapId, map.id)).limit(1),
+      tx
+        .select({ id: bigBoxOpenings.id })
+        .from(bigBoxOpenings)
+        .where(and(eq(bigBoxOpenings.userId, userId), eq(bigBoxOpenings.mapId, map.id), eq(bigBoxOpenings.round, prog.round)))
+        .limit(1),
+      tx
+        .select({ lootRequired: sql<number>`max(${userCheckpoints.lootRequired})::int` })
+        .from(userCheckpoints)
+        .where(and(eq(userCheckpoints.userId, userId), eq(userCheckpoints.mapId, map.id), eq(userCheckpoints.round, prog.round))),
+    ]);
+    if (bb?.active && !opening) throw new AppError("Open the Big Mystery Box at the finish first", "BIG_BOX_WAITING", 403);
+    const round = prog.round + 1;
+    const roundLootBase = prog.roundLootBase + Number(final?.lootRequired ?? 0);
+    await tx
+      .update(userMapProgress)
+      .set({ round, roundLootBase, roundCompletedAt: null })
+      .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)));
+    await recordEvent(tx, {
+      userId,
+      type: "MAP_UNLOCK",
+      actionId: `map-replay:${userId}:${map.id}:round-${round}`,
+      level: map.level,
+      refType: "map",
+      refId: map.id,
+      config: { mapVersion: map.version, replay: true, round },
+      result: { roundLootBase },
+    });
+    return { mapId: map.id, level: map.level, name: map.name, round };
+  });
 }
 
 export type MapCompletion = {
   level: number;
   name: string;
-  unlockedBoxes: { level: number; name: string }[];
-  unlockedMap: { level: number; name: string } | null;
+  /** Which run through the map this was. Maps can be replayed after their Big Mystery Box is opened. */
+  round: number;
+  firstClear: boolean;
+  /** Unlocked straight away only when the map has no active Big Mystery Box; otherwise opening it unlocks the next map. */
+  unlockedMap: { level: number; name: string; boxName: string } | null;
 };
 
 export type CheckpointResult = {
@@ -501,22 +630,23 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
       if (!map || map.status !== "PUBLISHED" || map.level === null) throw new NotFoundError("This map is not available");
       const level = map.level;
 
-      const [already] = await tx
-        .select({ id: userCheckpoints.id })
-        .from(userCheckpoints)
-        .where(and(eq(userCheckpoints.userId, userId), eq(userCheckpoints.checkpointId, cp.id)))
-        .limit(1);
-      if (already) return { checkpointId: cp.id, name: cp.name, mapId: map.id, level, isFinal: cp.isFinal, completion: null, bigBox: null, replayed: true };
-
-      const [prog] = await tx
+      let [prog] = await tx
         .select()
         .from(userMapProgress)
         .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)))
         .limit(1);
+      const round = prog?.round ?? 1;
+      const [already] = await tx
+        .select({ id: userCheckpoints.id })
+        .from(userCheckpoints)
+        .where(and(eq(userCheckpoints.userId, userId), eq(userCheckpoints.checkpointId, cp.id), eq(userCheckpoints.round, round)))
+        .limit(1);
+      if (already) return { checkpointId: cp.id, name: cp.name, mapId: map.id, level, isFinal: cp.isFinal, completion: null, bigBox: null, replayed: true };
+
       if (!prog) {
         if (await previousMap(tx, level)) throw new AppError(`Unlock ${map.name} first`, "MAP_NOT_UNLOCKED", 403);
         const startLoot = await lootCollected(tx, userId, level);
-        await tx.insert(userMapProgress).values({ userId, mapId: map.id, level, lootAtUnlock: startLoot });
+        [prog] = await tx.insert(userMapProgress).values({ userId, mapId: map.id, level, lootAtUnlock: startLoot }).returning();
         await recordEvent(tx, {
           userId,
           type: "MAP_UNLOCK",
@@ -538,10 +668,10 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
           await tx
             .select({ checkpointId: userCheckpoints.checkpointId })
             .from(userCheckpoints)
-            .where(and(eq(userCheckpoints.userId, userId), eq(userCheckpoints.mapId, map.id)))
+            .where(and(eq(userCheckpoints.userId, userId), eq(userCheckpoints.mapId, map.id), eq(userCheckpoints.round, round)))
         ).map((r) => r.checkpointId),
       );
-      const loot = await lootCollected(tx, userId, level);
+      const loot = (await lootCollected(tx, userId, level)) - prog.roundLootBase;
       const state = checkpointStates(all, done, loot, true).get(cp.id);
       if (state !== "available") {
         const earlier = all
@@ -551,8 +681,8 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
         throw new AppError(`Collect ${cp.lootRequired - loot} more Loot to reach ${cp.name}`, "LOOT_REQUIRED");
       }
 
-      await tx.insert(userCheckpoints).values({ userId, checkpointId: cp.id, mapId: map.id, lootRequired: cp.lootRequired, lootAtUnlock: loot });
-      const actionId = `checkpoint:${userId}:${cp.id}`;
+      await tx.insert(userCheckpoints).values({ userId, checkpointId: cp.id, mapId: map.id, lootRequired: cp.lootRequired, lootAtUnlock: loot, round });
+      const actionId = round === 1 ? `checkpoint:${userId}:${cp.id}` : `checkpoint:${userId}:${cp.id}:round-${round}`;
       await recordEvent(tx, {
         userId,
         type: "MAP_CHECKPOINT_UNLOCK",
@@ -560,7 +690,7 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
         level,
         refType: "map_checkpoint",
         refId: cp.id,
-        config: { lootRequired: cp.lootRequired, position: cp.position, isFinal: cp.isFinal },
+        config: { lootRequired: cp.lootRequired, position: cp.position, isFinal: cp.isFinal, round },
         result: { lootCollected: loot },
       });
       await trackMission(tx, userId, "DISCOVER_TILE");
@@ -568,45 +698,42 @@ export async function unlockCheckpoint(userId: string, checkpointId: string): Pr
       let completion: MapCompletion | null = null;
       let bigBox: CheckpointResult["bigBox"] = null;
       if (cp.isFinal) {
+        const firstClear = !prog.completedAt;
+        const now = new Date();
         const [finished] = await tx
           .update(userMapProgress)
-          .set({ completedAt: new Date() })
-          .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id), isNull(userMapProgress.completedAt)))
+          .set({ roundCompletedAt: now, completedAt: prog.completedAt ?? now })
+          .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id), isNull(userMapProgress.roundCompletedAt)))
           .returning();
         if (finished) {
-          const unlockedBoxes = await tx
-            .select({ level: mysteryBoxes.level, name: mysteryBoxes.name })
-            .from(mysteryBoxes)
-            .where(and(eq(mysteryBoxes.requiresMapLevel, level), eq(mysteryBoxes.status, "PUBLISHED"), isNotNull(mysteryBoxes.level)))
-            .orderBy(asc(mysteryBoxes.level));
-          const [nextMap] = await tx
-            .select({ level: maps.level, name: maps.name })
-            .from(maps)
-            .where(and(eq(maps.status, "PUBLISHED"), gt(maps.level, level)))
-            .orderBy(asc(maps.level))
-            .limit(1);
-          completion = {
-            level,
-            name: map.name,
-            unlockedBoxes: unlockedBoxes.map((b) => ({ level: b.level as number, name: b.name })),
-            unlockedMap: nextMap ? { level: nextMap.level as number, name: nextMap.name } : null,
-          };
+          const [bb] = await tx.select().from(bigMysteryBoxes).where(eq(bigMysteryBoxes.mapId, map.id)).limit(1);
+          // With an active Big Mystery Box, opening it is what unlocks the next map.
+          const unlockedMap = bb?.active || !firstClear ? null : await unlockNextMap(tx, userId, level);
+          completion = { level, name: map.name, round, firstClear, unlockedMap };
           await recordEvent(tx, {
             userId,
             type: "MAP_COMPLETION",
-            actionId: `map-complete:${userId}:${map.id}`,
+            actionId: firstClear ? `map-complete:${userId}:${map.id}` : `map-complete:${userId}:${map.id}:round-${round}`,
             level,
             refType: "map",
             refId: map.id,
-            config: { mapVersion: map.version },
+            config: { mapVersion: map.version, round },
             result: completion,
           });
           await notify(
             tx,
             userId,
             "REWARD",
-            `Map ${level} complete: ${map.name}`,
-            completion.unlockedMap ? `Map ${completion.unlockedMap.level} and the next Mystery Box are now unlocked.` : "You've completed the final map of the adventure.",
+            firstClear ? `Map ${level} complete: ${map.name}` : `Round ${round} of ${map.name} complete`,
+            !firstClear
+              ? bb?.active
+                ? "Open the Big Mystery Box at the finish for more Puzzle Pieces."
+                : "Play the map again whenever you like."
+              : bb?.active
+                ? "Open the Big Mystery Box at the finish to unlock the next map."
+                : unlockedMap
+                  ? `Map ${unlockedMap.level} and the ${unlockedMap.boxName} are now unlocked.`
+                  : "You've completed the final map of the adventure.",
             `/play/map?level=${level}`,
           );
           await syncPuzzleCompletions(tx, userId);
@@ -633,14 +760,14 @@ export type CompletedPuzzle = { puzzleId: string; level: number; name: string; p
 
 /** Records completion for every puzzle whose pieces are full and whose map level is complete. Idempotent. */
 export async function syncPuzzleCompletions(tx: Tx, userId: string): Promise<CompletedPuzzle[]> {
-  const [{ seq, doneBy }, total, mapsDone] = await Promise.all([puzzleSequence(tx, userId), totalPieces(tx, userId), completedMapLevels(tx, userId)]);
+  const [{ seq, doneBy }, byLevel, mapsDone] = await Promise.all([puzzleSequence(tx, userId), piecesByLevel(tx, userId), completedMapLevels(tx, userId)]);
   const out: CompletedPuzzle[] = [];
-  for (const a of allocatePieces(seq, total)) {
+  for (const a of allocatePieces(seq, byLevel)) {
     const p = seq.find((x) => x.id === a.id)!;
     if (doneBy.has(p.id) || !p.active || !a.piecesFull || !mapsDone.has(p.level)) continue;
     const [row] = await tx
       .insert(userPuzzles)
-      .values({ userId, puzzleId: p.id, level: p.level, piecesRequired: p.piecesRequired, piecesTotalAt: total, prizeId: p.prizeId })
+      .values({ userId, puzzleId: p.id, level: p.level, piecesRequired: p.piecesRequired, piecesTotalAt: a.piecesFound, prizeId: p.prizeId })
       .onConflictDoNothing()
       .returning();
     if (!row) continue;
@@ -653,7 +780,7 @@ export async function syncPuzzleCompletions(tx: Tx, userId: string): Promise<Com
       refType: "puzzle",
       refId: p.id,
       config: { piecesRequired: p.piecesRequired, prizeId: p.prizeId },
-      result: { piecesTotal: total },
+      result: { piecesFound: a.piecesFound },
     });
     await notify(tx, userId, "REWARD", `Level ${p.level} puzzle complete`, `One final step remains to unlock ${prize?.name ?? "your prize"}.`, "/play/prizes");
     out.push({ puzzleId: p.id, level: p.level, name: p.name, prizeName: prize?.name ?? "" });
@@ -661,16 +788,40 @@ export async function syncPuzzleCompletions(tx: Tx, userId: string): Promise<Com
   return out;
 }
 
-export type BigBoxResult = { openingId: string; level: number; pieces: number; totalPieces: number; completedPuzzles: CompletedPuzzle[]; replayed: boolean };
+export type BigBoxResult = {
+  openingId: string;
+  level: number;
+  pieces: number;
+  totalPieces: number;
+  completedPuzzles: CompletedPuzzle[];
+  /** The next map (and its Mystery Box), unlocked by opening this Big Box. */
+  unlockedMap: { level: number; name: string; boxName: string } | null;
+  /** Where this level's puzzle stands after the pieces were added. */
+  puzzle: { name: string; prizeName: string; have: number; required: number } | null;
+  replayed: boolean;
+};
+
+async function levelPuzzle(tx: DbOrTx, userId: string, level: number): Promise<BigBoxResult["puzzle"]> {
+  const [{ seq }, byLevel] = await Promise.all([puzzleSequence(tx, userId), piecesByLevel(tx, userId)]);
+  const a = allocatePieces(seq, byLevel).find((x) => x.level === level);
+  if (!a) return null;
+  const [prize] = await tx.select({ name: prizes.name }).from(prizes).where(eq(prizes.id, a.prizeId)).limit(1);
+  return { name: a.name, prizeName: prize?.name ?? "", have: a.piecesHave, required: a.piecesRequired };
+}
 
 export async function openBigBox(userId: string, input: { mapId: string; idempotencyKey: string }): Promise<BigBoxResult> {
   const replay = async (): Promise<BigBoxResult | null> => {
+    const [prog] = await db
+      .select({ round: userMapProgress.round })
+      .from(userMapProgress)
+      .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, input.mapId)))
+      .limit(1);
     const [o] = await db
       .select()
       .from(bigBoxOpenings)
-      .where(and(eq(bigBoxOpenings.userId, userId), eq(bigBoxOpenings.mapId, input.mapId)))
+      .where(and(eq(bigBoxOpenings.userId, userId), eq(bigBoxOpenings.mapId, input.mapId), eq(bigBoxOpenings.round, prog?.round ?? 1)))
       .limit(1);
-    return o ? { openingId: o.id, level: o.level, pieces: o.pieces, totalPieces: await totalPieces(db, userId), completedPuzzles: [], replayed: true } : null;
+    return o ? { openingId: o.id, level: o.level, pieces: o.pieces, totalPieces: await totalPieces(db, userId), completedPuzzles: [], unlockedMap: null, puzzle: await levelPuzzle(db, userId, o.level), replayed: true } : null;
   };
   const prior = await replay();
   if (prior) return prior;
@@ -684,7 +835,7 @@ export async function openBigBox(userId: string, input: { mapId: string; idempot
         .from(userMapProgress)
         .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)))
         .limit(1);
-      if (!prog?.completedAt) throw new AppError(`Reach the final checkpoint of ${map.name} first`, "BIG_BOX_LOCKED", 403);
+      if (!prog?.roundCompletedAt) throw new AppError(`Reach the final checkpoint of ${map.name} first`, "BIG_BOX_LOCKED", 403);
       const [bb] = await tx.select().from(bigMysteryBoxes).where(eq(bigMysteryBoxes.mapId, map.id)).limit(1);
       const split = bb ? [bb.pieces1Pct, bb.pieces2Pct, bb.pieces3Pct] : [];
       if (!bb || !bb.active || !isValidPercentSplit(split)) {
@@ -694,13 +845,14 @@ export async function openBigBox(userId: string, input: { mapId: string; idempot
       if (!pick) throw new AppError("The Big Mystery Box is temporarily unavailable.", "BIG_BOX_UNAVAILABLE", 503);
       const openingId = randomUUID();
       const odds = { pieces1Pct: bb.pieces1Pct, pieces2Pct: bb.pieces2Pct, pieces3Pct: bb.pieces3Pct, version: bb.version, updatedAt: bb.updatedAt.toISOString() };
-      await tx.insert(bigBoxOpenings).values({ id: openingId, userId, mapId: map.id, bigBoxId: bb.id, level: map.level, pieces: pick.pieces, odds, idempotencyKey: input.idempotencyKey });
+      await tx.insert(bigBoxOpenings).values({ id: openingId, userId, mapId: map.id, bigBoxId: bb.id, level: map.level, pieces: pick.pieces, odds, idempotencyKey: input.idempotencyKey, round: prog.round });
       await tx.insert(puzzlePieceEvents).values({ userId, delta: pick.pieces, sourceType: "big_box_opening", sourceId: openingId, level: map.level });
       const base = { userId, level: map.level, refType: "big_box_opening", refId: openingId, config: odds };
-      await recordEvent(tx, { ...base, type: "BIG_MYSTERY_BOX_OPEN", actionId: openingId, result: { pieces: pick.pieces } });
+      await recordEvent(tx, { ...base, type: "BIG_MYSTERY_BOX_OPEN", actionId: openingId, result: { pieces: pick.pieces, round: prog.round } });
       await recordEvent(tx, { ...base, type: "PUZZLE_PIECE_REWARD", actionId: openingId, result: { pieces: pick.pieces } });
       const completedPuzzles = await syncPuzzleCompletions(tx, userId);
-      return { openingId, level: map.level, pieces: pick.pieces, totalPieces: await totalPieces(tx, userId), completedPuzzles, replayed: false };
+      const unlockedMap = await unlockNextMap(tx, userId, map.level);
+      return { openingId, level: map.level, pieces: pick.pieces, totalPieces: await totalPieces(tx, userId), completedPuzzles, unlockedMap, puzzle: await levelPuzzle(tx, userId, map.level), replayed: false };
     });
   } catch (err) {
     if (isUniqueViolation(err)) {
@@ -722,7 +874,6 @@ export type WheelResult = {
   prizeName: string;
   claimId: string | null;
   alternativeDisplay: string | null;
-  odds: { prizeUnlockPct: number; alternativePct: number };
   replayed: boolean;
 };
 
@@ -736,7 +887,6 @@ async function attemptResult(tx: DbOrTx, attempt: typeof prizeUnlockAttempts.$in
     prizeName: prize?.name ?? "",
     claimId: claim?.id ?? null,
     alternativeDisplay: await storedRewardDisplay(attempt.alternativeReward),
-    odds: { prizeUnlockPct: attempt.odds.prizeUnlockPct, alternativePct: attempt.odds.alternativePct },
     replayed,
   };
 }
@@ -1020,7 +1170,6 @@ export async function adventureConfigWarnings(tx: DbOrTx = db): Promise<string[]
     for (let i = 1; i < ordered.length; i++) {
       if (ordered[i].lootRequired < ordered[i - 1].lootRequired) out.push(`Map ${m.level}: "${ordered[i].name}" needs less Loot than the checkpoint before it.`);
     }
-    if (m !== mapRows[0] && ordered[0] && ordered[0].lootRequired < m.lootRequired) out.push(`Map ${m.level}: the first checkpoint needs less Loot than unlocking the map.`);
     if (!boxRows.some((b) => b.level === m.level)) out.push(`Map ${m.level} has no published Mystery Box at the same level, so its Loot cannot be found.`);
     if (!bbs.some((b) => b.mapId === m.id && b.active)) out.push(`Map ${m.level} has no active Big Mystery Box.`);
     if (!pz.some((p) => p.level === m.level)) out.push(`Map ${m.level} has no active puzzle.`);

@@ -24,9 +24,9 @@ export function SpinCard({ spun, available }: { spun: boolean; available: boolea
       <p className="mt-1 mb-3 text-sm text-white/75">{spun ? "Spun today. Back tomorrow!" : available ? "Your free spin is ready." : "No spin today."}</p>
       <span
         className={cn(
-          buttonVariants({ variant: spun ? "secondary" : "gold", size: "pill" }),
+          buttonVariants({ variant: "secondary", size: "pill" }),
           "mt-auto w-full",
-          spun ? "bg-white/15 text-white" : "group-hover:brightness-105",
+          spun ? "bg-white/15 text-white" : "bg-white text-ocean-deep group-hover:bg-white/90",
           !spun && !available && "opacity-60",
         )}
       >

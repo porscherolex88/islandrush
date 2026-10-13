@@ -75,9 +75,13 @@ const ALTERNATIVES: [("CREDITS" | "CASH"), string][] = [
   ["CASH", "800.00"],
   ["CASH", "1500.00"],
 ];
-const PIECES_REQUIRED = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+/** Map 1 is a 3x3 puzzle, Maps 2-5 are 4x4, Maps 6-9 are 5x5, and Map 10 is 3x3 with rarer drops. */
+const PIECES_REQUIRED = [9, 16, 16, 16, 16, 25, 25, 25, 25, 9];
+const OLD_PIECES_REQUIRED = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+/** Chance (%) of 1, 2 or 3 pieces. Map 10's Big Mystery Box almost always holds a single piece. */
+const bigBoxOdds = (level: number) => (level === 10 ? [90, 9, 1] : level <= 5 ? [40, 40, 20] : [30, 40, 30]);
 
-/** Fills the player's next chest. If nothing is left to unlock it pays the box price back in Credits. */
+/** One more free play of the same box. */
 const freeUnlock = (price: number) => ({
   label: "Free unlock",
   rewardType: "FREE_UNLOCK" as const,
@@ -106,7 +110,7 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
 
   for (const [i, m] of MAPS.entries()) {
     const level = i + 1;
-    const r = roman(level);
+    const boxName = `${m.name} Box`;
     const slug = m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const price = PRICES[i];
     const rmValue = price / 60;
@@ -119,8 +123,8 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
         kind: "LOOT" as const,
         rarity: j === 0 ? ("UNCOMMON" as const) : ("RARE" as const),
         adventureLevel: level,
-        purpose: `Map ${level} Loot. Collect it to unlock ${m.name} and reach its checkpoints. Loot stays in your collection.`,
-        description: `Found in Mystery Box ${r}.`,
+        purpose: lootPurpose(level, m.name),
+        description: `Found in the ${boxName}.`,
         sortOrder: level * 10 + j,
       };
       const [item] = await db
@@ -132,13 +136,13 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
     }
 
     const base = 2 + Math.floor((level - 1) / 3);
-    const lootPool = await pool(`Mystery Box ${r} Loot`, [
+    const lootPool = await pool(`${boxName} Loot`, [
       { label: `${base}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base), weight: 40, rarity: "UNCOMMON", reveal: { icon: lootEmoji(m.items[0][1]) } },
       { label: `${base + 1}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base + 1), weight: 32, rarity: "UNCOMMON", reveal: { icon: lootEmoji(m.items[0][1]) } },
       { label: `${base + 2}× ${m.items[0][0]}`, rewardType: "ITEM", itemId: lootIds[0], amount: String(base + 2), weight: 16, rarity: "UNCOMMON", reveal: { icon: lootEmoji(m.items[0][1]) } },
       { label: `${base + 2}× ${m.items[1][0]}`, rewardType: "ITEM", itemId: lootIds[1], amount: String(base + 2), weight: 12, rarity: "RARE", reveal: { icon: lootEmoji(m.items[1][1]) } },
-    ], `Guaranteed Loot drop for every Mystery Box ${r}.`);
-    const rewardPool = await pool(`Mystery Box ${r} Rewards`, [
+    ], `Guaranteed Loot drop for every ${boxName}.`);
+    const rewardPool = await pool(`${boxName} Rewards`, [
       credits(Math.round(price * 0.25), 40, "COMMON"),
       credits(Math.round(price * 0.5), 30, "UNCOMMON"),
       credits(price, 12, "RARE"),
@@ -147,11 +151,11 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
       cash(Math.max(1, Math.round(rmValue * 1.5)), 4, "RARE"),
       cash(Math.max(1, Math.round(rmValue * 5)), 1, "LEGENDARY"),
       freeUnlock(price),
-    ], `Lucky drop table for Mystery Box ${r}: Credits, Cash or a Free unlock.`);
+    ], `Lucky drop table for the ${boxName}: Credits, Cash or a Free unlock.`);
 
     await db.insert(s.mysteryBoxes).values({
       slug: `mystery-box-${level}`,
-      name: `Mystery Box ${r}`,
+      name: boxName,
       description: `Sealed on the ${m.name}. Every box holds ${m.name} Loot plus a lucky drop: Credits, Cash or a Free unlock.`,
       priceCredits: price,
       rewardPoolId: rewardPool.id,
@@ -167,7 +171,7 @@ export async function seedAdventure(log: (msg: string) => void = () => {}) {
       .values({ slug: `map-${level}-${slug}`, name: m.name, description: `Map ${level} of the adventure.`, level, lootRequired: m.loot, color: m.color })
       .returning();
     await db.insert(s.mapCheckpoints).values(m.stops.map((_, k) => ({ mapId: map.id, position: k + 1, ...stopContent(level, k) })));
-    const odds = level <= 5 ? [40, 40, 20] : [30, 40, 30];
+    const odds = bigBoxOdds(level);
     await db.insert(s.bigMysteryBoxes).values({
       mapId: map.id,
       name: "Big Mystery Box",
@@ -271,6 +275,10 @@ async function realignStops(tx: Tx, level: number, log: (msg: string) => void) {
   log(`Map ${level} checkpoints moved onto the new trail.`);
 }
 
+function lootPurpose(level: number, mapName: string) {
+  return `Map ${level} Loot. Collect it to reach the checkpoints on ${mapName}. Loot stays in your collection.`;
+}
+
 const UPDATES: { id: string; run: (tx: Tx, log: (msg: string) => void) => Promise<void> }[] = [
   { id: "map1-three-routes", run: (tx, log) => relayRoute(tx, 1, ORIGINAL_STOPS[1], log) },
   {
@@ -309,7 +317,83 @@ const UPDATES: { id: string; run: (tx: Tx, log: (msg: string) => void) => Promis
       }
     },
   },
+  {
+    id: "faq-no-odds",
+    run: async (tx, log) => {
+      const done = await tx.update(s.faqs).set({ answer: NEW_FAQ, updatedAt: new Date() }).where(eq(s.faqs.answer, OLD_FAQ)).returning({ id: s.faqs.id });
+      log(done.length ? "FAQ no longer mentions odds." : "FAQ already edited, left as is.");
+    },
+  },
+  {
+    id: "maps-unlock-by-big-box",
+    run: async (tx, log) => {
+      for (const [i, m] of MAPS.entries()) {
+        const level = i + 1;
+        const done = await tx
+          .update(s.items)
+          .set({ purpose: lootPurpose(level, m.name), updatedAt: new Date() })
+          .where(and(eq(s.items.kind, "LOOT"), eq(s.items.adventureLevel, level), eq(s.items.purpose, `Map ${level} Loot. Collect it to unlock ${m.name} and reach its checkpoints. Loot stays in your collection.`)))
+          .returning({ id: s.items.id });
+        if (done.length) log(`Map ${level} Loot no longer says it unlocks the map.`);
+      }
+    },
+  },
+  {
+    id: "prize-puzzle-grids",
+    run: async (tx, log) => {
+      for (const [i, pieces] of PIECES_REQUIRED.entries()) {
+        const level = i + 1;
+        const done = await tx
+          .update(s.puzzles)
+          .set({ piecesRequired: pieces, updatedAt: new Date() })
+          .where(and(eq(s.puzzles.level, level), eq(s.puzzles.piecesRequired, OLD_PIECES_REQUIRED[i])))
+          .returning({ id: s.puzzles.id });
+        if (done.length) log(`Level ${level} puzzle now needs ${pieces} pieces.`);
+      }
+      const [map10] = await tx.select({ id: s.maps.id }).from(s.maps).where(eq(s.maps.level, 10)).limit(1);
+      if (!map10) return;
+      const [o1, o2, o3] = bigBoxOdds(10);
+      const done = await tx
+        .update(s.bigMysteryBoxes)
+        .set({ pieces1Pct: o1, pieces2Pct: o2, pieces3Pct: o3, version: sql`${s.bigMysteryBoxes.version} + 1`, updatedAt: new Date() })
+        .where(and(eq(s.bigMysteryBoxes.mapId, map10.id), eq(s.bigMysteryBoxes.pieces1Pct, 30), eq(s.bigMysteryBoxes.pieces2Pct, 40), eq(s.bigMysteryBoxes.pieces3Pct, 30)))
+        .returning({ id: s.bigMysteryBoxes.id });
+      if (done.length) log("Map 10 Big Mystery Box now drops rarer pieces.");
+    },
+  },
+  {
+    id: "boxes-named-after-maps",
+    run: async (tx, log) => {
+      for (const [i, m] of MAPS.entries()) {
+        const level = i + 1;
+        const r = roman(level);
+        const name = `${m.name} Box`;
+        const now = new Date();
+        const boxes = await tx
+          .update(s.mysteryBoxes)
+          .set({ name, updatedAt: now })
+          .where(and(eq(s.mysteryBoxes.level, level), eq(s.mysteryBoxes.name, `Mystery Box ${r}`)))
+          .returning({ id: s.mysteryBoxes.id });
+        await tx
+          .update(s.items)
+          .set({ description: `Found in the ${name}.`, updatedAt: now })
+          .where(and(eq(s.items.kind, "LOOT"), eq(s.items.adventureLevel, level), eq(s.items.description, `Found in Mystery Box ${r}.`)));
+        await tx
+          .update(s.rewardPools)
+          .set({ name: `${name} Loot`, description: `Guaranteed Loot drop for every ${name}.`, updatedAt: now })
+          .where(eq(s.rewardPools.name, `Mystery Box ${r} Loot`));
+        await tx
+          .update(s.rewardPools)
+          .set({ name: `${name} Rewards`, description: `Lucky drop table for the ${name}: Credits, Cash or a Free unlock.`, updatedAt: now })
+          .where(eq(s.rewardPools.name, `Mystery Box ${r} Rewards`));
+        if (boxes.length) log(`Mystery Box ${r} is now the ${name}.`);
+      }
+    },
+  },
 ];
+
+const OLD_FAQ = "Yes. Every result is decided by our server using a cryptographically secure random number generator at the moment you play. Odds for each Mystery Box are published on the box page.";
+const NEW_FAQ = "Yes. Every result is decided by our server using a cryptographically secure random number generator at the moment you play. Each Mystery Box shows the prizes you can win before you open it.";
 
 /**
  * Brings already-seeded adventures in line with the current starting content. Each update runs

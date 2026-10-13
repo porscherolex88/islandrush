@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, gte, ilike, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { inventory, items, marketListings, marketSales, profiles } from "@/db/schema";
 import { AppError, isUniqueViolation } from "@/lib/errors";
@@ -132,7 +132,7 @@ export async function buyListing(userId: string, input: { listingId: string; qua
         "WALLET",
         `${item.icon} You sold ${input.quantity} x ${item.name}`,
         `You received ${formatCredits(total - fee)} Credits after the ${feePct}% market fee.`,
-        "/market?tab=listings",
+        "/market/sell",
       );
       return { saleId: sale.id, quantity: input.quantity, total, replayed: false };
     });
@@ -174,21 +174,6 @@ export async function getMarketListings(userId: string, opts: { q?: string; rari
     )
     .orderBy(desc(marketListings.createdAt))
     .limit(100);
-}
-
-/** Headline numbers for the Market: open listings from other players, distinct sellers and listings added in the last 24 hours. */
-export async function getMarketStats(userId: string) {
-  const since = new Date(Date.now() - 86_400_000);
-  const [row] = await db
-    .select({
-      listings: sql<number>`count(*)::int`,
-      sellers: sql<number>`count(distinct ${marketListings.sellerId})::int`,
-      fresh: sql<number>`count(*) filter (where ${gte(marketListings.createdAt, since)})::int`,
-    })
-    .from(marketListings)
-    .innerJoin(profiles, eq(profiles.id, marketListings.sellerId))
-    .where(and(eq(marketListings.status, "ACTIVE"), gt(marketListings.quantity, 0), ne(marketListings.sellerId, userId), eq(profiles.status, "ACTIVE")));
-  return { listings: row?.listings ?? 0, sellers: row?.sellers ?? 0, fresh: row?.fresh ?? 0 };
 }
 
 export async function getMyListings(userId: string) {

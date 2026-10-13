@@ -24,7 +24,7 @@ export default async function GamesPage() {
             <p className="mt-4 text-xs font-bold text-primary">Step 1</p>
             <h2 className="mt-1 text-3xl font-bold sm:text-4xl">Mystery Box</h2>
             <p className="mt-3 text-muted-foreground">
-              Each Adventure Level has its own Mystery Box. Every opening gives Loot for that level&apos;s map plus a lucky drop: free Credits, free Cash or a Free unlock that fills your next map chest. Prizes and odds are published on every box.
+              Each Adventure Level has its own Mystery Box. Every opening gives Loot for that level&apos;s map plus a lucky drop: free Credits, free Cash or a Free unlock that lets you open the same box again for free. Every box shows its prizes before you open it.
             </p>
           </div>
           <div className="grid gap-3">
@@ -53,7 +53,7 @@ export default async function GamesPage() {
             <p className="text-xs font-bold text-primary">Step 2</p>
             <h2 className="mt-1 text-3xl font-bold sm:text-4xl">Mystery Map</h2>
             <p className="mt-3 text-muted-foreground">
-              Collect enough Loot to unlock a map, then move from checkpoint to checkpoint along its route. Loot is never used up, so every piece keeps counting toward the next checkpoint and the final destination.
+              Loot from each Mystery Box fills the chests along your map&apos;s route, carrying you from checkpoint to checkpoint. Loot is never used up. Reach the final checkpoint and open its Big Mystery Box to unlock the next map and its Mystery Box.
             </p>
           </div>
         </Container>

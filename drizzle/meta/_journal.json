@@ -64,6 +64,41 @@
       "when": 1791884715200,
       "tag": "0008_free_unlock_reward",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791886085545,
+      "tag": "0009_retire_daily_mystery",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791886155248,
+      "tag": "0010_drop_daily_mystery",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791888072749,
+      "tag": "0011_map_replay_rounds",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791888659612,
+      "tag": "0012_free_box_plays",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791888987001,
+      "tag": "0013_box_jackpots",
+      "breakpoints": true
     }
   ]
 }

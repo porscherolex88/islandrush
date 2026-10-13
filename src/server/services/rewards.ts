@@ -1,11 +1,10 @@
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import type { Tx } from "@/db";
-import { areaUnlocks, cashRewards, items, mapAreas, profiles, rewardPoolEntries, rewardPools } from "@/db/schema";
+import { areaUnlocks, cashRewards, freeBoxPlays, items, mapAreas, profiles, rewardPoolEntries, rewardPools } from "@/db/schema";
 import { AppError } from "@/lib/errors";
 import { formatCredits, toMinor } from "@/lib/money";
 import { fmtCash } from "@/lib/format-money";
 import { weightedPick } from "@/lib/rng";
-import { currentAdventureLevel, freeUnlockFill } from "./adventure-core";
 import { getConfig } from "./config";
 import { grantItem } from "./inventory";
 import { postTransaction, type RewardSource } from "./ledger";
@@ -36,8 +35,10 @@ export type GrantContext = {
   /** Unique, deterministic key for this grant; used for ledger idempotency. */
   key: string;
   rewardSource?: RewardSource;
-  /** Adventure level a Free unlock applies to. Defaults to the player's current level. */
+  /** Adventure level of the box being played. */
   level?: number | null;
+  /** The Mystery Box being played. A Free unlock gives one more play of this box. */
+  boxId?: string;
 };
 
 const RARITY_ICON: Record<RewardType, string> = {
@@ -114,7 +115,7 @@ export async function describeEntry(tx: Tx, entry: PoolEntry): Promise<RewardRes
       };
     }
     case "FREE_UNLOCK":
-      return { ...base, display: "Free unlock: your next chest, filled", icon: entry.reveal?.icon ?? RARITY_ICON.FREE_UNLOCK };
+      return { ...base, display: "Free unlock: play this box again for free", icon: entry.reveal?.icon ?? RARITY_ICON.FREE_UNLOCK };
   }
 }
 
@@ -137,25 +138,16 @@ async function grantCredits(tx: Tx, userId: string, amount: string, label: strin
 }
 
 /**
- * Fills the player's next chest on the level with primary Loot. When nothing is left to unlock,
- * the entry's amount is paid as Credits instead so the win is never wasted.
+ * Gives one more play of the box being opened, with no Credits to pay. Outside a Mystery Box play
+ * there is no box to replay, so the entry's amount is paid as Credits instead.
  */
 async function grantFreeUnlock(tx: Tx, userId: string, entry: PoolEntry, result: RewardResult, ctx: GrantContext): Promise<RewardResult> {
-  const level = ctx.level ?? (await currentAdventureLevel(tx, userId));
-  const fill = level ? await freeUnlockFill(tx, userId, level) : null;
-  if (!fill) {
+  if (!ctx.boxId || ctx.sourceType !== "mystery_box_play") {
     await grantCredits(tx, userId, entry.amount, entry.label, ctx);
-    return { ...result, amount: entry.amount, display: `Free unlock: ${formatCredits(entry.amount)} Credits instead`, headline: "Nothing left to unlock here, so it paid out in Credits" };
+    return { ...result, amount: entry.amount, display: `Free unlock: ${formatCredits(entry.amount)} Credits instead` };
   }
-  await grantItem(tx, userId, fill.item.id, fill.need, { sourceType: ctx.sourceType, sourceId: ctx.sourceId, reason: entry.label });
-  return {
-    ...result,
-    amount: String(fill.need),
-    itemId: fill.item.id,
-    itemName: fill.item.name,
-    display: `Free unlock: next ${fill.mapName} chest filled`,
-    headline: `+${fill.need} ${fill.item.name} added for free`,
-  };
+  await tx.insert(freeBoxPlays).values({ userId, boxId: ctx.boxId, sourcePlayId: ctx.sourceId });
+  return { ...result, amount: "1", display: "Free unlock: 1 free play", headline: "Open this box again, on us" };
 }
 
 /** Applies a reward to the user. Every effect is recorded (ledger, inventory events). */

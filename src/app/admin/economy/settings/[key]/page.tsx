@@ -27,7 +27,7 @@ const PAGES: Partial<Record<ConfigKey, { title: string; permission: Permission; 
     permission: "games.manage",
     help: {
       active: "Turn off to pause all final unlocks. Completed puzzles stay complete.",
-      prizeUnlockPct: "Chance (%) the prize unlocks. Shown to players.",
+      prizeUnlockPct: "Chance (%) the prize unlocks. Never shown to players.",
       alternativePct: "Chance (%) of the puzzle's alternative reward. Both must total exactly 100.",
     },
   },

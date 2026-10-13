@@ -45,7 +45,7 @@ export default async function BoxHistoryPage({ searchParams }: PageProps<"/play/
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{r.boxName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDateTime(r.createdAt)} · {r.level ? `Adventure Level ${r.level}` : `Box ${r.selectedIndex + 1}`} · -{formatCredits(r.creditsSpent)} Credits
+                    {formatDateTime(r.createdAt)} · {r.level ? `Adventure Level ${r.level}` : `Box ${r.selectedIndex + 1}`} · {r.jackpot ? "Jackpot spin" : r.creditsSpent === 0 ? "Free play" : `-${formatCredits(r.creditsSpent)} Credits`}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">

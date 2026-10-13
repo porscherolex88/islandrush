@@ -195,14 +195,12 @@ async function main() {
     const spinPool = await pool("Daily Spin", "WEIGHTED", [credits(200, 30), credits(500, 22), credits(1000, 12, "UNCOMMON"), give("map-fragment", 8, 1, "Ancient Map Fragment"), give("seal-fragment", 5, 1, "Vault Seal Fragment"), give("temple-key", 2, 1, "Temple Key"), cash("5.00", 6, "UNCOMMON")]);
     const streakSpinPool = await pool("Daily Spin (7+ day streak)", "WEIGHTED", [credits(500, 25), credits(1500, 20, "UNCOMMON"), credits(3000, 8, "RARE"), give("map-fragment", 10, 1, "Ancient Map Fragment"), give("seal-fragment", 8, 1, "Vault Seal Fragment"), give("temple-key", 4, 1, "Temple Key"), give("vault-key", 2, 1, "Vault Key"), cash("10.00", 8, "UNCOMMON")]);
     const bonusPool = await pool("Daily missions bonus", "ALL", [credits(2000, 1, "UNCOMMON")]);
-    const eventPool = await pool("Daily Mystery Event", "WEIGHTED", [credits(800, 30), give("map-fragment", 20, 1, "Ancient Map Fragment"), give("seal-fragment", 12, 1, "Vault Seal Fragment"), give("golden-coin", 15, 1, "Golden Coin")]);
 
     await db.insert(s.missionDefinitions).values([
       { key: "daily_login", title: "Check in today", action: "DAILY_LOGIN", target: 1, icon: "👋" },
       { key: "open_box", title: "Open 1 Mystery Box", action: "OPEN_BOX", target: 1, icon: "🎁" },
       { key: "discover_2", title: "Discover 2 Map Tiles", action: "DISCOVER_TILE", target: 2, icon: "🧭" },
       { key: "spin", title: "Complete Daily Spin", action: "DAILY_SPIN", target: 1, icon: "🎡" },
-      { key: "event", title: "Explore the Daily Mystery Event", action: "DAILY_EVENT", target: 1, icon: "🌊" },
       { key: "collect_3", title: "Collect 3 items", action: "COLLECT_ITEM", target: 3, icon: "🎒" },
       { key: "convert", title: "Convert Cash to Credits", action: "CONVERT_CREDITS", target: 1, icon: "🔁", active: true },
       { key: "unlock_area", title: "Unlock a new area", action: "UNLOCK_AREA", target: 1, icon: "🔓" },
@@ -219,10 +217,6 @@ async function main() {
     await db.insert(s.dailySchedules).values({
       day: addDays(today, 1),
       status: "PUBLISHED",
-      eventTitle: "Shipwreck Cove",
-      eventDescription: "A storm uncovered an old shipwreck overnight. What's inside the captain's chest?",
-      eventIcon: "⚓",
-      eventPoolId: eventPool.id,
       freeDiscoveries: 4,
     });
 
@@ -233,8 +227,7 @@ async function main() {
         ...CONFIG_DEFAULTS.daily_defaults,
         spinPoolId: spinPool.id,
         missionBonusPoolId: bonusPool.id,
-        eventPoolId: eventPool.id,
-        missionKeys: ["daily_login", "open_box", "discover_2", "spin", "event", "collect_3"],
+        missionKeys: ["daily_login", "open_box", "discover_2", "spin", "collect_3"],
         streakSpinPoolId: streakSpinPool.id,
       },
     };
@@ -303,14 +296,14 @@ async function main() {
     ]);
     await db.insert(s.banners).values([
       { kind: "BANNER", title: "A prize waits at the end of every map", body: "Collect Loot, reach checkpoints and open the Big Mystery Box to find puzzle pieces.", link: "/play/map", status: "PUBLISHED" },
-      { kind: "ANNOUNCEMENT", title: "Welcome to LootBox", body: "Every day brings a new spin, three missions and a mystery event.", status: "PUBLISHED" },
+      { kind: "ANNOUNCEMENT", title: "Welcome to LootBox", body: "Every day brings a new spin and three missions.", status: "PUBLISHED" },
     ]);
     await db.insert(s.faqs).values([
       { category: "Getting started", sortOrder: 0, question: "What is LootBox?", answer: "LootBox is a rewards platform with three games: Mystery Box, Mystery Map and the Vault. You play with Credits, discover items, complete collections and earn rewards you can withdraw once eligible." },
       { category: "Getting started", sortOrder: 1, question: "How do Credits work?", answer: "Credits are bought with Cash from your wallet at the current conversion rate (RM1,000 = 60,000 Credits at launch). The RM value of every Credit price is always shown next to it." },
       { category: "Wallet", sortOrder: 2, question: "How long do deposits take?", answer: "Deposits are manual bank transfers. After you submit your transfer reference, our team verifies it, usually within 30 minutes during business hours." },
       { category: "Wallet", sortOrder: 3, question: "When can I withdraw my rewards?", answer: "Cash rewards first appear as Pending Rewards. After the settlement period (24 hours for game rewards) they move to your Withdrawable balance, which you can withdraw to your saved bank account." },
-      { category: "Games", sortOrder: 4, question: "Are results random?", answer: "Yes. Every result is decided by our server using a cryptographically secure random number generator at the moment you play. Odds for each Mystery Box are published on the box page." },
+      { category: "Games", sortOrder: 4, question: "Are results random?", answer: "Yes. Every result is decided by our server using a cryptographically secure random number generator at the moment you play. Each Mystery Box shows the prizes you can win before you open it." },
       { category: "Games", sortOrder: 5, question: "What are Fragments and Keys?", answer: "Fragments are pieces of a bigger object. Five Ancient Map Fragments assemble into the Ancient Map, and eight Vault Seal Fragments are needed to open the Vault. Keys unlock Special Areas and the Vault." },
       { category: "Referrals", sortOrder: 6, question: "How do referrals work?", answer: "Share your code. When someone you referred makes their first qualifying deposit, you earn a referral reward. Rewards up to three levels deep become withdrawable after a short review period." },
       { category: "Responsible play", sortOrder: 7, question: "Can I set limits?", answer: "Yes. In Account > Responsible Play you can set a daily Credit spending limit or take a break from play for a period you choose." },

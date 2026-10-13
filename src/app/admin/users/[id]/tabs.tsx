@@ -308,21 +308,17 @@ export async function AchievementsTab({ userId }: { userId: string }) {
 }
 
 export async function GamesTab({ userId }: { userId: string }) {
-  const [logins, spins, events] = await Promise.all([
+  const [logins, spins] = await Promise.all([
     db.select().from(s.dailyLogins).where(eq(s.dailyLogins.userId, userId)).orderBy(desc(s.dailyLogins.day)).limit(30),
     db.select().from(s.dailySpins).where(eq(s.dailySpins.userId, userId)).orderBy(desc(s.dailySpins.day)).limit(30),
-    db.select().from(s.dailyEventClaims).where(eq(s.dailyEventClaims.userId, userId)).orderBy(desc(s.dailyEventClaims.day)).limit(30),
   ]);
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 lg:grid-cols-2">
       <AdminCard title="Check-ins" bodyClassName="p-0">
         <DataTable rows={logins} rowKey={(r) => r.id} empty="No check-ins" columns={[{ key: "d", header: "Day", cell: (r) => r.day }, { key: "s", header: "Streak", align: "right", cell: (r) => r.streakAfter }]} />
       </AdminCard>
       <AdminCard title="Daily spins" bodyClassName="p-0">
         <DataTable rows={spins} rowKey={(r) => r.id} empty="No spins" columns={[{ key: "d", header: "Day", cell: (r) => r.day }, { key: "r", header: "Reward", cell: (r) => rewardLabel(r.reward) }]} />
-      </AdminCard>
-      <AdminCard title="Mystery events" bodyClassName="p-0">
-        <DataTable rows={events} rowKey={(r) => r.id} empty="No events" columns={[{ key: "d", header: "Day", cell: (r) => r.day }, { key: "r", header: "Reward", cell: (r) => rewardLabel(r.reward) }]} />
       </AdminCard>
     </div>
   );

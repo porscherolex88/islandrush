@@ -7,6 +7,7 @@ import { Section } from "@/components/app/mobile-header";
 import { DepositLevelCard } from "@/components/app/progression";
 import { WalletHeader } from "@/components/app/root-page-header";
 import { TransactionList } from "@/components/app/transaction-list";
+import { WalletMoreSheet } from "@/components/app/wallet-more-sheet";
 import { EmptyState } from "@/components/shared/states";
 import { requireUser } from "@/lib/auth/session";
 import { formatCredits, formatCash, toDecimal } from "@/lib/money";
@@ -95,10 +96,63 @@ export default async function WalletPage() {
           </div>
         </HeroCard>
 
-        <nav aria-label="Wallet actions" className="mt-4 grid grid-cols-3 gap-2">
+        <nav aria-label="Wallet actions" className="mt-4 grid grid-cols-4 gap-2">
           <ActionButton href="/wallet/deposit" label="Add money" icon={ArrowDownToLine} primary />
           <ActionButton href="/wallet/convert" label="Convert" icon={Repeat} />
           <ActionButton href="/wallet/withdraw" label="Withdraw" icon={ArrowUpFromLine} />
+          <WalletMoreSheet openOnHash="deposit-level">
+            <details id="deposit-level" className="group rounded-3xl border bg-card">
+              <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                <span
+                  className="size-10 shrink-0 rounded-2xl ring-4 ring-white"
+                  style={{ background: `linear-gradient(135deg, ${level.current?.color ?? "#94a3b8"}, color-mix(in oklch, ${level.current?.color ?? "#94a3b8"}, black 25%))` }}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-muted-foreground">Deposit Level</span>
+                  <span className="block font-heading text-lg leading-tight font-extrabold">{level.current?.name ?? "Starter"}</span>
+                </span>
+                <span className="flex items-center gap-1 text-sm font-semibold text-primary">
+                  <TrendingUp className="size-4" aria-hidden />
+                  <span className="group-open:hidden">Details</span>
+                  <span className="hidden group-open:inline">Hide</span>
+                </span>
+              </summary>
+              <div className="border-t p-3">
+                <DepositLevelCard {...level} platformMaxDaily={wcfg.maxDaily} fiat={fiat} />
+              </div>
+            </details>
+
+            <div>
+              <h2 className="mb-2 font-heading text-lg font-bold">Manage</h2>
+              <MenuCard>
+                <MenuRow href="/wallet/transactions" icon={ReceiptText} label="All transactions" />
+                <MenuRow href="/account/withdrawal-accounts" icon={Landmark} label="Bank accounts" />
+                <MenuRow href="/account/responsible-play" icon={HeartHandshake} label="Deposit and play limits" />
+                <MenuRow href="/account/support" icon={LifeBuoy} label="Get help with a payment" />
+              </MenuCard>
+            </div>
+
+            <details className="group rounded-3xl border bg-card">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 px-4 font-semibold [&::-webkit-details-marker]:hidden">
+                <Sparkles className="size-4 text-gold" aria-hidden />
+                <span className="flex-1">How money works</span>
+                <ChevronRight className="size-4 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+              </summary>
+              <ol className="space-y-3 border-t p-4">
+                {HOW_IT_WORKS.map((s, i) => (
+                  <li key={s.title} className="flex gap-3">
+                    <span className={cn("grid size-7 shrink-0 place-items-center rounded-full font-heading text-sm font-extrabold", i === 3 ? "bg-success-soft text-success" : "bg-brand-soft text-primary")}>{i + 1}</span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold">{s.title}</span>
+                      <span className="block text-sm text-muted-foreground">{s.body}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <p className="border-t px-4 py-3 text-xs text-muted-foreground">Every change to your balance is recorded in your transaction history.</p>
+            </details>
+          </WalletMoreSheet>
         </nav>
       </Section>
 
@@ -161,61 +215,6 @@ export default async function WalletPage() {
         ) : (
           <EmptyState icon={<Banknote className="size-8 text-primary" />} title="No activity yet" description="Deposits, conversions, games and rewards will appear here." />
         )}
-      </Section>
-
-      <Section>
-        <details id="deposit-level" className="group scroll-mt-20 rounded-3xl border bg-card">
-          <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-            <span
-              className="size-10 shrink-0 rounded-2xl ring-4 ring-white"
-              style={{ background: `linear-gradient(135deg, ${level.current?.color ?? "#94a3b8"}, color-mix(in oklch, ${level.current?.color ?? "#94a3b8"}, black 25%))` }}
-              aria-hidden
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block text-xs font-semibold text-muted-foreground">Deposit Level</span>
-              <span className="block font-heading text-lg leading-tight font-extrabold">{level.current?.name ?? "Starter"}</span>
-            </span>
-            <span className="flex items-center gap-1 text-sm font-semibold text-primary">
-              <TrendingUp className="size-4" aria-hidden />
-              <span className="group-open:hidden">Details</span>
-              <span className="hidden group-open:inline">Hide</span>
-            </span>
-          </summary>
-          <div className="border-t p-3">
-            <DepositLevelCard {...level} platformMaxDaily={wcfg.maxDaily} fiat={fiat} />
-          </div>
-        </details>
-      </Section>
-
-      <Section title="Manage">
-        <MenuCard>
-          <MenuRow href="/wallet/transactions" icon={ReceiptText} label="All transactions" />
-          <MenuRow href="/account/withdrawal-accounts" icon={Landmark} label="Bank accounts" />
-          <MenuRow href="/account/responsible-play" icon={HeartHandshake} label="Deposit and play limits" />
-          <MenuRow href="/account/support" icon={LifeBuoy} label="Get help with a payment" />
-        </MenuCard>
-      </Section>
-
-      <Section>
-        <details className="group rounded-3xl border bg-card">
-          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 px-4 font-semibold [&::-webkit-details-marker]:hidden">
-            <Sparkles className="size-4 text-gold" aria-hidden />
-            <span className="flex-1">How money works</span>
-            <ChevronRight className="size-4 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
-          </summary>
-          <ol className="space-y-3 border-t p-4">
-            {HOW_IT_WORKS.map((s, i) => (
-              <li key={s.title} className="flex gap-3">
-                <span className={cn("grid size-7 shrink-0 place-items-center rounded-full font-heading text-sm font-extrabold", i === 3 ? "bg-success-soft text-success" : "bg-brand-soft text-primary")}>{i + 1}</span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-bold">{s.title}</span>
-                  <span className="block text-sm text-muted-foreground">{s.body}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p className="border-t px-4 py-3 text-xs text-muted-foreground">Every change to your balance is recorded in your transaction history.</p>
-        </details>
       </Section>
     </div>
   );

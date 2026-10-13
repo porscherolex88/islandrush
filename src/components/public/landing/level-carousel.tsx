@@ -48,7 +48,6 @@ function TiltCard({ m }: { m: LandingMap }) {
             <span className="inline-flex items-center gap-1">
               <Flag className="size-3.5" aria-hidden /> {m.checkpoints} checkpoints
             </span>
-            {m.lootRequired > 0 && <span>{m.lootRequired} Loot to unlock</span>}
           </p>
         </div>
       </div>

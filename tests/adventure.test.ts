@@ -13,15 +13,17 @@ import {
   prizeUnlockAttempts,
   profiles,
   puzzles,
+  userMapProgress,
   userPuzzles,
 } from "@/db/schema";
-import { allocatePieces, checkpointStates, isValidPercentSplit } from "@/lib/adventure";
+import { allocatePieces, checkpointStates, isValidPercentSplit, puzzleColumns } from "@/lib/adventure";
 import { createAdjustment } from "@/server/services/admin-finance";
 import {
   adventureConfigWarnings,
   claimPrize,
   getAdventureState,
   openBigBox,
+  replayMap,
   spinPrizeWheel,
   unlockCheckpoint,
   unlockMap,
@@ -116,18 +118,27 @@ describe("adventure helpers", () => {
     expect(isValidPercentSplit([-10, 110])).toBe(false);
   });
 
-  it("allocates pieces cumulatively in level order", () => {
+  it("gives each puzzle only the pieces from its own level, capped at its size", () => {
     const a = allocatePieces(
       [
-        { id: "b", level: 2, piecesRequired: 2 },
-        { id: "a", level: 1, piecesRequired: 1 },
+        { id: "b", level: 2, piecesRequired: 4 },
+        { id: "a", level: 1, piecesRequired: 9 },
+        { id: "c", level: 3, piecesRequired: 9 },
       ],
-      2,
+      new Map([
+        [1, 11],
+        [2, 1],
+      ]),
     );
     expect(a.map((x) => [x.id, x.piecesHave, x.piecesFull])).toEqual([
-      ["a", 1, true],
+      ["a", 9, true],
       ["b", 1, false],
+      ["c", 0, false],
     ]);
+  });
+
+  it("lays square puzzles out as a grid", () => {
+    expect([9, 16, 25, 2, 7].map(puzzleColumns)).toEqual([3, 4, 5, 2, 5]);
   });
 
   it("only makes the next checkpoint available, and the final one last", () => {
@@ -143,10 +154,10 @@ describe("adventure helpers", () => {
 });
 
 describe("Mystery Box levels", () => {
-  it("locks boxes until the previous map is completed", async () => {
+  it("locks boxes until their map is unlocked", async () => {
     const u = await makeUser();
     await giveCredits(u.id, 10_000);
-    await expect(open(u.id, 2)).rejects.toThrow(/Complete Map 1/);
+    await expect(open(u.id, 2)).rejects.toThrow(/Win the Big Mystery Box on Map 1/);
     expect((await getBalances(u.id)).CREDITS).toBe(10_000n);
     const state = await getAdventureState(u.id);
     expect(state.boxes.map((b) => b.locked)).toEqual([false, true, true]);
@@ -185,7 +196,7 @@ describe("maps and checkpoints", () => {
   it("opens Map 1 for every new player without Loot", async () => {
     const u = await makeUser();
     const state = await getAdventureState(u.id);
-    expect(state.maps[0]).toMatchObject({ state: "exploring", lootRequired: 0, lootCollected: 0 });
+    expect(state.maps[0]).toMatchObject({ state: "exploring", lootCollected: 0 });
     expect(state.maps[0].checkpoints.find((c) => c.isNext)?.name).toBe("Camp");
     expect(state.maps[1].state).toBe("locked");
   });
@@ -215,9 +226,15 @@ describe("maps and checkpoints", () => {
     expect(n).toBe(1);
   });
 
-  it("keeps the next map locked until the previous map is completed", async () => {
+  it("keeps the next map and its box locked until the previous Big Mystery Box is won", async () => {
     const u = await makeUser();
-    await expect(unlockMap(u.id, L[2].map.id)).rejects.toThrow(/Complete Map 1/);
+    await giveCredits(u.id, 10_000);
+    await expect(unlockMap(u.id, L[2].map.id)).rejects.toThrow(/Win the Big Mystery Box on Map 1/);
+    const before = (await getBalances(u.id)).CREDITS;
+    await expect(open(u.id, 2)).rejects.toThrow(/Win the Big Mystery Box on Map 1 to unlock Map 2/);
+    expect((await getBalances(u.id)).CREDITS).toBe(before);
+    const state = await getAdventureState(u.id);
+    expect(state.boxes[1]).toMatchObject({ locked: true, unlockMapLevel: 1 });
   });
 
   it("enforces checkpoint order and Loot thresholds, and Loot is never consumed", async () => {
@@ -239,39 +256,114 @@ describe("maps and checkpoints", () => {
     expect(state.nextStep.kind).toBe("loot");
   });
 
-  it("completes the map on the final checkpoint and unlocks the next map and box", async () => {
+  it("completes the map on the final checkpoint, then the Big Mystery Box unlocks the next map and box", async () => {
     const u = await makeUser();
     await giveCredits(u.id, 10_000);
     for (let i = 0; i < 3; i++) await open(u.id, 1);
-    await unlockMap(u.id, L[1].map.id);
     const results = [];
     for (const cp of L[1].checkpoints) results.push(await unlockCheckpoint(u.id, cp.id));
     const final = results.at(-1)!;
     expect(final.isFinal).toBe(true);
-    expect(final.completion?.unlockedMap?.level).toBe(2);
-    expect(final.completion?.unlockedBoxes.map((b) => b.level)).toEqual([2]);
+    expect(final.completion?.unlockedMap).toBeNull();
     expect(final.bigBox).not.toBeNull();
-    const state = await getAdventureState(u.id);
+    let state = await getAdventureState(u.id);
     expect(state.maps[0].state).toBe("completed");
-    expect(state.maps[1].state).toBe("collecting");
-    expect(state.boxes[1].locked).toBe(false);
-    expect(state.currentLevel).toBe(2);
+    expect(state.maps[1].state).toBe("locked");
+    expect(state.boxes[1].locked).toBe(true);
     expect(state.nextStep.kind).toBe("bigbox");
+
+    const big = await openBigBox(u.id, { mapId: L[1].map.id, idempotencyKey: uid("bb") });
+    expect(big.unlockedMap).toEqual({ level: 2, name: "Map 2", boxName: "Test Box" });
+    state = await getAdventureState(u.id);
+    expect(state.maps[1].state).toBe("exploring");
+    expect(state.boxes[1].locked).toBe(false);
+    expect(state.currentBox?.level).toBe(2);
+    expect(state.currentLevel).toBe(2);
+    await expect(open(u.id, 2)).resolves.toMatchObject({ level: 2 });
+    const [{ n }] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(gameEvents)
+      .where(and(eq(gameEvents.userId, u.id), eq(gameEvents.type, "MAP_UNLOCK")));
+    expect(n).toBe(2);
   });
 
-  it("retires a level's box once its map is completed, without charging", async () => {
+  it("keeps a level's box open after its map is completed", async () => {
     const u = await makeUser();
     await giveCredits(u.id, 10_000);
     for (let i = 0; i < 3; i++) await open(u.id, 1);
-    await unlockMap(u.id, L[1].map.id);
     for (const cp of L[1].checkpoints) await unlockCheckpoint(u.id, cp.id);
     const before = (await getBalances(u.id)).CREDITS;
-    await expect(open(u.id, 1)).rejects.toThrow(/completed Map 1/);
-    expect((await getBalances(u.id)).CREDITS).toBe(before);
+    await expect(open(u.id, 1)).resolves.toMatchObject({ level: 1 });
+    expect((await getBalances(u.id)).CREDITS).toBeLessThan(before);
     const state = await getAdventureState(u.id);
-    expect(state.boxes.map((b) => b.completed)).toEqual([true, false, false]);
-    expect(state.currentBox?.level).toBe(2);
-    await expect(open(u.id, 2)).resolves.toMatchObject({ level: 2 });
+    expect(state.boxes.map((b) => [b.completed, b.locked])).toEqual([
+      [true, false],
+      [false, true],
+      [false, true],
+    ]);
+    expect(state.currentBox?.level).toBe(1);
+  });
+
+  it("unlocks the next map straight away when a map has no active Big Mystery Box", async () => {
+    const u = await makeUser();
+    await giveCredits(u.id, 10_000);
+    await db.update(bigMysteryBoxes).set({ active: false }).where(eq(bigMysteryBoxes.mapId, L[1].map.id));
+    try {
+      for (let i = 0; i < 3; i++) await open(u.id, 1);
+      const results = [];
+      for (const cp of L[1].checkpoints) results.push(await unlockCheckpoint(u.id, cp.id));
+      expect(results.at(-1)?.completion?.unlockedMap?.level).toBe(2);
+      const state = await getAdventureState(u.id);
+      expect(state.maps[1].state).toBe("exploring");
+      expect(state.boxes[1].locked).toBe(false);
+    } finally {
+      await db.update(bigMysteryBoxes).set({ active: true }).where(eq(bigMysteryBoxes.mapId, L[1].map.id));
+    }
+  });
+
+  it("lets players who won a map before the change unlock the next one by hand", async () => {
+    const u = await makeUser();
+    await giveCredits(u.id, 100_000);
+    await clearLevel(u.id, 1);
+    await db.delete(userMapProgress).where(and(eq(userMapProgress.userId, u.id), eq(userMapProgress.mapId, L[2].map.id)));
+    let state = await getAdventureState(u.id);
+    expect(state.maps[1].state).toBe("ready");
+    expect(state.boxes[1]).toMatchObject({ locked: true, unlockMapLevel: 2 });
+    await expect(unlockMap(u.id, L[2].map.id)).resolves.toMatchObject({ level: 2, replayed: false });
+    state = await getAdventureState(u.id);
+    expect(state.maps[1].state).toBe("exploring");
+    expect(state.boxes[1].locked).toBe(false);
+  });
+
+  it("replays a won map: checkpoints reset, Loot refills from zero, and the Big Mystery Box gives more pieces", async () => {
+    const u = await makeUser();
+    await giveCredits(u.id, 100_000);
+    await expect(replayMap(u.id, L[1].map.id)).rejects.toThrow();
+    await open(u.id, 1);
+    for (let i = 0; i < 3; i++) await open(u.id, 1);
+    for (const cp of L[1].checkpoints) await unlockCheckpoint(u.id, cp.id);
+    await expect(replayMap(u.id, L[1].map.id)).rejects.toMatchObject({ code: "BIG_BOX_WAITING" });
+    const first = await openBigBox(u.id, { mapId: L[1].map.id, idempotencyKey: uid("bb") });
+    expect(first.unlockedMap?.level).toBe(2);
+    let state = await getAdventureState(u.id);
+    expect(state.maps[0]).toMatchObject({ state: "completed", cleared: true, round: 1, canReplay: true });
+
+    await expect(replayMap(u.id, L[1].map.id)).resolves.toMatchObject({ level: 1, round: 2 });
+    state = await getAdventureState(u.id);
+    expect(state.maps[0]).toMatchObject({ state: "exploring", cleared: true, round: 2, canReplay: false, lootCollected: 5 });
+    expect(state.maps[0].checkpoints.map((c) => c.state)).toEqual(["locked", "locked", "locked"]);
+    expect(state.maps[1].state).toBe("exploring");
+    await expect(unlockCheckpoint(u.id, L[1].checkpoints[0].id)).rejects.toThrow();
+
+    for (let i = 0; i < 2; i++) await open(u.id, 1);
+    const results = [];
+    for (const cp of L[1].checkpoints) results.push(await unlockCheckpoint(u.id, cp.id));
+    expect(results.at(-1)?.completion).toMatchObject({ round: 2, firstClear: false, unlockedMap: null });
+    const second = await openBigBox(u.id, { mapId: L[1].map.id, idempotencyKey: uid("bb") });
+    expect(second).toMatchObject({ replayed: false, pieces: 1, totalPieces: 2, unlockedMap: null, puzzle: { have: 1, required: 1 } });
+    state = await getAdventureState(u.id);
+    expect(state.maps[0]).toMatchObject({ state: "completed", round: 2, canReplay: true });
+    expect(state.puzzles.map((p) => p.piecesHave)).toEqual([1, 0, 0]);
   });
 });
 
@@ -324,7 +416,7 @@ describe("Final Prize Unlock wheel", () => {
     const before = (await getBalances(u.id)).CREDITS;
     const res = await spinPrizeWheel(u.id, { puzzleId: L[1].puzzle.id, idempotencyKey: uid() }, () => 0);
     expect(res.outcome).toBe("PRIZE");
-    expect(res.odds).toEqual({ prizeUnlockPct: 90, alternativePct: 10 });
+    expect(res).not.toHaveProperty("odds");
     const replay = await spinPrizeWheel(u.id, { puzzleId: L[1].puzzle.id, idempotencyKey: uid() }, () => 99);
     expect(replay.replayed).toBe(true);
     expect(replay.outcome).toBe("PRIZE");

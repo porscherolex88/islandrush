@@ -16,7 +16,7 @@ function amountLabel(e: EntryStat, fiat: FiatDisplay) {
     case "AREA_UNLOCK":
       return `Unlock ${e.areaName ?? "area"}`;
     case "FREE_UNLOCK":
-      return `Fill next chest (else ${formatCredits(Math.round(Number(e.amount)))} Credits)`;
+      return `1 free play of this box (else ${formatCredits(Math.round(Number(e.amount)))} Credits)`;
     default:
       return e.amount;
   }

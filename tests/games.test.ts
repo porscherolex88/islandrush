@@ -6,7 +6,7 @@ import { createAdjustment } from "@/server/services/admin-finance";
 import { itemQuantity } from "@/server/services/inventory";
 import { getBalances } from "@/server/services/ledger";
 import { discoverTile, getMapState, unlockArea } from "@/server/services/map";
-import { boxOdds, playMysteryBox } from "@/server/services/mystery-box";
+import { boxOdds, boxPrizes, playMysteryBox } from "@/server/services/mystery-box";
 import { getVaultStates, unlockVault } from "@/server/services/vault";
 import { weightedPick } from "@/lib/rng";
 import {
@@ -108,10 +108,17 @@ describe("Mystery Box", () => {
     expect(entry.awardedCount).toBe(1);
   });
 
-  it("publishes odds that sum to 100%", async () => {
+  it("computes odds that sum to 100%", async () => {
     const pool = await makePool("WEIGHTED", [{ weight: 1 }, { weight: 3 }]);
     const odds = await boxOdds(pool.id);
     expect(odds.reduce((s, o) => s + o.pct, 0)).toBeCloseTo(100);
+  });
+
+  it("never sends chances to players", async () => {
+    const pool = await makePool("WEIGHTED", [{ weight: 1 }, { weight: 3 }]);
+    const prizes = await boxPrizes(pool.id);
+    expect(prizes).toHaveLength(2);
+    for (const p of prizes) expect(p).not.toHaveProperty("pct");
   });
 
   it("awards cash rewards into Pending Rewards, never directly Withdrawable", async () => {
@@ -123,6 +130,45 @@ describe("Mystery Box", () => {
     const b = await getBalances(u.id);
     expect(b.PENDING_REWARDS).toBe(15000n);
     expect(b.WITHDRAWABLE).toBe(0n);
+  });
+
+  it("turns a Free unlock into one free play of the same box", async () => {
+    const pool = await makePool("WEIGHTED", [{ label: "Free unlock", rewardType: "FREE_UNLOCK", amount: "1000" }]);
+    const box = await makeBox(pool.id, 1000);
+    const u = await makeUser();
+    await giveCredits(u.id, 1000);
+    const first = await playMysteryBox(u.id, { boxId: box.id, selectedIndex: 0, idempotencyKey: uid() });
+    expect(first).toMatchObject({ creditsSpent: 1000, freePlay: false, freePlaysLeft: 1, creditsBalance: "0" });
+    expect(first.reward).toMatchObject({ type: "FREE_UNLOCK", amount: "1" });
+
+    const key = uid();
+    const second = await playMysteryBox(u.id, { boxId: box.id, selectedIndex: 1, idempotencyKey: key });
+    expect(second).toMatchObject({ creditsSpent: 0, freePlay: true, freePlaysLeft: 1, creditsBalance: "0" });
+    await expect(playMysteryBox(u.id, { boxId: box.id, selectedIndex: 1, idempotencyKey: key })).resolves.toMatchObject({ replayed: true, freePlay: true, creditsSpent: 0 });
+    expect((await getBalances(u.id)).CREDITS).toBe(0n);
+  });
+
+  it("fills the jackpot meter, then auto-spins the box for free and starts the meter again", async () => {
+    const pool = await makePool("WEIGHTED", [{ label: "100 Credits", rewardType: "CREDITS", amount: "100" }]);
+    const box = await makeBox(pool.id, 1000, { jackpotPlays: 3, jackpotSpins: 4, dailyLimitPerUser: 4 });
+    const u = await makeUser();
+    await giveCredits(u.id, 4000);
+    const play = (key = uid()) => playMysteryBox(u.id, { boxId: box.id, selectedIndex: 0, idempotencyKey: key });
+    expect((await play()).meter).toEqual({ plays: 1, target: 3, spins: 4 });
+    expect((await play()).jackpot).toBeNull();
+    const key = uid();
+    const third = await play(key);
+    expect(third.jackpot?.spins).toHaveLength(4);
+    expect(third.jackpot?.spins.every((x) => x.reward.type === "CREDITS")).toBe(true);
+    expect(third.meter).toEqual({ plays: 0, target: 3, spins: 4 });
+    // 4,000 - 3 plays x 1,000 + 7 prizes x 100
+    expect((await getBalances(u.id)).CREDITS).toBe(1700n);
+    const again = await play(key);
+    expect(again).toMatchObject({ replayed: true, meter: { plays: 0 } });
+    expect(again.jackpot?.spins).toHaveLength(4);
+    expect((await getBalances(u.id)).CREDITS).toBe(1700n);
+    // Jackpot spins never count toward the daily limit or the meter.
+    expect((await play()).meter).toEqual({ plays: 1, target: 3, spins: 4 });
   });
 });
 

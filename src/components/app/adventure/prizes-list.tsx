@@ -7,10 +7,10 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { formatCredits } from "@/lib/money";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
-import type { PoolOdds } from "@/server/services/mystery-box";
+import type { PrizeList } from "@/server/services/mystery-box";
 import { LootToken } from "./loot";
 
-type Odd = PoolOdds[number];
+type Odd = PrizeList[number];
 
 /** Human label for a pool entry: Credits and Cash amounts are formatted for the viewer, items keep their label. */
 export function useOddLabel() {
@@ -36,47 +36,83 @@ export function RewardGlyph({ type, icon, rarity, size = "sm" }: { type: string;
   );
 }
 
-function chance(pct: number) {
-  return `${pct.toFixed(pct < 1 ? 2 : pct < 10 ? 1 : 0)}%`;
+export type PrizeKey = "loot" | "credits" | "cash" | "unlock";
+export type PrizeTile = { key: PrizeKey; type: string; icon: string; rarity: string | null; title: string; short: string; value: string };
+
+/** Maps a granted reward to the prize group it belongs to. */
+export function prizeKeyOf(type: string): PrizeKey {
+  return type === "CREDITS" ? "credits" : type === "CASH" ? "cash" : type === "FREE_UNLOCK" ? "unlock" : "loot";
 }
 
 /**
  * Everything a box can give, grouped the way players think about it: Loot on every open, plus one
- * lucky drop that is Credits, Cash or a Free unlock. Chances add up across a group's entries.
+ * lucky drop that is Credits, Cash or a Free unlock.
  */
-export function BoxContents({ rewards, loot, tone = "light", className }: { rewards: PoolOdds; loot: PoolOdds; tone?: "light" | "dark"; className?: string }) {
+export function usePrizeTiles(rewards: PrizeList, loot: PrizeList): PrizeTile[] {
   const fmt = useFormatCash();
   const group = (type: string) => {
     const rows = rewards.filter((o) => o.type === type);
     if (!rows.length) return null;
     const amounts = rows.map((o) => Number(o.amount));
-    return { pct: rows.reduce((s, o) => s + o.pct, 0), min: Math.min(...amounts), max: Math.max(...amounts) };
+    return { min: Math.min(...amounts), max: Math.max(...amounts) };
   };
   const credits = group("CREDITS");
   const cash = group("CASH");
   const unlock = group("FREE_UNLOCK");
   const lootQty = loot.map((o) => Math.max(1, Math.floor(Number(o.amount) || 1)));
-  const dark = tone === "dark";
 
-  const tiles: { key: string; type: string; icon: string; title: string; value: string; odds: string }[] = [];
+  const tiles: PrizeTile[] = [];
   if (loot.length) {
     const lo = Math.min(...lootQty);
     const hi = Math.max(...lootQty);
-    tiles.push({ key: "loot", type: "ITEM", icon: loot[0].icon, title: "Loot", value: lo === hi ? `${lo} pieces` : `${lo}-${hi} pieces`, odds: "Every box" });
+    tiles.push({ key: "loot", type: "ITEM", icon: loot[0].icon, rarity: loot[0].rarity, title: "Loot", short: "Loot", value: lo === hi ? `${lo} pieces` : `${lo}-${hi} pieces` });
   }
-  if (credits) tiles.push({ key: "credits", type: "CREDITS", icon: "", title: "Free Credits", value: `${formatCredits(credits.min)}-${formatCredits(credits.max)}`, odds: `${chance(credits.pct)} chance` });
-  if (cash) tiles.push({ key: "cash", type: "CASH", icon: "", title: "Free Cash", value: `${fmt(String(cash.min))}-${fmt(String(cash.max))}`, odds: `${chance(cash.pct)} chance` });
-  if (unlock) tiles.push({ key: "unlock", type: "FREE_UNLOCK", icon: "", title: "Free unlock", value: "Fills your next chest", odds: `${chance(unlock.pct)} chance` });
+  if (credits)
+    tiles.push({ key: "credits", type: "CREDITS", icon: "", rarity: null, title: "Free Credits", short: "Credits", value: `${formatCredits(credits.min)}-${formatCredits(credits.max)}` });
+  if (cash) tiles.push({ key: "cash", type: "CASH", icon: "", rarity: null, title: "Free Cash", short: "Cash", value: `${fmt(String(cash.min))}-${fmt(String(cash.max))}` });
+  if (unlock) tiles.push({ key: "unlock", type: "FREE_UNLOCK", icon: "", rarity: null, title: "Free unlock", short: "Unlock", value: "Free play" });
+  return tiles;
+}
+
+export function BoxContents({
+  rewards,
+  loot,
+  tone = "light",
+  compact = false,
+  className,
+}: {
+  rewards: PrizeList;
+  loot: PrizeList;
+  tone?: "light" | "dark";
+  /** One row of icons with a short name and amount. */
+  compact?: boolean;
+  className?: string;
+}) {
+  const tiles = usePrizeTiles(rewards, loot);
+  const dark = tone === "dark";
+
+  if (compact) {
+    return (
+      <ul className={cn("grid grid-cols-4 gap-1.5", className)}>
+        {tiles.map((t) => (
+          <li key={t.key} className="flex flex-col items-center gap-1 rounded-2xl bg-surface px-1 py-2 text-center">
+            <RewardGlyph type={t.type} icon={t.icon} rarity={t.rarity} size="sm" />
+            <span className="text-xs leading-none font-bold">{t.short}</span>
+            <span className="max-w-full truncate text-[11px] leading-none font-semibold text-muted-foreground tabular">{t.key === "loot" ? "Always" : t.value}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
   return (
     <ul className={cn("grid grid-cols-2 gap-2", className)}>
       {tiles.map((t) => (
         <li key={t.key} className={cn("flex min-h-16 items-center gap-2.5 rounded-2xl p-2.5", dark ? "bg-white/10 ring-1 ring-white/10" : "border bg-card")}>
-          <RewardGlyph type={t.type} icon={t.icon} rarity={t.type === "ITEM" ? loot[0]?.rarity : null} size="sm" />
+          <RewardGlyph type={t.type} icon={t.icon} rarity={t.rarity} size="sm" />
           <span className="min-w-0">
             <span className="block text-sm leading-tight font-bold">{t.title}</span>
             <span className={cn("block truncate text-xs tabular", dark ? "text-white/75" : "text-muted-foreground")}>{t.value}</span>
-            <span className={cn("block text-[11px] font-semibold tabular", dark ? "text-amber-200" : "text-primary")}>{t.odds}</span>
           </span>
         </li>
       ))}
@@ -84,20 +120,19 @@ export function BoxContents({ rewards, loot, tone = "light", className }: { rewa
   );
 }
 
-function OddsList({ odds }: { odds: PoolOdds }) {
+function PrizeRows({ prizes }: { prizes: PrizeList }) {
   const label = useOddLabel();
   return (
     <ul className="space-y-2">
-      {odds.map((o) => {
+      {prizes.map((o) => {
         const r = rarityOf(o.rarity);
         return (
           <li key={o.id} className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-2.5">
             <RewardGlyph type={o.type} icon={o.icon} rarity={o.rarity} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{label(o)}</span>
-              <span className={cn("text-xs font-semibold", r.text)}>{o.type === "FREE_UNLOCK" ? "Fills your next chest for free" : r.label}</span>
+              <span className={cn("text-xs font-semibold", r.text)}>{o.type === "FREE_UNLOCK" ? "Play this box again for free" : r.label}</span>
             </span>
-            <span className="text-sm font-bold tabular">{o.pct.toFixed(o.pct < 1 ? 2 : 1)}%</span>
           </li>
         );
       })}
@@ -105,36 +140,36 @@ function OddsList({ odds }: { odds: PoolOdds }) {
   );
 }
 
-/** "View prizes & odds" for an adventure box: the guaranteed Loot drop and the lucky drop table. */
-export function BoxOddsSheet({ name, rewards, loot, trigger }: { name: string; rewards: PoolOdds; loot: PoolOdds; trigger?: ReactNode }) {
+/** "View prizes" for an adventure box: the guaranteed Loot drop and every possible lucky drop. */
+export function BoxPrizesSheet({ name, rewards, loot, trigger }: { name: string; rewards: PrizeList; loot: PrizeList; trigger?: ReactNode }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
         {trigger ?? (
           <button type="button" className="mx-auto flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-primary hover:bg-brand-soft">
             <Info className="size-4" aria-hidden />
-            View prizes & odds
+            View prizes
           </button>
         )}
       </SheetTrigger>
       <SheetContent side="bottom">
         <SheetHeader>
-          <SheetTitle className="font-heading text-xl">{name}: prizes & odds</SheetTitle>
+          <SheetTitle className="font-heading text-xl">{name}: prizes</SheetTitle>
           <SheetDescription>Every box contains one Loot drop and one lucky drop. Both are drawn separately on our servers when you open it.</SheetDescription>
         </SheetHeader>
         <div className="max-h-[60vh] space-y-5 overflow-y-auto px-4 pb-4">
           {loot.length > 0 && (
             <section>
               <h3 className="mb-2 text-sm font-bold">Loot drop (guaranteed)</h3>
-              <OddsList odds={loot} />
+              <PrizeRows prizes={loot} />
             </section>
           )}
           <section>
             <h3 className="mb-2 text-sm font-bold">Lucky drop: Credits, Cash or a Free unlock</h3>
-            <OddsList odds={rewards} />
+            <PrizeRows prizes={rewards} />
           </section>
           <p className="text-xs text-muted-foreground">
-            Percentages are the chance on every single open. Past results never change the odds. A Free unlock adds exactly the Loot you need to open your next map or checkpoint; if there&apos;s nothing left to unlock, it pays out in Credits instead. Loot stays in your collection: unlocking maps and checkpoints never uses it up.
+            A Free unlock lets you open the same box one more time for free. Loot stays in your collection: unlocking maps and checkpoints never uses it up.
           </p>
         </div>
       </SheetContent>

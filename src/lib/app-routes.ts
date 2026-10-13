@@ -13,6 +13,7 @@ export type RootRoute = (typeof ROOT_ROUTES)[number];
 const LABELS: Record<string, string> = {
   "/home": "Home",
   "/market": "Market",
+  "/market/sell": "Sell items",
   "/play": "Play",
   "/daily": "Daily",
   "/account": "Account",
@@ -34,6 +35,7 @@ const LABELS: Record<string, string> = {
 const PARENTS: [pattern: string, parent: string][] = [
   ["/play/mystery-box/history", "/play/mystery-box"],
   ["/play/*", "/play"],
+  ["/market/*", "/market"],
   ["/daily/*", "/daily"],
   ["/daily", "/home"],
   ["/collections/*", "/collections"],

@@ -31,7 +31,7 @@ export default async function PrizesPage() {
           <div className="min-w-0">
             <p className="text-xs font-bold text-amber-200">Puzzle pieces</p>
             <p className="font-heading text-3xl leading-tight font-extrabold tabular">{s.totalPieces}</p>
-            <p className="text-xs leading-snug text-white/75">Open the Big Mystery Box at the end of each map to find pieces. Pieces fill puzzles in level order.</p>
+            <p className="text-xs leading-snug text-white/75">Each map&apos;s Big Mystery Box drops 1 to 3 pieces of that level&apos;s prize. Complete the picture to unlock it.</p>
           </div>
         </div>
       </Section>
@@ -41,7 +41,7 @@ export default async function PrizesPage() {
         ) : (
           <div className="space-y-4">
             {featured.map((p) => (
-              <PuzzleCard key={p.id} puzzle={p} wheel={s.wheel} verified={user.verificationStatus === "VERIFIED"} enabled={enabled} />
+              <PuzzleCard key={p.id} puzzle={p} verified={user.verificationStatus === "VERIFIED"} enabled={enabled} />
             ))}
             {upcoming.length > 0 && (
               <div className="space-y-2">
@@ -57,7 +57,7 @@ export default async function PrizesPage() {
         )}
         <p className="mt-4 flex items-start gap-2 text-xs leading-snug text-muted-foreground">
           <Puzzle className="mt-0.5 size-4 shrink-0" aria-hidden />
-          A puzzle is complete when it has every piece and its map is finished. The Final Prize Unlock result is decided on our servers using the published odds.
+          A puzzle is complete when it has every piece and its map is finished. The Final Prize Unlock result is decided securely on our servers.
         </p>
       </Section>
     </div>

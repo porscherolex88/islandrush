@@ -6,13 +6,27 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { title: "Box", art: "/illustrations/3d/crate.webp", body: "Pick a Mystery Box for your level and choose one of nine spots. Every box shows its prizes and odds first." },
-  { title: "Loot", art: "/illustrations/3d/coins.webp", body: "Each box pays out Loot for that level's map, plus a lucky drop: free Credits, free Cash or a Free unlock that fills your next chest." },
-  { title: "Map", art: "/illustrations/3d/map-scroll.webp", body: "Collect enough Loot and the level's illustrated map unlocks. Ten islands, each with its own trail." },
-  { title: "Checkpoints", art: "/illustrations/3d/checkpoint.webp", body: "Keep collecting to move from checkpoint to checkpoint until you reach the final destination." },
-  { title: "Big Box", art: "/illustrations/3d/big-box.webp", body: "The last checkpoint opens the Big Mystery Box, holding one to three puzzle pieces." },
-  { title: "Puzzle", art: "/illustrations/3d/puzzle.webp", body: "Every level has a prize puzzle. Fit the pieces together to complete it." },
-  { title: "Prize", art: "/illustrations/3d/prize-gift.webp", body: "A finished puzzle unlocks that level's prize. Then the next island opens up." },
+  {
+    title: "Box",
+    art: "/illustrations/3d/crate.webp",
+    body: "Open a Mystery Box for your level. Every box drops Loot for your map, and you can win smaller prizes along the way. Prizes are shown before you open.",
+    perksLabel: "Win along the way",
+    perks: ["Credits", "Cash", "Loot", "Collectible items"],
+  },
+  {
+    title: "Map",
+    art: "/illustrations/3d/map-scroll.webp",
+    body: "Your Loot moves you across the level's map, checkpoint by checkpoint. Reach the final checkpoint to open the Big Box and collect puzzle pieces.",
+    perksLabel: null,
+    perks: [],
+  },
+  {
+    title: "Puzzle",
+    art: "/illustrations/3d/puzzle.webp",
+    body: "Fit the pieces together to complete the level's puzzle and unlock its big prize. Then the next island opens up.",
+    perksLabel: "Big prizes like",
+    perks: ["Rolex", "Tesla", "Big cash prizes"],
+  },
 ] as const;
 
 /** One step's artwork inside the shared panel. */
@@ -31,7 +45,7 @@ function Panel({ className, children }: { className?: string; children: React.Re
 function Step({ i, active }: { i: number; active: boolean }) {
   const s = STEPS[i];
   return (
-    <li className="relative flex gap-4 pb-8 last:pb-0 sm:gap-5 lg:min-h-[24vh] lg:pb-0">
+    <li className="relative flex gap-4 pb-8 last:pb-0 sm:gap-5 lg:min-h-[45vh] lg:pb-0 lg:last:min-h-[30vh]">
       <div className="flex flex-col items-center">
         <span
           className={cn(
@@ -46,6 +60,18 @@ function Step({ i, active }: { i: number; active: boolean }) {
       <div className="min-w-0 flex-1 pt-1 pb-2">
         <h3 className={cn("text-2xl font-extrabold transition-colors duration-300 lg:text-3xl", active ? "text-foreground" : "text-foreground lg:text-muted-foreground")}>{s.title}</h3>
         <p className={cn("mt-1.5 max-w-md text-muted-foreground transition-opacity duration-300 lg:mt-2 lg:text-lg", !active && "lg:opacity-60")}>{s.body}</p>
+        {s.perks.length > 0 && (
+          <div className={cn("mt-3 transition-opacity duration-300 lg:mt-4", !active && "lg:opacity-60")}>
+            <p className="text-xs font-semibold text-muted-foreground">{s.perksLabel}</p>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {s.perks.map((p) => (
+                <li key={p} className="rounded-full bg-brand-soft px-3 py-1 text-sm font-semibold text-primary">
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <Panel className="mt-4 aspect-[16/10] w-full max-w-md lg:hidden">
           <StepArt step={s} sizes="(min-width: 640px) 448px, 90vw" />
         </Panel>
@@ -54,7 +80,7 @@ function Step({ i, active }: { i: number; active: boolean }) {
   );
 }
 
-/** The seven-step loop of every level. On large screens the artwork stays pinned and swaps as each step reaches the middle of the viewport. */
+/** The three-step loop of every level. On large screens the artwork stays pinned and swaps as each step reaches the middle of the viewport. */
 export function LoopJourney() {
   const [active, setActive] = useState(0);
   const list = useRef<HTMLOListElement>(null);

@@ -36,7 +36,7 @@ export default async function PoolPage({ params }: PageProps<"/admin/economy/poo
       db
         .select({ id: s.dailySchedules.id, name: sql<string>`${s.dailySchedules.day}::text` })
         .from(s.dailySchedules)
-        .where(or(eq(s.dailySchedules.spinPoolId, id), eq(s.dailySchedules.eventPoolId, id), eq(s.dailySchedules.missionBonusPoolId, id)))
+        .where(or(eq(s.dailySchedules.spinPoolId, id), eq(s.dailySchedules.missionBonusPoolId, id)))
         .then((r) => r.map((x) => ({ ...x, kind: "Daily schedule", href: `/admin/daily/${x.id}` }))),
     ]).then((groups) => groups.flat()),
   ]);

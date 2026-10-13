@@ -52,19 +52,23 @@ export function isValidPercentSplit(values: number[]): boolean {
 export type PuzzleSlot = { id: string; level: number; piecesRequired: number };
 
 /**
- * Splits a running total of pieces across puzzles in level order. Puzzle N shows
- * the pieces left over after puzzles before it are full, capped at its own size.
+ * Each puzzle collects the pieces found in its own level's Big Mystery Boxes, capped at its size.
+ * Pieces are never shared between levels.
  */
-export function allocatePieces<T extends PuzzleSlot>(puzzles: T[], totalPieces: number) {
-  let before = 0;
+export function allocatePieces<T extends PuzzleSlot>(puzzles: T[], piecesByLevel: Map<number, number>) {
   return [...puzzles]
     .sort((a, b) => a.level - b.level)
     .map((p) => {
-      const have = Math.max(0, Math.min(p.piecesRequired, totalPieces - before));
-      const out = { ...p, piecesBefore: before, piecesHave: have, piecesFull: have >= p.piecesRequired };
-      before += p.piecesRequired;
-      return out;
+      const found = piecesByLevel.get(p.level) ?? 0;
+      const have = Math.max(0, Math.min(p.piecesRequired, found));
+      return { ...p, piecesFound: found, piecesHave: have, piecesFull: have >= p.piecesRequired };
     });
+}
+
+/** Puzzle sizes that form a square grid (9 is 3x3) show as one; others wrap in rows of up to 5. */
+export function puzzleColumns(pieces: number) {
+  const side = Math.round(Math.sqrt(pieces));
+  return side * side === pieces ? side : Math.min(5, Math.max(1, pieces));
 }
 
 export type CheckpointState = "locked" | "available" | "completed";

@@ -9,7 +9,7 @@ const EVERGREEN: PromoItem[] = [
   { id: "spin", title: "Free daily spin for every player", link: "/register" },
   { id: "streak", title: "Streak rewards on day 3 and day 7, every week", link: "/rewards" },
   { id: "refer", title: "Invite a friend, earn a reward on their first deposit", link: "/referrals" },
-  { id: "odds", title: "Every Mystery Box shows its odds before you open it", link: "/games" },
+  { id: "prizes", title: "See every prize before you open a Mystery Box", link: "/games" },
 ];
 
 export function PromoTicker({ banners }: { banners: PromoItem[] }) {

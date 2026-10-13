@@ -4,11 +4,11 @@ import { Info } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { rarityOf } from "@/lib/rarity";
 import { cn } from "@/lib/utils";
-import type { PoolOdds } from "@/server/services/mystery-box";
+import type { PrizeList } from "@/server/services/mystery-box";
 import { Token } from "./art";
 
-/** Prize pool and odds, kept one tap away instead of crowding the play screen. */
-export function OddsSheet({ odds, label = "View prizes & odds", title = "Prize pool", description, className }: { odds: PoolOdds; label?: string; title?: string; description: string; className?: string }) {
+/** Prize pool, kept one tap away instead of crowding the play screen. */
+export function PrizesSheet({ prizes, label = "View prizes", title = "Prize pool", description, className }: { prizes: PrizeList; label?: string; title?: string; description: string; className?: string }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -23,7 +23,7 @@ export function OddsSheet({ odds, label = "View prizes & odds", title = "Prize p
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
         <ul className="space-y-2 px-4 pb-4">
-          {odds.map((o) => {
+          {prizes.map((o) => {
             const r = rarityOf(o.rarity);
             return (
               <li key={o.id} className="flex items-center gap-3 rounded-2xl border bg-card p-2.5">
@@ -32,12 +32,11 @@ export function OddsSheet({ odds, label = "View prizes & odds", title = "Prize p
                   <span className="block truncate text-sm font-semibold">{o.label}</span>
                   <span className={cn("text-xs font-semibold", r.text)}>{r.label}</span>
                 </span>
-                <span className="text-sm font-bold tabular">{o.pct.toFixed(o.pct < 1 ? 2 : 1)}%</span>
               </li>
             );
           })}
         </ul>
-        <p className="px-4 pb-6 text-xs text-muted-foreground">Results are decided securely on our servers at the moment you play. Percentages are the chance of each prize on every single play.</p>
+        <p className="px-4 pb-6 text-xs text-muted-foreground">Results are decided securely on our servers at the moment you play.</p>
       </SheetContent>
     </Sheet>
   );

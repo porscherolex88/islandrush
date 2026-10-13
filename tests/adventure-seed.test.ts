@@ -26,6 +26,6 @@ describe("adventure seed content", () => {
       const ys = m.checkpoints.map((c) => c.posY);
       expect(ys).toEqual([...ys].sort((a, b) => b - a));
     }
-    expect(state.wheel).toEqual({ active: true, prizeUnlockPct: 90, alternativePct: 10 });
+    expect(state.wheel).toEqual({ active: true });
   });
 });

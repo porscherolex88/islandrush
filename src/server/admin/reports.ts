@@ -293,23 +293,19 @@ export const REPORTS: ReportDef[] = [
     key: "daily",
     group: "games",
     label: "Daily activity",
-    description: "Check-ins, spins, mission bonuses and Mystery events per day.",
+    description: "Check-ins, spins and mission bonuses per day.",
     permission: "reports.view",
     columns: [
       { key: "day", label: "Day", format: "date" },
       { key: "checkins", label: "Check-ins", format: "int" },
       { key: "spins", label: "Spins", format: "int" },
       { key: "bonuses", label: "Mission bonuses", format: "int" },
-      { key: "events", label: "Event plays", format: "int" },
-      { key: "event_spent", label: "Event Credits", format: "credits" },
     ],
     query: (r) => sql`
       select d as day,
         (select count(*)::int from daily_logins where day = d) as checkins,
         (select count(*)::int from daily_spins where day = d) as spins,
-        (select count(*)::int from mission_bonus_claims where day = d) as bonuses,
-        (select count(*)::int from daily_event_claims where day = d) as events,
-        (select coalesce(sum(credits_spent), 0) from daily_event_claims where day = d) as event_spent
+        (select count(*)::int from mission_bonus_claims where day = d) as bonuses
       from ${days(r)} order by d`,
   },
   /* ------------------------------- Collections ------------------------------ */
@@ -544,14 +540,12 @@ export const REPORTS: ReportDef[] = [
       { key: "box_players", label: "Mystery Box", format: "int" },
       { key: "map_players", label: "Map", format: "int" },
       { key: "spin_players", label: "Daily Spin", format: "int" },
-      { key: "event_players", label: "Mystery events", format: "int" },
     ],
     query: (r) => sql`
       select d as day,
         (select count(distinct user_id)::int from mystery_box_plays where app_day = d) as box_players,
         (select count(distinct user_id)::int from tile_discoveries where app_day = d) as map_players,
-        (select count(distinct user_id)::int from daily_spins where day = d) as spin_players,
-        (select count(distinct user_id)::int from daily_event_claims where day = d) as event_players
+        (select count(distinct user_id)::int from daily_spins where day = d) as spin_players
       from ${days(r)} order by d`,
   },
 ];

@@ -2,19 +2,16 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { Check, Flame, Gift, Loader2, Sparkles } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAction } from "@/hooks/use-action";
-import { formatCredits } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import { claimEventAction, claimLoginAction, claimMissionBonusAction, spinAction } from "@/server/actions/games";
-import type { PoolOdds } from "@/server/services/mystery-box";
+import { claimLoginAction, claimMissionBonusAction, spinAction } from "@/server/actions/games";
+import type { PrizeList } from "@/server/services/mystery-box";
 import type { RewardResult } from "@/server/services/rewards";
-import { ART } from "./art";
-import { OddsSheet } from "./odds-sheet";
+import { PrizesSheet } from "./prizes-sheet";
 import { RewardChip, RewardReveal } from "./reward-reveal";
 
 export function CheckInCard({ claimed, streak }: { claimed: boolean; streak: number }) {
@@ -63,7 +60,7 @@ const px = (n: number) => Math.round(n * 1000) / 1000;
 
 const WHEEL_COLORS = ["var(--ocean-deep)", "var(--gold)", "var(--ocean)", "var(--gold-soft)"];
 
-export function SpinWheel({ entries, spun, available, boosted }: { entries: PoolOdds; spun: RewardResult | null; available: boolean; boosted: boolean }) {
+export function SpinWheel({ entries, spun, available, boosted }: { entries: PrizeList; spun: RewardResult | null; available: boolean; boosted: boolean }) {
   const reduce = useReducedMotion();
   const router = useRouter();
   const [rotation, setRotation] = useState(0);
@@ -158,7 +155,7 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Pool
           </Button>
         )}
       </div>
-      <OddsSheet odds={segs} label="View prizes & odds" title="Spin prizes" description="The chance of each prize on today's free spin." className="mt-2" />
+      <PrizesSheet prizes={segs} label="View prizes" title="Spin prizes" description="Everything you can win on today's free spin." className="mt-2" />
       <RewardReveal
         open={revealOpen}
         onClose={() => {
@@ -184,39 +181,5 @@ export function MissionBonusButton({ done, total, claimed }: { done: number; tot
       </Button>
       <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title="All missions complete" rewards={reveal?.rewards ?? []} />
     </>
-  );
-}
-
-export function MysteryEventCard({ event, claim }: { event: { title: string; description: string; icon: string; costCredits: number } | null; claim: RewardResult | null }) {
-  const [reveal, setReveal] = useState<{ reward: RewardResult } | null>(null);
-  const { run, pending } = useAction(claimEventAction, { onSuccess: (d) => setReveal(d) });
-  if (!event) {
-    return <p className="rounded-3xl border border-dashed p-5 text-center text-sm text-muted-foreground">No mystery today. Check back tomorrow.</p>;
-  }
-  const current = reveal?.reward ?? claim;
-  return (
-    <div className="relative isolate overflow-hidden rounded-3xl bg-ocean-deep text-white">
-      <Image src={ART.tidePool} alt="" fill sizes="(max-width: 430px) 100vw, 430px" className="-z-10 object-cover" />
-      <div aria-hidden className="art-scrim absolute inset-0 -z-10" />
-      <div className="flex min-h-56 flex-col justify-end p-5">
-        <p className="text-xs font-bold text-amber-200">Today&apos;s mystery</p>
-        <p className="max-w-[70%] font-heading text-2xl font-extrabold">{event.title}</p>
-        <p className="max-w-[65%] text-sm text-white/85">{event.description}</p>
-        <div className="mt-4">
-          {current ? (
-            <div className="flex w-fit items-center gap-2 rounded-full bg-white/15 py-1 pr-1 pl-3 backdrop-blur">
-              <span className="text-sm">You found</span>
-              <RewardChip reward={current} />
-            </div>
-          ) : (
-            <Button size="pill" variant="gold" className={cn("w-full max-w-60")} onClick={() => run()} disabled={pending}>
-              {pending && <Loader2 className="animate-spin" />}
-              {event.costCredits > 0 ? `Explore for ${formatCredits(event.costCredits)} Credits` : "Explore for free"}
-            </Button>
-          )}
-        </div>
-      </div>
-      <RewardReveal open={Boolean(reveal)} onClose={() => setReveal(null)} title={event.title} rewards={reveal ? [reveal.reward] : []} />
-    </div>
   );
 }

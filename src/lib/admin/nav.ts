@@ -60,7 +60,6 @@ export const ADMIN_NAV: NavGroup[] = [
       { label: "Legacy Vaults", href: m("vaults"), permission: "games.manage" },
       { label: "Daily Spin", href: "/admin/daily?focus=spin", permission: "daily.manage" },
       { label: "Daily Missions", href: m("missions"), permission: "daily.manage" },
-      { label: "Daily Mystery Events", href: "/admin/daily?focus=event", permission: "daily.manage" },
       { label: "Streaks", href: m("streakMilestones"), permission: "daily.manage" },
     ],
   },

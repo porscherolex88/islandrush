@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { dailySchedules } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits } from "@/lib/money";
 import { one } from "@/server/admin/queries";
 import { getDailyPlan } from "@/server/services/daily";
 
@@ -24,11 +23,9 @@ export default async function DailySchedulePage({ params }: PageProps<"/admin/da
   if (!s) notFound();
   const [plan, stats] = await Promise.all([
     getDailyPlan(s.day, db, { includeDrafts: true }),
-    one<{ logins: number; spins: number; events: number; event_spent: string; bonus: number }>(sql`
+    one<{ logins: number; spins: number; bonus: number }>(sql`
       select (select count(*)::int from daily_logins where day = ${s.day}) as logins,
         (select count(*)::int from daily_spins where day = ${s.day}) as spins,
-        (select count(*)::int from daily_event_claims where day = ${s.day}) as events,
-        (select coalesce(sum(credits_spent), 0)::text from daily_event_claims where day = ${s.day}) as event_spent,
         (select count(*)::int from mission_bonus_claims where day = ${s.day}) as bonus`),
   ]);
   const back = `/admin/daily/${id}`;
@@ -47,12 +44,10 @@ export default async function DailySchedulePage({ params }: PageProps<"/admin/da
         </>
       }
     >
-      <StatGrid cols={5}>
+      <StatGrid cols={3}>
         <StatsCard label="Check-ins" value={stats.logins} />
         <StatsCard label="Spins" value={stats.spins} />
         <StatsCard label="Mission bonuses" value={stats.bonus} />
-        <StatsCard label="Event plays" value={stats.events} />
-        <StatsCard label="Event Credits" value={formatCredits(stats.event_spent)} />
       </StatGrid>
       <div className="grid gap-4 xl:grid-cols-[1.3fr_1fr]">
         <AdminCard title="Schedule">

@@ -137,6 +137,8 @@ const VALIDATORS: Partial<Record<ResourceKey, (v: Values) => void>> = {
   },
   boxes: (v) => {
     if (Number(v.priceCredits) <= 0) throw new AppError("Price must be greater than zero");
+    if (!Number.isInteger(Number(v.jackpotPlays ?? 50)) || Number(v.jackpotPlays ?? 50) < 0) throw new AppError("Plays to the jackpot must be 0 or more");
+    if (!Number.isInteger(Number(v.jackpotSpins ?? 10)) || Number(v.jackpotSpins ?? 10) < 1 || Number(v.jackpotSpins ?? 10) > 50) throw new AppError("Jackpot free spins must be 1-50");
     if (v.level != null) {
       if (!levelOk(v.level)) throw new AppError(`Adventure level must be 1-${ADVENTURE_LEVELS}`);
       if (v.requiresMapLevel != null && Number(v.requiresMapLevel) >= Number(v.level)) throw new AppError("A box can only require an earlier map");

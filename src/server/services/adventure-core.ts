@@ -1,6 +1,6 @@
-import { and, asc, eq, gt, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, lt, sql } from "drizzle-orm";
 import type { DbOrTx } from "@/db";
-import { gameEvents, inventory, items, mapCheckpoints, maps, userCheckpoints, userMapProgress } from "@/db/schema";
+import { bigBoxOpenings, bigMysteryBoxes, gameEvents, inventory, items, maps, userMapProgress } from "@/db/schema";
 
 export type GameEventType = (typeof gameEvents.$inferInsert)["type"];
 
@@ -59,67 +59,59 @@ export async function lootCollected(tx: DbOrTx, userId: string, level: number) {
   return (await lootCollectedByLevel(tx, userId)).get(level) ?? 0;
 }
 
-/** The adventure level the player is working on: the lowest published map they haven't completed. */
-export async function currentAdventureLevel(tx: DbOrTx, userId: string): Promise<number | null> {
-  const [levels, done] = await Promise.all([
-    tx.select({ level: maps.level }).from(maps).where(and(eq(maps.status, "PUBLISHED"), isNotNull(maps.level))).orderBy(asc(maps.level)),
-    completedMapLevels(tx, userId),
-  ]);
-  return (levels.find((m) => !done.has(m.level as number))?.level as number | undefined) ?? null;
-}
-
 /**
- * What a Free unlock grants on a map level: enough of the map's primary Loot to reach the next
- * milestone above the player's total (the map unlock, then each checkpoint chest in order).
- * Returns null when nothing is left to unlock on that map.
+ * Whether the previous map has been won: its final checkpoint is reached and its Big Mystery Box
+ * opened (or it has no active Big Mystery Box). Winning it is what unlocks the next map.
  */
-export async function freeUnlockFill(tx: DbOrTx, userId: string, level: number) {
-  const [map] = await tx
-    .select()
-    .from(maps)
-    .where(and(eq(maps.level, level), eq(maps.status, "PUBLISHED")))
-    .limit(1);
-  if (!map) return null;
-  const [[prev], [progress], cps, done, [item], loot] = await Promise.all([
-    tx
-      .select({ id: maps.id })
-      .from(maps)
-      .where(and(eq(maps.status, "PUBLISHED"), isNotNull(maps.level), lt(maps.level, level)))
-      .limit(1),
+export async function mapWon(tx: DbOrTx, userId: string, map: { id: string }) {
+  const [[prog], [bb], [opening]] = await Promise.all([
     tx
       .select({ completedAt: userMapProgress.completedAt })
       .from(userMapProgress)
       .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)))
       .limit(1),
+    tx.select({ active: bigMysteryBoxes.active }).from(bigMysteryBoxes).where(eq(bigMysteryBoxes.mapId, map.id)).limit(1),
     tx
-      .select({ id: mapCheckpoints.id, lootRequired: mapCheckpoints.lootRequired })
-      .from(mapCheckpoints)
-      .where(and(eq(mapCheckpoints.mapId, map.id), eq(mapCheckpoints.status, "PUBLISHED"))),
-    tx.select({ id: userCheckpoints.checkpointId }).from(userCheckpoints).where(and(eq(userCheckpoints.userId, userId), eq(userCheckpoints.mapId, map.id))),
-    tx
-      .select({ id: items.id, name: items.name, icon: items.icon })
-      .from(items)
-      .where(and(eq(items.kind, "LOOT"), eq(items.adventureLevel, level), eq(items.status, "PUBLISHED")))
-      .orderBy(asc(items.sortOrder))
+      .select({ id: bigBoxOpenings.id })
+      .from(bigBoxOpenings)
+      .where(and(eq(bigBoxOpenings.userId, userId), eq(bigBoxOpenings.mapId, map.id)))
       .limit(1),
-    lootCollected(tx, userId, level),
   ]);
-  if (!item || progress?.completedAt) return null;
-  const doneIds = new Set(done.map((d) => d.id));
-  const milestones = cps.filter((c) => !doneIds.has(c.id)).map((c) => c.lootRequired);
-  if (prev && !progress) milestones.push(map.lootRequired);
-  const target = Math.min(...milestones.filter((m) => m > loot));
-  if (!Number.isFinite(target)) return null;
-  return { item, mapName: map.name, need: target - loot };
+  return Boolean(prog?.completedAt) && (Boolean(opening) || !bb?.active);
 }
 
-/** Explains why a box level is locked, or returns null when the player may open it. */
+/**
+ * Explains why a box is locked, or returns null when the player may open it. A level's box opens
+ * together with that level's map and stays open for good, so players can keep opening it.
+ */
 export async function boxLockReason(tx: DbOrTx, userId: string, box: { level: number | null; requiresMapLevel: number | null }): Promise<string | null> {
-  if (box.level === null && box.requiresMapLevel === null) return null;
-  const done = await completedMapLevels(tx, userId);
-  // A level's box retires once its map is complete: its Loot can no longer move the player forward.
-  if (box.level !== null && done.has(box.level)) return `You've completed Map ${box.level}. Continue your adventure with the next Mystery Box.`;
-  if (box.requiresMapLevel === null || done.has(box.requiresMapLevel)) return null;
+  if (box.level !== null) {
+    const [map] = await tx
+      .select({ id: maps.id, name: maps.name })
+      .from(maps)
+      .where(and(eq(maps.level, box.level), eq(maps.status, "PUBLISHED")))
+      .limit(1);
+    if (map) {
+      const [[prog], [prev]] = await Promise.all([
+        tx
+          .select({ level: userMapProgress.level })
+          .from(userMapProgress)
+          .where(and(eq(userMapProgress.userId, userId), eq(userMapProgress.mapId, map.id)))
+          .limit(1),
+        tx
+          .select({ id: maps.id, level: maps.level })
+          .from(maps)
+          .where(and(eq(maps.status, "PUBLISHED"), isNotNull(maps.level), lt(maps.level, box.level)))
+          .orderBy(desc(maps.level))
+          .limit(1),
+      ]);
+      if (prog || !prev) return null;
+      return (await mapWon(tx, userId, prev))
+        ? `Unlock Map ${box.level} (${map.name}) to open this box`
+        : `Win the Big Mystery Box on Map ${prev.level} to unlock Map ${box.level} and this box`;
+    }
+  }
+  if (box.requiresMapLevel === null || (await completedMapLevels(tx, userId)).has(box.requiresMapLevel)) return null;
   const [map] = await tx.select({ name: maps.name }).from(maps).where(eq(maps.level, box.requiresMapLevel)).limit(1);
   return `Complete Map ${box.requiresMapLevel}${map ? ` (${map.name})` : ""} to unlock this box`;
 }

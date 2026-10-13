@@ -11,10 +11,25 @@ export const ART = {
   crate3d: "/illustrations/3d/crate.webp",
   crateOpen: "/illustrations/crate-open.webp",
   island: "/illustrations/island-map.webp",
-  tidePool: "/illustrations/tide-pool.webp",
   bigBox: "/illustrations/adventure/big-box.webp",
   boxHub: "/illustrations/box-hub.webp",
 } as const;
+
+/** Default chest for an adventure level's Mystery Box, used when a box has no custom artwork. */
+export function boxArt(level: number | null | undefined, artwork?: string | null) {
+  if (artwork) return artwork;
+  if (!level) return ART.crate3d;
+  return `/illustrations/boxes/chest-${((Math.max(1, level) - 1) % 10) + 1}.webp`;
+}
+
+/**
+ * Opened version of a level's default chest, drawn on a square canvas with the chest 640/720 wide
+ * and 20/720 above the bottom edge. Custom artwork has no open state, so it returns null.
+ */
+export function boxOpenArt(level: number | null | undefined, artwork?: string | null) {
+  if (artwork || !level) return null;
+  return `/illustrations/boxes/chest-${((Math.max(1, level) - 1) % 10) + 1}-open.webp`;
+}
 
 /** Default illustrated map for an adventure level, used when a map has no custom artwork. */
 export function mapArt(level: number, artwork?: string | null) {
@@ -117,7 +132,7 @@ export function Token({
   );
 }
 
-/** Compact tappable row used for "Today's progress" and "Continue your journey" lists. */
+/** Compact tappable row used in the "Today's progress" list. */
 export function StatRow({ href, icon, label, value, done, className }: { href: string; icon: ReactNode; label: string; value: ReactNode; done?: boolean; className?: string }) {
   return (
     <Link href={href} className={cn("flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 transition-colors hover:bg-surface", className)}>

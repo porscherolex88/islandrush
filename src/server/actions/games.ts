@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { userAction } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
-import { claimPrize, openBigBox, spinPrizeWheel, unlockCheckpoint, unlockMap, type ClaimContact } from "@/server/services/adventure";
-import { claimDailyEvent, claimDailyLogin, claimMissionBonus, spinDaily } from "@/server/services/daily";
+import { claimPrize, openBigBox, replayMap, spinPrizeWheel, unlockCheckpoint, unlockMap, type ClaimContact } from "@/server/services/adventure";
+import { claimDailyLogin, claimMissionBonus, spinDaily } from "@/server/services/daily";
 import { playMysteryBox } from "@/server/services/mystery-box";
 import { assertPlayable, gameRateLimit } from "./guard";
 
@@ -44,14 +44,6 @@ export async function claimMissionBonusAction() {
   });
 }
 
-export async function claimEventAction() {
-  return userAction(async (user) => {
-    await assertPlayable(user);
-    await gameRateLimit(user.id);
-    return claimDailyEvent(user.id);
-  });
-}
-
 /** Opens an adventure Mystery Box level. The reward and Loot are decided on the server. */
 export async function openBoxAction(input: { boxId: string; idempotencyKey: string }) {
   return userAction(async (user) => {
@@ -68,6 +60,15 @@ export async function unlockMapAction(mapId: string) {
     await assertPlayable(user, "mystery_map");
     await gameRateLimit(user.id);
     return unlockMap(user.id, id);
+  });
+}
+
+export async function replayMapAction(mapId: string) {
+  return userAction(async (user) => {
+    const id = parse(uuid, mapId);
+    await assertPlayable(user, "mystery_map");
+    await gameRateLimit(user.id);
+    return replayMap(user.id, id);
   });
 }
 

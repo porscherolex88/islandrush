@@ -1,27 +1,34 @@
 import type { AdventureMapView, AdventureState } from "@/server/services/adventure";
 import type { TrackLevel } from "./level-track";
 
-/** Loot progress toward the map's next milestone: unlocking the map, then each checkpoint chest. */
+/** Loot progress toward the map's next checkpoint chest. */
 export function mapLootGoal(map: AdventureMapView) {
-  const target = map.state === "exploring" ? map.nextLootTarget : map.lootRequired;
-  const label = map.state === "exploring" ? "Loot for the next checkpoint" : map.state === "completed" ? `${map.name} Loot` : `Loot to unlock ${map.name}`;
+  const target = map.nextLootTarget;
+  const label = map.state === "exploring" ? "Loot for the next checkpoint" : `${map.name} Loot`;
   return { have: map.lootCollected, target, label };
 }
 
-export function boxTrack(s: AdventureState): TrackLevel[] {
+/** Boxes are never "done": players can keep opening any unlocked box. Progress lives on the maps. */
+export function boxTrack(s: AdventureState): (TrackLevel & { state: Exclude<TrackLevel["state"], "done"> })[] {
   return s.boxes.map((b) => ({
     level: b.level,
-    state: b.completed ? "done" : b.locked ? "locked" : b.id === s.currentBox?.id ? "current" : "open",
-    label: b.completed ? `${b.name}, completed` : b.locked ? `${b.name}, locked` : b.name,
+    state: b.locked ? "locked" : b.id === s.currentBox?.id ? "current" : "open",
+    label: b.locked ? `${b.name}, locked` : b.name,
   }));
 }
 
 export function mapTrack(s: AdventureState): TrackLevel[] {
   return s.maps.map((m) => ({
     level: m.level,
-    state: m.state === "completed" ? "done" : m.id === s.currentMap?.id ? "current" : m.state === "locked" ? "locked" : "open",
-    label: `${m.name}, ${m.state === "completed" ? "completed" : m.state === "locked" ? "locked" : "in progress"}`,
+    state: m.cleared ? "done" : m.id === s.currentMap?.id ? "current" : m.state === "locked" ? "locked" : "open",
+    label: `${m.name}, ${m.cleared ? "completed" : m.state === "locked" ? "locked" : "in progress"}`,
   }));
+}
+
+/** The highest-level open box the player can pay for right now, else the lowest open box. */
+export function affordableBox(s: AdventureState, credits: number) {
+  const open = s.boxes.filter((b) => !b.locked);
+  return open.findLast((b) => b.priceCredits <= credits) ?? open[0] ?? s.currentBox;
 }
 
 export function levelParam(raw: string | string[] | undefined, fallback: number, max: number) {

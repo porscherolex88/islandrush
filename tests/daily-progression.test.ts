@@ -5,7 +5,6 @@ import { achievements, dailyLogins, profiles, streakMilestoneClaims, streakMiles
 import { addDays } from "@/lib/time";
 import { createAdjustment } from "@/server/services/admin-finance";
 import {
-  claimDailyEvent,
   claimDailyLogin,
   claimMissionBonus,
   getDailyPlan,
@@ -42,12 +41,10 @@ beforeAll(async () => {
   await ensureAdminActor();
   spinPoolId = (await makePool("WEIGHTED", [{ label: "200 Credits", rewardType: "CREDITS", amount: "200" }])).id;
   bonusPoolId = (await makePool("ALL", [{ label: "Bonus", rewardType: "CREDITS", amount: "1000" }])).id;
-  const eventPool = await makePool("WEIGHTED", [{ label: "Event Credits", rewardType: "CREDITS", amount: "40" }]);
   await setConfigRaw("daily_defaults", {
     spinPoolId,
     missionBonusPoolId: bonusPoolId,
     missionKeys: ["open_box", "discover_2", "spin"],
-    eventPoolId: eventPool.id,
     freeDiscoveries: 0,
   });
 });
@@ -91,15 +88,6 @@ describe("daily missions", () => {
     expect(bonus.rewards).toHaveLength(1);
     expect((await getBalances(u.id)).CREDITS).toBe(before + 1000n);
     await expect(claimMissionBonus(u.id)).rejects.toThrow(/already/);
-  });
-});
-
-describe("daily mystery event", () => {
-  it("can be explored once per day", async () => {
-    const u = await makeUser();
-    const r = await claimDailyEvent(u.id);
-    expect(r.reward.type).toBe("CREDITS");
-    await expect(claimDailyEvent(u.id)).rejects.toThrow(/already/);
   });
 });
 

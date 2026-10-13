@@ -8,7 +8,6 @@ import { LevelCarousel } from "@/components/public/landing/level-carousel";
 import { LiveTicker } from "@/components/public/landing/live-ticker";
 import { LoopJourney } from "@/components/public/landing/loop-journey";
 import { MarketShowcase } from "@/components/public/landing/market-showcase";
-import { OddsBar } from "@/components/public/landing/odds-bar";
 import { PromoPopup } from "@/components/public/landing/promo-popup";
 import { PromoTicker } from "@/components/public/landing/promo-ticker";
 import { StatCounter } from "@/components/public/landing/stat-counter";
@@ -111,7 +110,7 @@ export default async function LandingPage() {
 
       <section className="py-14 sm:py-24">
         <Container>
-          <SectionHeading eyebrow="How a level works" title="Seven steps to every prize" description="Each of the ten levels runs the same loop. Learn it once, then chase it across every island." />
+          <SectionHeading eyebrow="How a level works" title="Three steps to every prize" description="Each of the ten levels runs the same loop. Win smaller prizes as you go, and chase the big one at the end of every island." />
           <LoopJourney />
         </Container>
       </section>
@@ -138,7 +137,7 @@ export default async function LandingPage() {
 
       <section className="bg-surface py-14 sm:py-24">
         <Container>
-          <SectionHeading eyebrow="Daily" title="Something to claim every day" description="A free spin, a check-in that grows your streak, three fresh missions and a new Daily Mystery to explore." />
+          <SectionHeading eyebrow="Daily" title="Something to claim every day" description="A free spin, a check-in that grows your streak, and three fresh missions." />
           <DailyTeaser />
         </Container>
       </section>
@@ -174,15 +173,15 @@ export default async function LandingPage() {
       </section>
 
       <section className="bg-surface py-14 sm:py-24">
-        <Container className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
+        <Container>
           <div>
             <SectionHeading
               eyebrow="Trust"
               title="Fair by design, open by default"
-              description="Every Mystery Box lists its possible rewards and their chances before you choose a spot. No hidden tables."
+              description="Every Mystery Box shows the prizes you can win before you open it, and every result is decided securely on our servers."
               className="mb-0 sm:mb-0"
             />
-            <ul className="mt-8 space-y-5">
+            <ul className="mt-8 grid gap-5 sm:grid-cols-3">
               {TRUST.map(({ icon: Icon, title, body }) => (
                 <li key={title} className="flex gap-4">
                   <span className="grid size-11 shrink-0 place-items-center rounded-2xl border bg-card text-primary">
@@ -196,7 +195,6 @@ export default async function LandingPage() {
               ))}
             </ul>
           </div>
-          <OddsBar />
         </Container>
       </section>
 

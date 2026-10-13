@@ -1,4 +1,4 @@
-import { Box, CalendarCheck, Disc3, HandCoins, ListChecks, Sparkles, Users } from "lucide-react";
+import { Box, CalendarCheck, Disc3, HandCoins, ListChecks, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { type EarnWay, EarnMore } from "@/components/app/earn-more";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -66,7 +66,6 @@ export default async function ReferralsPage() {
           },
         ]
       : []),
-    ...(daily.event ? [{ href: "/daily#event", icon: Sparkles, title: "Daily Mystery", description: daily.event.title, done: Boolean(daily.eventClaim) }] : []),
     { href: "/play/mystery-box", icon: Box, title: "Mystery Box", description: "Open a box for Loot, Credits and collectible items." },
   ];
 

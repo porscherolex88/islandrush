@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db, type DbOrTx, type Tx } from "@/db";
 import {
-  dailyEventClaims,
   dailyLogins,
   dailySchedules,
   dailySpins,
@@ -18,7 +17,6 @@ import { checkInsToNext, STREAK_WEEK, weekDay } from "@/lib/streak";
 import { appDay, daysBetween } from "@/lib/time";
 import { checkAchievements } from "./achievements";
 import { getConfig } from "./config";
-import { postTransaction } from "./ledger";
 import { notify } from "./notifications";
 import { grantPool, grantReward, pickPoolEntry, type RewardResult } from "./rewards";
 
@@ -39,7 +37,6 @@ export type DailyPlan = {
   spinPoolId: string | null;
   missions: MissionDef[];
   missionBonusPoolId: string | null;
-  event: { title: string; description: string; icon: string; poolId: string | null; costCredits: number } | null;
   freeDiscoveries: number;
 };
 
@@ -64,22 +61,12 @@ export async function getDailyPlan(day: string, tx: DbOrTx = db, opts: { include
     for (let i = 0; i < Math.min(3, pool.length); i++) missions.push(pool[(start + i) % pool.length]);
   }
 
-  const eventPoolId = s?.eventPoolId ?? defaults.eventPoolId;
   return {
     day,
     scheduled: Boolean(s),
     spinPoolId: s?.spinPoolId ?? defaults.spinPoolId,
     missions,
     missionBonusPoolId: s?.missionBonusPoolId ?? defaults.missionBonusPoolId,
-    event: eventPoolId
-      ? {
-          title: s?.eventTitle ?? defaults.eventTitle,
-          description: s?.eventDescription ?? defaults.eventDescription,
-          icon: s?.eventIcon ?? defaults.eventIcon,
-          poolId: eventPoolId,
-          costCredits: s?.eventCostCredits ?? 0,
-        }
-      : null,
     freeDiscoveries: s?.freeDiscoveries ?? defaults.freeDiscoveries,
   };
 }
@@ -227,45 +214,6 @@ export async function claimMissionBonus(userId: string) {
   });
 }
 
-export async function claimDailyEvent(userId: string) {
-  try {
-    return await db.transaction(async (tx) => {
-      const day = await today(tx);
-      const plan = await getDailyPlan(day, tx);
-      if (!plan.event?.poolId) throw new AppError("There is no mystery event today", "NO_EVENT");
-      const inserted = await tx
-        .insert(dailyEventClaims)
-        .values({ userId, day, creditsSpent: plan.event.costCredits, reward: {} })
-        .onConflictDoNothing()
-        .returning({ id: dailyEventClaims.id });
-      if (inserted.length === 0) throw new AppError("You've already explored today's event", "ALREADY_CLAIMED");
-      if (plan.event.costCredits > 0) {
-        const cost = BigInt(plan.event.costCredits);
-        await postTransaction(tx, {
-          type: "GAME_SPEND",
-          userId,
-          idempotencyKey: `event-spend:${userId}:${day}`,
-          description: `Daily Mystery Event: ${plan.event.title}`,
-          sourceType: "daily_event",
-          sourceId: inserted[0].id,
-          entries: [
-            { userId, account: "CREDITS", amount: -cost },
-            { account: "SYS_GAME_REVENUE", currency: "CREDITS", amount: cost },
-          ],
-        });
-      }
-      const entry = await pickPoolEntry(tx, plan.event.poolId);
-      const reward = await grantReward(tx, userId, entry, { sourceType: "daily_event", sourceId: inserted[0].id, key: `event:${userId}:${day}` });
-      await tx.update(dailyEventClaims).set({ reward }).where(eq(dailyEventClaims.id, inserted[0].id));
-      await trackMission(tx, userId, "DAILY_EVENT");
-      return { reward };
-    });
-  } catch (err) {
-    if (isUniqueViolation(err)) throw new AppError("You've already explored today's event", "ALREADY_CLAIMED");
-    throw err;
-  }
-}
-
 export async function freeDiscoveriesUsed(tx: DbOrTx, userId: string, day: string) {
   const [row] = await tx
     .select({ n: sql<number>`count(*)::int` })
@@ -277,12 +225,11 @@ export async function freeDiscoveriesUsed(tx: DbOrTx, userId: string, day: strin
 export async function getDailyState(userId: string) {
   const day = await today();
   const plan = await getDailyPlan(day);
-  const [[login], [spin], progress, [bonus], [eventClaim], [streak], milestones, usedFree] = await Promise.all([
+  const [[login], [spin], progress, [bonus], [streak], milestones, usedFree] = await Promise.all([
     db.select().from(dailyLogins).where(and(eq(dailyLogins.userId, userId), eq(dailyLogins.day, day))).limit(1),
     db.select().from(dailySpins).where(and(eq(dailySpins.userId, userId), eq(dailySpins.day, day))).limit(1),
     db.select().from(missionProgress).where(and(eq(missionProgress.userId, userId), eq(missionProgress.day, day))),
     db.select().from(missionBonusClaims).where(and(eq(missionBonusClaims.userId, userId), eq(missionBonusClaims.day, day))).limit(1),
-    db.select().from(dailyEventClaims).where(and(eq(dailyEventClaims.userId, userId), eq(dailyEventClaims.day, day))).limit(1),
     db.select().from(userStreaks).where(eq(userStreaks.userId, userId)).limit(1),
     db
       .select()
@@ -310,8 +257,6 @@ export async function getDailyState(userId: string) {
     missions,
     missionsDone: missions.filter((m) => m.completed).length,
     bonusClaimed: Boolean(bonus),
-    event: plan.event,
-    eventClaim: eventClaim ? (eventClaim.reward as RewardResult) : null,
     freeDiscoveries: plan.freeDiscoveries,
     freeDiscoveriesLeft: Math.max(0, plan.freeDiscoveries - usedFree),
     streak: { current: currentStreak, longest: streak?.longest ?? 0, lastClaimDay: streak?.lastClaimDay ?? null },
@@ -328,7 +273,6 @@ export function dailyChecklist(state: DailyState) {
     { key: "checkin", label: "Check-in", done: state.loginClaimed },
     ...(state.spinAvailable ? [{ key: "spin", label: "Daily Spin", done: Boolean(state.spin) }] : []),
     ...(state.missions.length ? [{ key: "missions", label: "Daily Missions", done: state.missionsDone >= state.missions.length }] : []),
-    ...(state.event ? [{ key: "mystery", label: "Daily Mystery", done: Boolean(state.eventClaim) }] : []),
   ];
   return { items, done: items.filter((i) => i.done).length, total: items.length };
 }

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { dailySchedules } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatCredits } from "@/lib/money";
 import { addDays } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { rows } from "@/server/admin/queries";
@@ -37,10 +36,9 @@ export default async function DailyPage({ searchParams }: PageProps<"/admin/dail
   const [schedules, todayPlan, activity] = await Promise.all([
     db.select().from(dailySchedules).where(and(gte(dailySchedules.day, first), lte(dailySchedules.day, last))),
     getDailyPlan(todayKey),
-    rows<{ d: string; spins: number; events: number; logins: number }>(sql`
+    rows<{ d: string; spins: number; logins: number }>(sql`
       select d::text,
         (select count(*)::int from daily_spins s where s.day = d) as spins,
-        (select count(*)::int from daily_event_claims e where e.day = d) as events,
         (select count(*)::int from daily_logins l where l.day = d) as logins
       from generate_series(${first}::date, least(${last}::date, ${todayKey}::date), interval '1 day') d`),
   ]);
@@ -55,7 +53,7 @@ export default async function DailyPage({ searchParams }: PageProps<"/admin/dail
   return (
     <AdminPage
       title="Daily content calendar"
-      description="Schedule Daily Spin pools, missions and Mystery events per day. Days without a published schedule use the defaults."
+      description="Schedule Daily Spin pools and missions per day. Days without a published schedule use the defaults."
       actions={
         <Button asChild variant="outline">
           <Link href="/admin/economy/settings/daily_defaults">Edit defaults</Link>
@@ -110,20 +108,15 @@ export default async function DailyPage({ searchParams }: PageProps<"/admin/dail
                   {s ? (
                     <>
                       <span className="text-[10px] text-muted-foreground">{humanize(s.status)}</span>
-                      {(focus !== "spin" || !s.spinPoolId) && s.eventTitle && (
-                        <span className="line-clamp-2">
-                          {s.eventIcon} {s.eventTitle}
-                          {s.eventCostCredits ? ` · ${formatCredits(s.eventCostCredits)} Cr` : ""}
-                        </span>
-                      )}
-                      {focus === "spin" && s.spinPoolId && <span>🎡 Custom spin</span>}
+                      {s.spinPoolId && <span>🎡 Custom spin</span>}
+                      {s.mission1Id && <span>🎯 Custom missions</span>}
                     </>
                   ) : (
                     <span className="text-muted-foreground">Defaults</span>
                   )}
                   {a && (
                     <span className="mt-auto text-[10px] text-muted-foreground tabular-nums">
-                      {a.logins} in · {a.spins} spins{focus === "event" ? ` · ${a.events} events` : ""}
+                      {a.logins} in · {a.spins} spins
                     </span>
                   )}
                 </Link>
