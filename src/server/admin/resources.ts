@@ -6,6 +6,7 @@ import * as s from "@/db/schema";
 import { getResourceDef, type FieldDef, type RelationKey, type ResourceDef, type ResourceKey } from "@/lib/admin/resource-fields";
 import { ADVENTURE_LEVELS, isValidPercentSplit } from "@/lib/adventure";
 import { AppError } from "@/lib/errors";
+import { STREAK_WEEK } from "@/lib/streak";
 
 export const RESOURCE_TABLES: Record<ResourceKey, PgTable> = {
   paymentAccounts: s.paymentAccounts,
@@ -195,7 +196,8 @@ const VALIDATORS: Partial<Record<ResourceKey, (v: Values) => void>> = {
     if (Number(v.target) < 1) throw new AppError("Target must be at least 1");
   },
   streakMilestones: (v) => {
-    if (Number(v.days) < 1) throw new AppError("Days must be at least 1");
+    const d = Number(v.days);
+    if (!Number.isInteger(d) || d < 1 || d > STREAK_WEEK) throw new AppError(`Streak rewards repeat weekly, so the day must be 1 to ${STREAK_WEEK}`);
   },
   banners: (v) => {
     if (v.startsAt && v.endsAt && (v.endsAt as Date) <= (v.startsAt as Date)) throw new AppError("End must be after start");

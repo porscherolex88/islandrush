@@ -11,7 +11,7 @@ const SUPPORT_EMAIL = "support@lootbox.my";
 export default function ContactPage() {
   return (
     <>
-      <PageHero eyebrow="Contact" title="We're here to help" description="Our support team replies within a few hours, every day." art="/illustrations/3d/gift.webp" />
+      <PageHero eyebrow="Contact" title="We're here to help" description="Our support team replies within a few hours, every day." art="/illustrations/3d/prize-gift.webp" />
       <Container className="grid gap-4 py-10 sm:py-14 md:grid-cols-3 md:gap-5">
         <div className="rounded-3xl border bg-card p-6">
           <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-primary"><MessageCircle className="size-6" aria-hidden /></span>

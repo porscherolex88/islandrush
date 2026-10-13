@@ -246,6 +246,20 @@ async function relayRoute(tx: Tx, level: number, expected: readonly string[], lo
   log(`Map ${level} now has ${stops.length} routes.`);
 }
 
+/** Moves a map's checkpoints onto its current default trail, if it still uses the default art and the seeded stops. */
+async function realignStops(tx: Tx, level: number, log: (msg: string) => void) {
+  const [map] = await tx.select().from(s.maps).where(and(eq(s.maps.level, level), eq(s.maps.status, "PUBLISHED")));
+  if (!map || map.artwork) return;
+  const live = (await tx.select().from(s.mapCheckpoints).where(and(eq(s.mapCheckpoints.mapId, map.id), eq(s.mapCheckpoints.status, "PUBLISHED")))).sort((a, b) => a.position - b.position);
+  const stops = MAPS[level - 1].stops;
+  if (live.map((c) => c.name).join("|") !== stops.join("|")) return log(`Skipping Map ${level}: its checkpoints no longer match the seed.`);
+  const spots = stopPositions(level, stops.length);
+  for (const [k, c] of live.entries()) {
+    await tx.update(s.mapCheckpoints).set({ posX: spots[k][0], posY: spots[k][1], updatedAt: new Date() }).where(eq(s.mapCheckpoints.id, c.id));
+  }
+  log(`Map ${level} checkpoints moved onto the new trail.`);
+}
+
 const UPDATES: { id: string; run: (tx: Tx, log: (msg: string) => void) => Promise<void> }[] = [
   { id: "map1-three-routes", run: (tx, log) => relayRoute(tx, 1, ORIGINAL_STOPS[1], log) },
   {
@@ -258,6 +272,12 @@ const UPDATES: { id: string; run: (tx: Tx, log: (msg: string) => void) => Promis
     id: "stops-below-header",
     run: async (tx, log) => {
       for (const [i, m] of MAPS.entries()) await relayRoute(tx, i + 1, m.stops, log);
+    },
+  },
+  {
+    id: "shore-style-art",
+    run: async (tx, log) => {
+      for (let level = 2; level <= MAPS.length; level++) await realignStops(tx, level, log);
     },
   },
 ];

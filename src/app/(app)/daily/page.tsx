@@ -80,7 +80,7 @@ export default async function DailyPage() {
             {milestone && (
               <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-gold-foreground">
                 <Gift className="size-3.5" aria-hidden />
-                {milestone.title} at a {milestone.days}-day streak
+                {milestone.title} on day {milestone.days} of every week
               </p>
             )}
           </div>

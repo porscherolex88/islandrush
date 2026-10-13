@@ -12,7 +12,7 @@ export default async function ReferralsInfoPage() {
   const { levels, referral } = await publicReferralFacts();
   return (
     <>
-      <PageHero eyebrow="Referrals" title="Bring friends on the adventure" description="Share your code. When friends join and make a qualifying deposit, you earn rewards." art="/illustrations/3d/gift.webp" />
+      <PageHero eyebrow="Referrals" title="Bring friends on the adventure" description="Share your code. When friends join and make a qualifying deposit, you earn rewards." art="/illustrations/3d/prize-gift.webp" />
       <SectionBlock eyebrow="Step by step" title="How referrals work">
         <Steps
           steps={[

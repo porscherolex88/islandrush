@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db, type DbOrTx, type Tx } from "@/db";
 import {
   dailyEventClaims,
@@ -14,6 +14,7 @@ import {
   userStreaks,
 } from "@/db/schema";
 import { AppError, isUniqueViolation } from "@/lib/errors";
+import { checkInsToNext, STREAK_WEEK, weekDay } from "@/lib/streak";
 import { appDay, daysBetween } from "@/lib/time";
 import { checkAchievements } from "./achievements";
 import { getConfig } from "./config";
@@ -137,21 +138,34 @@ export async function claimDailyLogin(userId: string) {
     await tx.update(dailyLogins).set({ streakAfter: current }).where(eq(dailyLogins.id, inserted[0].id));
 
     const milestoneRewards: { title: string; days: number; rewards: RewardResult[] }[] = [];
+    const dayOfWeek = weekDay(current);
     const milestones = await tx
       .select()
       .from(streakMilestones)
-      .where(and(eq(streakMilestones.active, true), eq(streakMilestones.days, current)));
+      .where(and(eq(streakMilestones.active, true), eq(streakMilestones.days, dayOfWeek)));
+    // Claims are keyed by the day this week of the streak began, so each week pays out again.
+    const weekStartDay =
+      dayOfWeek === 1 || !milestones.length
+        ? day
+        : ((
+            await tx
+              .select({ day: dailyLogins.day })
+              .from(dailyLogins)
+              .where(and(eq(dailyLogins.userId, userId), eq(dailyLogins.streakAfter, current - dayOfWeek + 1), gte(dailyLogins.day, runStartDay)))
+              .orderBy(desc(dailyLogins.day))
+              .limit(1)
+          )[0]?.day ?? day);
     for (const m of milestones) {
       const claim = await tx
         .insert(streakMilestoneClaims)
-        .values({ userId, milestoneId: m.id, runStartDay })
+        .values({ userId, milestoneId: m.id, runStartDay: weekStartDay })
         .onConflictDoNothing()
         .returning({ id: streakMilestoneClaims.id });
       if (claim.length === 0) continue;
       const rewards = await grantPool(tx, userId, m.rewardPoolId, {
         sourceType: "streak_milestone",
         sourceId: m.id,
-        key: `streak:${userId}:${m.id}:${runStartDay}`,
+        key: `streak:${userId}:${m.id}:${weekStartDay}`,
       });
       await tx.update(streakMilestoneClaims).set({ rewards }).where(eq(streakMilestoneClaims.id, claim[0].id));
       await notify(tx, userId, "REWARD", `🔥 ${m.days}-day streak!`, `${m.title}: ${rewards.map((r) => r.display).join(", ") || "Milestone reached"}`, "/daily");
@@ -270,13 +284,20 @@ export async function getDailyState(userId: string) {
     db.select().from(missionBonusClaims).where(and(eq(missionBonusClaims.userId, userId), eq(missionBonusClaims.day, day))).limit(1),
     db.select().from(dailyEventClaims).where(and(eq(dailyEventClaims.userId, userId), eq(dailyEventClaims.day, day))).limit(1),
     db.select().from(userStreaks).where(eq(userStreaks.userId, userId)).limit(1),
-    db.select().from(streakMilestones).where(eq(streakMilestones.active, true)).orderBy(asc(streakMilestones.days)),
+    db
+      .select()
+      .from(streakMilestones)
+      .where(and(eq(streakMilestones.active, true), lte(streakMilestones.days, STREAK_WEEK)))
+      .orderBy(asc(streakMilestones.days)),
     freeDiscoveriesUsed(db, userId, day),
   ]);
   const { streakGraceDays } = await getConfig("daily_defaults");
   const gap = streak?.lastClaimDay ? daysBetween(streak.lastClaimDay, day) : Infinity;
   const streakAlive = gap <= 1 + streakGraceDays;
   const currentStreak = streakAlive ? streak?.current ?? 0 : 0;
+  const weekDone = weekDay(currentStreak);
+  const next = checkInsToNext(currentStreak, milestones.map((m) => m.days));
+  const nextMilestone = next && milestones.find((m) => m.days === next.day);
   const missions = plan.missions.map((m) => {
     const p = progress.find((x) => x.missionId === m.id);
     return { ...m, progress: p?.progress ?? 0, completed: Boolean(p?.completedAt) };
@@ -294,8 +315,8 @@ export async function getDailyState(userId: string) {
     freeDiscoveries: plan.freeDiscoveries,
     freeDiscoveriesLeft: Math.max(0, plan.freeDiscoveries - usedFree),
     streak: { current: currentStreak, longest: streak?.longest ?? 0, lastClaimDay: streak?.lastClaimDay ?? null },
-    milestones: milestones.map((m) => ({ id: m.id, days: m.days, title: m.title, reached: currentStreak >= m.days })),
-    nextMilestone: milestones.find((m) => m.days > currentStreak) ?? null,
+    milestones: milestones.map((m) => ({ id: m.id, days: m.days, title: m.title, reached: weekDone >= m.days })),
+    nextMilestone: next && nextMilestone ? { days: nextMilestone.days, title: nextMilestone.title, inDays: next.inDays } : null,
   };
 }
 

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/db";
-import { achievements, profiles, streakMilestones, userAchievements, userStreaks } from "@/db/schema";
+import { achievements, dailyLogins, profiles, streakMilestoneClaims, streakMilestones, userAchievements, userStreaks } from "@/db/schema";
 import { addDays } from "@/lib/time";
 import { createAdjustment } from "@/server/services/admin-finance";
 import {
@@ -122,6 +122,31 @@ describe("streaks", () => {
     const res2 = await claimDailyLogin(u2.id);
     expect(res2.streak).toBe(1);
     expect(res2.longest).toBe(9);
+  });
+
+  it("pays the same weekly milestone again in the next week of a run", async () => {
+    const pool = await makePool("ALL", [{ label: "Streak bonus", rewardType: "CREDITS", amount: "300" }]);
+    await db.insert(streakMilestones).values({ days: 3, title: "3-day streak", rewardPoolId: pool.id }).onConflictDoNothing();
+    const u = await makeUser();
+    const day = await today();
+    const runStart = addDays(day, -9);
+
+    // Week one: the day-3 reward was already claimed on the third day of the run.
+    await db.insert(dailyLogins).values([
+      { userId: u.id, day: runStart, streakAfter: 1 },
+      { userId: u.id, day: addDays(day, -2), streakAfter: 8 },
+    ]);
+    const [m] = await db.select().from(streakMilestones).where(eq(streakMilestones.days, 3));
+    await db.insert(streakMilestoneClaims).values({ userId: u.id, milestoneId: m.id, runStartDay: runStart });
+    await db.update(userStreaks).set({ current: 9, longest: 9, lastClaimDay: addDays(day, -1), runStartDay: runStart }).where(eq(userStreaks.userId, u.id));
+
+    const res = await claimDailyLogin(u.id);
+    expect(res.streak).toBe(10);
+    expect(res.milestoneRewards).toHaveLength(1);
+    expect((await getBalances(u.id)).CREDITS).toBe(300n);
+
+    const state = await getDailyState(u.id);
+    expect(state.nextMilestone).toMatchObject({ days: 3, inDays: 7 });
   });
 });
 

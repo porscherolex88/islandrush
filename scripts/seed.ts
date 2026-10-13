@@ -214,8 +214,6 @@ async function main() {
     };
     await ms(3, "Warming up", [credits(1000, 1)]);
     await ms(7, "One week strong", [credits(3000, 1, "UNCOMMON"), give("vault-key", 1, 1, "Vault Key")]);
-    await ms(14, "Two week explorer", [cash("20.00", 1), give("seal-fragment", 1, 2, "2x Vault Seal Fragment")]);
-    await ms(30, "Island regular", [cash("100.00", 1, "EPIC"), give("vault-key", 1, 1, "Vault Key")]);
 
     const today = appDay(new Date(), CONFIG_DEFAULTS.timezone);
     await db.insert(s.dailySchedules).values({

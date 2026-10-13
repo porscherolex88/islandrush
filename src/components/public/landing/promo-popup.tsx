@@ -89,7 +89,7 @@ export function PromoPopup({ promos, signedIn }: { promos: Promo[]; signedIn: bo
               transition={{ type: "spring", stiffness: 210, damping: 14, delay: 0.1 }}
             >
               <Image
-                src="/illustrations/3d/gift.webp"
+                src="/illustrations/3d/prize-gift.webp"
                 alt=""
                 fill
                 sizes="160px"

@@ -20,7 +20,7 @@ export default async function GamesPage() {
       <SectionBlock>
         <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-10">
           <div>
-            <Image src="/illustrations/crate.webp" alt="" width={72} height={72} className="size-18 rounded-2xl object-cover" />
+            <Image src="/illustrations/3d/crate.webp" alt="" width={72} height={72} className="size-18 object-contain drop-shadow-lg" />
             <p className="mt-4 text-xs font-bold tracking-widest text-primary uppercase">Step 1</p>
             <h2 className="mt-1 text-3xl font-bold sm:text-4xl">Mystery Box</h2>
             <p className="mt-3 text-muted-foreground">
@@ -61,7 +61,7 @@ export default async function GamesPage() {
 
       <SectionBlock>
         <div className="mx-auto max-w-2xl text-center">
-          <Image src="/illustrations/adventure/big-box.webp" alt="" width={96} height={96} className="mx-auto size-24 object-contain" />
+          <Image src="/illustrations/3d/big-box.webp" alt="" width={96} height={96} className="mx-auto size-24 object-contain drop-shadow-lg" />
           <p className="mt-4 text-xs font-bold tracking-widest text-primary uppercase">Step 3</p>
           <h2 className="mt-1 text-3xl font-bold sm:text-4xl">Big Mystery Box, Puzzles and Prizes</h2>
           <p className="mt-3 text-muted-foreground">

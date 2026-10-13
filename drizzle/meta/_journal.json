@@ -50,6 +50,13 @@
       "when": 1790944155384,
       "tag": "0006_remove_xp",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791865257955,
+      "tag": "0007_weekly_streak",
+      "breakpoints": true
     }
   ]
 }

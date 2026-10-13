@@ -84,7 +84,8 @@ function SpinWheel() {
   );
 }
 
-const MILESTONES = [3, 7, 14, 30];
+const REWARD_DAYS = [3, 7];
+const DEMO_DONE = 5;
 
 function StreakStrip() {
   const ref = useRef<HTMLDivElement>(null);
@@ -94,33 +95,43 @@ function StreakStrip() {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-extrabold">Check in, build a streak</h3>
         <span className="flex items-center gap-1 text-sm font-bold text-primary">
-          <Flame className="size-4" aria-hidden /> Day 7
+          <Flame className="size-4" aria-hidden /> Day {DEMO_DONE}
         </span>
       </div>
-      <ol className="mt-4 grid grid-cols-10 gap-1.5" aria-label="Streak milestones at day 3, 7, 14 and 30">
-        {Array.from({ length: 30 }, (_, i) => {
+      <ol className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2" aria-label="A 7-day streak week with rewards on day 3 and day 7">
+        {Array.from({ length: 7 }, (_, i) => {
           const day = i + 1;
-          const milestone = MILESTONES.includes(day);
-          const done = day <= 7;
+          const reward = REWARD_DAYS.includes(day);
+          const done = day <= DEMO_DONE;
+          const isToday = day === DEMO_DONE + 1;
           return (
-            <motion.li
-              key={day}
-              aria-hidden
-              className={cn(
-                "grid aspect-square place-items-center rounded-lg text-[10px] font-bold",
-                milestone ? "ring-2 ring-gold" : "",
-                done ? "bg-gold text-[var(--gold-ink)]" : "bg-muted text-muted-foreground",
-              )}
-              initial={false}
-              animate={inView && done ? { scale: [1, 1.25, 1] } : undefined}
-              transition={{ delay: i * 0.07, duration: 0.35 }}
-            >
-              {milestone ? <Gift className="size-3" /> : day}
-            </motion.li>
+            <li key={day} aria-hidden className="flex flex-col items-center gap-1.5">
+              <motion.span
+                className={cn(
+                  "relative grid aspect-square w-full max-w-12 place-items-center rounded-full",
+                  done ? "bg-gold text-[var(--gold-ink)]" : "border-2 border-dashed border-border bg-muted/50 text-muted-foreground",
+                  isToday && "border-solid border-primary text-primary",
+                  reward && !done && "border-solid border-primary bg-brand-soft text-primary",
+                )}
+                initial={false}
+                animate={inView && done ? { scale: [1, 1.2, 1] } : undefined}
+                transition={{ delay: i * 0.12, duration: 0.35 }}
+              >
+                {done ? <Check className="size-4" strokeWidth={3} /> : reward ? <Gift className="size-4" /> : <Flame className="size-4" />}
+                {reward && done && (
+                  <span className="absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-card text-primary ring-2 ring-card">
+                    <Gift className="size-2.5" />
+                  </span>
+                )}
+              </motion.span>
+              <span className={cn("text-[11px] font-bold tabular", isToday ? "text-primary" : done ? "text-foreground" : "text-muted-foreground")}>
+                {isToday ? "Today" : `Day ${day}`}
+              </span>
+            </li>
           );
         })}
       </ol>
-      <p className="mt-3 text-sm text-muted-foreground">Milestone rewards land on days 3, 7, 14 and 30.</p>
+      <p className="mt-4 text-sm text-muted-foreground">Rewards land on day 3 and day 7. Then a new week starts and you can earn them again.</p>
     </div>
   );
 }

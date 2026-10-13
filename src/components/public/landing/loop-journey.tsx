@@ -1,31 +1,23 @@
 "use client";
 
-import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/** Art with its own painted background fills the whole panel; cut-outs float on the ocean backdrop. */
-const FULL_BLEED = new Set(["Box", "Checkpoints", "Big Box"]);
-
 const STEPS = [
-  { title: "Box", art: "/illustrations/crate.webp", body: "Pick a Mystery Box for your level and choose one of nine spots. Every box shows its prizes and odds first." },
+  { title: "Box", art: "/illustrations/3d/crate.webp", body: "Pick a Mystery Box for your level and choose one of nine spots. Every box shows its prizes and odds first." },
   { title: "Loot", art: "/illustrations/3d/coins.webp", body: "Each box pays out Loot for that level's map, plus a bonus reward like Credits or a collectible item." },
   { title: "Map", art: "/illustrations/3d/map-scroll.webp", body: "Collect enough Loot and the level's illustrated map unlocks. Ten islands, each with its own trail." },
-  { title: "Checkpoints", art: "/illustrations/adventure/map-3.webp", body: "Keep collecting to move from checkpoint to checkpoint until you reach the final destination." },
-  { title: "Big Box", art: "/illustrations/adventure/big-box.webp", body: "The last checkpoint opens the Big Mystery Box, holding one to three puzzle pieces." },
+  { title: "Checkpoints", art: "/illustrations/3d/checkpoint.webp", body: "Keep collecting to move from checkpoint to checkpoint until you reach the final destination." },
+  { title: "Big Box", art: "/illustrations/3d/big-box.webp", body: "The last checkpoint opens the Big Mystery Box, holding one to three puzzle pieces." },
   { title: "Puzzle", art: "/illustrations/3d/puzzle.webp", body: "Every level has a prize puzzle. Fit the pieces together to complete it." },
-  { title: "Prize", art: "/illustrations/3d/gift.webp", body: "A finished puzzle unlocks that level's prize. Then the next island opens up." },
+  { title: "Prize", art: "/illustrations/3d/prize-gift.webp", body: "A finished puzzle unlocks that level's prize. Then the next island opens up." },
 ] as const;
 
 /** One step's artwork inside the shared ocean panel. */
 function StepArt({ step, sizes, priority }: { step: (typeof STEPS)[number]; sizes: string; priority?: boolean }) {
-  return FULL_BLEED.has(step.title) ? (
-    <>
-      <Image src={step.art} alt="" fill sizes={sizes} priority={priority} className="object-cover" />
-      <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,transparent_55%,color-mix(in_oklab,var(--ocean-deep)_75%,transparent))]" />
-    </>
-  ) : (
+  return (
     <span className="absolute inset-[14%]">
       <Image src={step.art} alt="" fill sizes={sizes} priority={priority} className="object-contain drop-shadow-[0_24px_30px_rgb(0_0_0/0.45)]" />
     </span>
@@ -36,15 +28,10 @@ function Panel({ className, children }: { className?: string; children: React.Re
   return <div className={cn("relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_50%_60%,var(--ocean),var(--ocean-deep)_75%)]", className)}>{children}</div>;
 }
 
-function Step({ i, active, onActive }: { i: number; active: boolean; onActive: (i: number) => void }) {
-  const ref = useRef<HTMLLIElement>(null);
-  const inView = useInView(ref, { margin: "-45% 0px -45% 0px" });
-  useEffect(() => {
-    if (inView) onActive(i);
-  }, [inView, i, onActive]);
+function Step({ i, active }: { i: number; active: boolean }) {
   const s = STEPS[i];
   return (
-    <li ref={ref} className="relative flex gap-4 pb-8 last:pb-0 sm:gap-5 lg:min-h-[24vh] lg:pb-0">
+    <li className="relative flex gap-4 pb-8 last:pb-0 sm:gap-5 lg:min-h-[24vh] lg:pb-0">
       <div className="flex flex-col items-center">
         <span
           className={cn(
@@ -70,8 +57,34 @@ function Step({ i, active, onActive }: { i: number; active: boolean; onActive: (
 /** The seven-step loop of every level. On large screens the artwork stays pinned and swaps as each step reaches the middle of the viewport. */
 export function LoopJourney() {
   const [active, setActive] = useState(0);
+  const list = useRef<HTMLOListElement>(null);
   const reduced = useReducedMotion();
   const s = STEPS[active];
+
+  // Derived from scroll position rather than per-step visibility, so a fast scroll can never skip a step.
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const items = list.current?.children;
+      if (!items) return;
+      const mid = window.innerHeight / 2;
+      let next = 0;
+      for (let i = 0; i < items.length; i++) if (items[i].getBoundingClientRect().top <= mid) next = i;
+      setActive(next);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
   return (
     <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
       <div className="hidden lg:block">
@@ -90,14 +103,14 @@ export function LoopJourney() {
           </AnimatePresence>
           <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1.5 p-5">
             {STEPS.map((x, i) => (
-              <span key={x.title} className={cn("h-1.5 rounded-full transition-all duration-300", i === active ? "w-8 bg-gold" : "w-1.5 bg-white/45")} />
+              <span key={x.title} className={cn("h-1.5 rounded-full transition-all duration-300", i === active ? "w-8 bg-white" : "w-1.5 bg-white/45")} />
             ))}
           </div>
         </Panel>
       </div>
-      <ol>
+      <ol ref={list}>
         {STEPS.map((x, i) => (
-          <Step key={x.title} i={i} active={i === active} onActive={setActive} />
+          <Step key={x.title} i={i} active={i === active} />
         ))}
       </ol>
     </div>

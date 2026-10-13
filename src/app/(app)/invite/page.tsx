@@ -50,7 +50,7 @@ export default async function ReferralsPage() {
       title: "Daily check-in",
       description:
         streak > 0
-          ? `Day ${streak} streak.${daily.nextMilestone ? ` ${daily.nextMilestone.title} at ${daily.nextMilestone.days} days.` : ""}`
+          ? `Day ${streak} streak.${daily.nextMilestone ? ` ${daily.nextMilestone.title} in ${daily.nextMilestone.inDays} day${daily.nextMilestone.inDays === 1 ? "" : "s"}.` : ""}`
           : "Check in every day to build a streak and unlock milestone rewards.",
       done: daily.loginClaimed,
     },

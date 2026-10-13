@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { STREAK_WEEK } from "@/lib/streak";
 import { cn } from "@/lib/utils";
 import { Token } from "./art";
 
@@ -62,7 +63,7 @@ export function MissionCard({ mission }: { mission: MissionView }) {
   );
 }
 
-const WEEK = 7;
+const WEEK = STREAK_WEEK;
 
 /**
  * Streak as a 7-day week that restarts after day 7. Days already checked in this week are
@@ -77,14 +78,13 @@ export function StreakCard({
 }: {
   current: number;
   milestones: { id: string; days: number; title: string; reached: boolean }[];
-  nextMilestone: { days: number; title: string } | null;
+  nextMilestone: { days: number; title: string; inDays: number } | null;
   checkedInToday: boolean;
   action?: ReactNode;
 }) {
-  const toNext = nextMilestone ? nextMilestone.days - current : 0;
+  const toNext = nextMilestone?.inDays ?? 0;
   // Before today's check-in, a finished week means today starts a fresh one.
   const done = checkedInToday ? ((Math.max(current, 1) - 1) % WEEK) + 1 : current % WEEK;
-  const weekStart = current - done;
   const todayIndex = checkedInToday ? done - 1 : done;
   const rewardDays = new Set(milestones.map((m) => m.days));
   return (
@@ -114,7 +114,7 @@ export function StreakCard({
         {Array.from({ length: WEEK }, (_, i) => {
           const filled = i < done;
           const isToday = i === todayIndex;
-          const reward = rewardDays.has(weekStart + i + 1);
+          const reward = rewardDays.has(i + 1);
           return (
             <li key={i} className="flex flex-col items-center gap-1.5">
               <span

@@ -162,7 +162,7 @@ export default async function LandingPage() {
           </ol>
           <Link href="/referrals" className="group mt-4 flex items-center gap-4 overflow-hidden rounded-3xl bg-brand-soft p-4 sm:mt-6 sm:p-6">
             <span className="relative size-16 shrink-0 sm:size-20">
-              <Image src="/illustrations/3d/gift.webp" alt="" fill sizes="80px" className="object-contain" />
+              <Image src="/illustrations/3d/prize-gift.webp" alt="" fill sizes="80px" className="object-contain" />
             </span>
             <span className="flex-1">
               <span className="block font-heading text-xl font-extrabold">Bring your crew</span>

@@ -14,7 +14,7 @@ export function EarnMore({ ways }: { ways: EarnWay[] }) {
           <h2 className="font-heading text-lg font-bold">More ways to earn</h2>
           <p className="text-sm text-muted-foreground">Fresh rewards every day</p>
         </div>
-        <Image src="/illustrations/3d/gift.webp" alt="" width={56} height={72} className="-my-2 h-16 w-auto rotate-6 drop-shadow-[0_8px_10px_oklch(0.24_0.05_228/0.25)]" />
+        <Image src="/illustrations/3d/prize-gift.webp" alt="" width={56} height={72} className="-my-2 h-16 w-auto rotate-6 drop-shadow-[0_8px_10px_oklch(0.24_0.05_228/0.25)]" />
       </div>
       <ul className="divide-y">
         {ways.map(({ href, icon: Icon, title, description, done }) => (

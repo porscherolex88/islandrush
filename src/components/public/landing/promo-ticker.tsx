@@ -7,7 +7,7 @@ export type PromoItem = { id: string; title: string; link: string | null };
 /** Evergreen offers that are always true, used when no admin banner is live. */
 const EVERGREEN: PromoItem[] = [
   { id: "spin", title: "Free daily spin for every player", link: "/register" },
-  { id: "streak", title: "Streak milestones at 3, 7, 14 and 30 days", link: "/rewards" },
+  { id: "streak", title: "Streak rewards on day 3 and day 7, every week", link: "/rewards" },
   { id: "refer", title: "Invite a friend, earn a reward on their first deposit", link: "/referrals" },
   { id: "odds", title: "Every Mystery Box shows its odds before you open it", link: "/games" },
 ];

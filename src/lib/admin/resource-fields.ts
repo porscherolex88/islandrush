@@ -406,11 +406,12 @@ export const RESOURCES = {
     key: "streakMilestones",
     label: "Streak milestones",
     singular: "Streak milestone",
+    description: "Rewards for check-in streaks. They repeat every week, paying out on the chosen day of each 7-day week.",
     group: "Daily",
     permission: "daily.manage",
     pk: "id",
     fields: [
-      { name: "days", label: "Streak days", type: "number", required: true },
+      { name: "days", label: "Day of the week (1-7)", type: "number", required: true },
       { name: "title", label: "Title", type: "text", required: true },
       pool("rewardPoolId", "Reward pool"),
       { name: "active", label: "Active", type: "boolean", default: true },
