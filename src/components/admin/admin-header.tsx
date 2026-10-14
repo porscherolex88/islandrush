@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { NavGroup } from "@/lib/admin/nav";
-import { signOutAction } from "@/server/actions/auth";
+import { adminSignOutAction } from "@/server/actions/auth";
 import { AdminSidebar } from "./admin-sidebar";
 import { ScrollFadeHeader } from "@/components/shared/scroll-fade-header";
 import { humanize as humanizeEnum } from "@/components/shared/status-badge";
@@ -138,7 +138,7 @@ export function AdminHeader({ nav, user }: { nav: NavGroup[]; user: { name: stri
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <form action={signOutAction} className="w-full">
+              <form action={adminSignOutAction} className="w-full">
                 <button type="submit" className="flex w-full items-center gap-2">
                   <LogOut className="size-4" /> Sign out
                 </button>

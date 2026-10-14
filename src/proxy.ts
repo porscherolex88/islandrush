@@ -18,11 +18,12 @@ function hasSessionCookie(req: NextRequest) {
  */
 export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
-  const isProtected = isAppPath(pathname) || pathname === "/admin" || pathname.startsWith("/admin/");
+  const isAdmin = (pathname === "/admin" || pathname.startsWith("/admin/")) && pathname !== "/admin/login";
+  const isProtected = isAppPath(pathname) || isAdmin;
 
   if (isProtected && !hasSessionCookie(req)) {
     const url = req.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = isAdmin ? "/admin/login" : "/login";
     url.search = `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }

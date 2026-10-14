@@ -52,7 +52,7 @@ export const getAdminContext = cache(async (): Promise<AdminContext | null> => {
 /** Server-side guard for admin pages. Non-admins get a 404 so the console is not discoverable. */
 export async function requireAdmin(permission?: Permission): Promise<AdminContext> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/admin");
+  if (!user) redirect("/admin/login");
   const ctx = await getAdminContext();
   if (!ctx) notFound();
   if (permission && !ctx.can(permission)) redirect("/admin/forbidden");

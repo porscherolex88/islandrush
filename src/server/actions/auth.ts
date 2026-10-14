@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getRequestMeta } from "@/lib/auth/request";
 import { getAuth } from "@/lib/auth/server";
 import { RateLimitError } from "@/lib/errors";
+import { isAdminRole } from "@/lib/permissions";
 import { isFeatureEnabled } from "@/server/services/config";
 import { ensureProfile, recordLogin } from "@/server/services/profiles";
 import { rateLimit } from "@/server/services/rate-limit";
@@ -49,6 +50,47 @@ export async function signInAction(_prev: AuthFormState, form: FormData): Promis
   );
   await recordLogin({ userId: profile.id, email, success: true, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
   redirect(safeNext(form.get("next")));
+}
+
+const ADMIN_EMAIL_DOMAIN = "lootbox.my";
+
+/** Admin console sign-in. Usernames map to staff accounts at `<username>@lootbox.my`. */
+export async function adminSignInAction(_prev: AuthFormState, form: FormData): Promise<AuthFormState> {
+  const username = String(form.get("username") ?? "").trim().toLowerCase();
+  const password = String(form.get("password") ?? "");
+  const fields = { username };
+  const failed = { error: "That username and password combination doesn't match our records.", fields };
+  if (!/^[a-z0-9._-]{2,32}$/.test(username)) return { error: "Enter your username", fields };
+  if (!password) return { error: "Enter your password", fields };
+
+  const email = `${username}@${ADMIN_EMAIL_DOMAIN}`;
+  const meta = await getRequestMeta();
+  if ((await limited(`login:ip:${meta.ip ?? "unknown"}`, 20, 900)) || (await limited(`login:email:${email}`, 8, 900))) {
+    return { error: "Too many sign-in attempts. Please wait a few minutes and try again.", fields };
+  }
+
+  const { data, error } = await getAuth().signIn.email({ email, password });
+  if (error || !data?.user) {
+    await recordLogin({ userId: null, email, success: false, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
+    return failed;
+  }
+  const profile = await ensureProfile(
+    { id: data.user.id, email: data.user.email, name: data.user.name },
+    { ip: meta.ip, deviceId: meta.deviceId, referralCode: meta.referralCode },
+  );
+  if (!isAdminRole(profile.role) || profile.status !== "ACTIVE") {
+    await getAuth().signOut();
+    await recordLogin({ userId: profile.id, email, success: false, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
+    return failed;
+  }
+  await recordLogin({ userId: profile.id, email, success: true, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
+  const next = safeNext(form.get("next"));
+  redirect(next.startsWith("/admin") ? next : "/admin");
+}
+
+export async function adminSignOutAction() {
+  await getAuth().signOut();
+  redirect("/admin/login");
 }
 
 const registerSchema = z.object({
