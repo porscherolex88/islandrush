@@ -84,7 +84,7 @@ export function AdminLoginForm({ next }: { next?: string }) {
           autoCapitalize="none"
           spellCheck={false}
           required
-          maxLength={32}
+          maxLength={254}
           defaultValue={state.fields?.username}
           className="h-12"
         />
