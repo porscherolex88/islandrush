@@ -6,13 +6,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  adminSignInAction,
-  forgotPasswordAction,
-  signInAction,
-  signUpAction,
-  type AuthFormState,
-} from "@/server/actions/auth";
+import { forgotPasswordAction, signInAction, signUpAction, type AuthFormState } from "@/server/actions/auth";
 
 function PasswordInput({ id, autoComplete, minLength }: { id: string; autoComplete: string; minLength?: number }) {
   const [show, setShow] = useState(false);
@@ -90,38 +84,6 @@ export function LoginForm({ next }: { next?: string }) {
           Request a reset
         </Link>
       </p>
-    </form>
-  );
-}
-
-export function AdminLoginForm({ next }: { next?: string }) {
-  const [state, action, pending] = useActionState(adminSignInAction, {});
-  return (
-    <form action={action} className="space-y-4">
-      <input type="hidden" name="next" value={next ?? ""} />
-      <FormError state={state} />
-      <div className="grid gap-1.5">
-        <Label htmlFor="username">Username</Label>
-        <Input
-          id="username"
-          name="username"
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          required
-          maxLength={254}
-          defaultValue={state.fields?.username}
-          className="h-12"
-        />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="password">Password</Label>
-        <PasswordInput id="password" autoComplete="current-password" />
-      </div>
-      <Button type="submit" size="xl" className="w-full" disabled={pending}>
-        {pending && <Loader2 className="animate-spin" />}
-        Sign in
-      </Button>
     </form>
   );
 }

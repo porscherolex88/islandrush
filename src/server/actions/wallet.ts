@@ -39,8 +39,8 @@ export async function createDepositAction(form: FormData) {
         amount,
         method: z.string().min(1),
         paymentAccountId: z.string().uuid().optional().or(z.literal("")),
-        reference: z.string().trim().min(3, "Enter your transfer reference").max(80),
-        payerName: z.string().trim().min(2, "Enter the account holder name").max(120),
+        reference: z.string().trim().max(80).optional(),
+        payerName: z.string().trim().max(120).optional(),
         note: z.string().trim().max(500).optional(),
         idempotencyKey: key,
       })
@@ -48,8 +48,8 @@ export async function createDepositAction(form: FormData) {
         amount: field(form, "amount"),
         method: field(form, "method"),
         paymentAccountId: field(form, "paymentAccountId"),
-        reference: field(form, "reference"),
-        payerName: field(form, "payerName"),
+        reference: field(form, "reference") || undefined,
+        payerName: field(form, "payerName") || undefined,
         note: field(form, "note") || undefined,
         idempotencyKey: field(form, "idempotencyKey"),
       });
@@ -63,13 +63,13 @@ export async function createDepositAction(form: FormData) {
       method: d.method,
       paymentAccountId: d.paymentAccountId || null,
       reference: d.reference,
-      payerName: d.payerName,
+      payerName: d.payerName || (d.method === "USDT_TRC20" ? "USDT TRC20" : ""),
       note: d.note ?? null,
       proofFileId,
       idempotencyKey: d.idempotencyKey,
     });
     revalidatePath("/wallet", "layout");
-    return { id: row.id, amount: row.amount };
+    return { id: row.id, amount: row.amount, cryptoExpectedAmount: row.cryptoExpectedAmount, method: row.method };
   });
 }
 

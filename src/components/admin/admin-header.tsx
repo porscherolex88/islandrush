@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, ExternalLink, LogOut, Menu, Search } from "lucide-react";
+import { ChevronRight, LogOut, Menu, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { NavGroup } from "@/lib/admin/nav";
-import { adminSignOutAction } from "@/server/actions/auth";
+import { adminSignOutAction } from "@/server/actions/admin-auth";
 import { AdminSidebar } from "./admin-sidebar";
 import { ScrollFadeHeader } from "@/components/shared/scroll-fade-header";
 import { humanize as humanizeEnum } from "@/components/shared/status-badge";
@@ -132,11 +132,6 @@ export function AdminHeader({ nav, user }: { nav: NavGroup[]; user: { name: stri
               <p className="mt-1 text-[10px] font-semibold text-primary">{humanizeEnum(user.role)}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/home">
-                <ExternalLink /> Open player app
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <form action={adminSignOutAction} className="w-full">
                 <button type="submit" className="flex w-full items-center gap-2">

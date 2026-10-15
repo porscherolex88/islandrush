@@ -38,6 +38,7 @@ export async function ensureProfile(
     referralCode?: string | null;
     phone?: string | null;
     dateOfBirth?: string | null;
+    country?: string | null;
   } = {},
 ): Promise<Profile> {
   const [existing] = await db.select().from(profiles).where(eq(profiles.id, authUser.id)).limit(1);
@@ -65,6 +66,7 @@ export async function ensureProfile(
             .limit(1);
           if (ref && ref.id !== authUser.id) referredById = ref.id;
         }
+        const country = ctx.country?.trim().toUpperCase() || null;
         const [profile] = await tx
           .insert(profiles)
           .values({
@@ -77,6 +79,7 @@ export async function ensureProfile(
             referredById,
             signupIp: ctx.ip ?? null,
             signupDeviceId: ctx.deviceId ?? null,
+            signupCountry: country && /^[A-Z]{2}$/.test(country) ? country : null,
           })
           .returning();
         await ensureUserAccounts(tx, profile.id);
@@ -145,14 +148,36 @@ export async function updatePlayLimits(userId: string, limits: Profile["playLimi
   });
 }
 
-export async function requestVerification(userId: string) {
+export async function requestVerification(
+  userId: string,
+  docs?: { idDocumentFileId: string; addressProofFileId: string },
+) {
   await db.transaction(async (tx) => {
     const [p] = await tx.select().from(profiles).where(eq(profiles.id, userId)).for("update");
     if (!p) throw new NotFoundError();
     if (p.verificationStatus === "VERIFIED") throw new AppError("Your account is already verified");
     if (p.verificationStatus === "PENDING") throw new AppError("Your verification is already under review");
-    if (!p.phone) throw new AppError("Add a phone number to your profile before requesting verification");
-    await tx.update(profiles).set({ verificationStatus: "PENDING", updatedAt: new Date() }).where(eq(profiles.id, userId));
+    if (!docs?.idDocumentFileId || !docs?.addressProofFileId) {
+      throw new AppError("Upload a photo of your ID and a proof of address");
+    }
+    await tx
+      .update(profiles)
+      .set({
+        verificationStatus: "PENDING",
+        verificationRequired: true,
+        idDocumentFileId: docs.idDocumentFileId,
+        addressProofFileId: docs.addressProofFileId,
+        updatedAt: new Date(),
+      })
+      .where(eq(profiles.id, userId));
+    await audit(tx, {
+      actorId: userId,
+      actorRole: "USER",
+      action: "user.verification_submit",
+      entityType: "profile",
+      entityId: userId,
+      after: { verificationStatus: "PENDING", idDocumentFileId: docs.idDocumentFileId, addressProofFileId: docs.addressProofFileId },
+    });
   });
 }
 

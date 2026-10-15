@@ -82,8 +82,8 @@ describe("referral fraud controls", () => {
     const a = await makeUser();
     const b = await makeUser();
     const ref = uid("REF");
-    const d1 = await createDeposit(a.id, { amount: "100.00", reference: ref, payerName: "A", method: "BANK_TRANSFER", idempotencyKey: uid() });
-    const d2 = await createDeposit(b.id, { amount: "100.00", reference: ref, payerName: "B", method: "BANK_TRANSFER", idempotencyKey: uid() });
+    const d1 = await createDeposit(a.id, { amount: "100.00", reference: ref, payerName: "Alice", method: "BANK_TRANSFER", idempotencyKey: uid(), countryCode: "PH" });
+    const d2 = await createDeposit(b.id, { amount: "100.00", reference: ref, payerName: "Bob", method: "BANK_TRANSFER", idempotencyKey: uid(), countryCode: "PH" });
     await approveDeposit(admin, d1.id);
     await approveDeposit(admin, d2.id);
     const flags = await db.select().from(riskFlags).where(and(eq(riskFlags.userId, b.id), eq(riskFlags.type, "SUSPICIOUS_DEPOSIT")));

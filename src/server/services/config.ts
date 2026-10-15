@@ -42,12 +42,12 @@ export type ConfigShape = {
 export const CONFIG_DEFAULTS: ConfigShape = {
   conversion: { cash: "1000.00", credits: 60000 },
   timezone: "Asia/Kuala_Lumpur",
-  deposit: { min: "50.00", max: "50000.00", proofRequired: false, methods: ["BANK_TRANSFER", "DUITNOW"] },
+  deposit: { min: "50.00", max: "50000.00", proofRequired: false, methods: ["USDT_TRC20", "BANK_TRANSFER", "QR_TRANSFER"] },
   withdrawal: {
     min: "50.00",
     maxPerRequest: "10000.00",
     maxDaily: "20000.00",
-    requiresVerification: false,
+    requiresVerification: true,
     minDepositLevelOrder: 0,
   },
   rewards: { pendingHours: 24 },

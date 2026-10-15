@@ -35,10 +35,14 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
   const to = str(sp.to);
   const [list, entities] = await Promise.all([
     rows<{ id: number; created_at: string; actor_id: string | null; actor_role: string | null; actor_name: string | null; action: string; entity_type: string; entity_id: string | null; before: unknown; after: unknown; reason: string | null; ip: string | null }>(sql`
-      select a.id, a.created_at::text, a.actor_id, a.actor_role, p.name as actor_name, a.action, a.entity_type, a.entity_id, a.before, a.after, a.reason, a.ip
-      from audit_logs a left join profiles p on p.id = a.actor_id
+      select a.id, a.created_at::text, a.actor_id, a.actor_role,
+        coalesce(aa.display_name, p.name) as actor_name,
+        a.action, a.entity_type, a.entity_id, a.before, a.after, a.reason, a.ip
+      from audit_logs a
+        left join profiles p on p.id = a.actor_id
+        left join admin_accounts aa on aa.id::text = a.actor_id
       where true
-        ${actor ? (actor.includes("@") ? sql`and p.email = ${actor.toLowerCase()}` : sql`and a.actor_id = ${actor}`) : sql``}
+        ${actor ? (actor.includes("@") ? sql`and (p.email = ${actor.toLowerCase()} or aa.username = ${actor.toLowerCase()})` : sql`and a.actor_id = ${actor}`) : sql``}
         ${action ? sql`and a.action ilike ${`%${action.replace(/[%_]/g, "\\$&")}%`}` : sql``}
         ${entity ? sql`and a.entity_type = ${entity}` : sql``}
         ${entityId ? sql`and a.entity_id = ${entityId}` : sql``}

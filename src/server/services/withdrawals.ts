@@ -5,6 +5,7 @@ import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
 import { minBig, toDecimal, toMinor } from "@/lib/money";
 import { fmtCash } from "@/lib/format-money";
 import { audit } from "./audit";
+import { assertWithdrawalsAllowed, getRequestCountry } from "./country-access";
 import { getConfig } from "./config";
 import { getBalances, postTransaction } from "./ledger";
 import { notify } from "./notifications";
@@ -30,8 +31,20 @@ export async function getWithdrawalEligibility(userId: string, tx: DbOrTx = db):
   const balances = await getBalances(userId, tx);
   const reasons: string[] = [];
   if (profile.status !== "ACTIVE") reasons.push("Your account is suspended.");
-  if ((cfg.requiresVerification || profile.verificationRequired) && profile.verificationStatus !== "VERIFIED") {
-    reasons.push("Please complete account verification before withdrawing.");
+
+  // Licence + country lock (live request geo, else signup country).
+  const country = (await getRequestCountry()) ?? profile.signupCountry;
+  try {
+    await assertWithdrawalsAllowed(country, tx);
+  } catch (err) {
+    reasons.push(err instanceof Error ? err.message : "Withdrawals are not available in your country.");
+  }
+
+  // Identity check before first withdrawal: admin-reviewed ID + proof of address.
+  if (profile.verificationStatus !== "VERIFIED" || !profile.idDocumentFileId || !profile.addressProofFileId) {
+    reasons.push("Upload your ID and proof of address, then wait for admin approval before your first withdrawal.");
+  } else if (cfg.requiresVerification || profile.verificationRequired) {
+    // already verified with docs
   }
   const [level] = profile.depositLevelId
     ? await tx.select().from(depositLevels).where(eq(depositLevels.id, profile.depositLevelId)).limit(1)
@@ -91,7 +104,9 @@ export async function requestWithdrawal(userId: string, input: { amount: string;
   if (prior) return prior;
   try {
     return await db.transaction(async (tx) => {
-      await tx.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, userId)).for("update");
+      const [lockedProfile] = await tx.select().from(profiles).where(eq(profiles.id, userId)).for("update");
+      if (!lockedProfile) throw new NotFoundError("Account not found");
+      await assertWithdrawalsAllowed((await getRequestCountry()) ?? lockedProfile.signupCountry, tx);
       const [account] = await tx
         .select()
         .from(withdrawalAccounts)

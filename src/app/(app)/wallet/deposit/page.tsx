@@ -16,15 +16,19 @@ import { formatCash } from "@/lib/money";
 import { getFiatDisplay } from "@/lib/fiat-display";
 import { formatDateTime } from "@/lib/time";
 import { getConfig, isFeatureEnabled } from "@/server/services/config";
-import { listPaymentAccounts, userDeposits } from "@/server/services/deposits";
+import { availableDepositMethods, getRequestCountry, resolveCountryAccess } from "@/server/services/country-access";
+import { userDeposits } from "@/server/services/deposits";
+import { getFile } from "@/server/services/files";
 
 export const metadata: Metadata = { title: "Deposit" };
 
 export default async function DepositPage() {
   const fiat = await getFiatDisplay();
   const user = await requireUser();
-  const [accounts, cfg, deposits, enabled, [{ n }], b] = await Promise.all([
-    listPaymentAccounts(),
+  const country = (await getRequestCountry()) ?? user.signupCountry;
+  const access = await resolveCountryAccess(country);
+  const methods = availableDepositMethods(access);
+  const [cfg, deposits, enabled, [{ n }], b] = await Promise.all([
     getConfig("deposit"),
     userDeposits(user.id, 10),
     isFeatureEnabled("deposits", db, false),
@@ -32,10 +36,17 @@ export default async function DepositPage() {
     getBalances(user.id),
   ]);
   const reference = `LB-${user.referralCode}-${String(n + 1).padStart(3, "0")}`;
+  let qrUrl: string | null = null;
+  if (access.payments.qrImageFileId) {
+    const file = await getFile(access.payments.qrImageFileId);
+    if (file) qrUrl = `/api/files/${file.id}`;
+  }
+
+  const blocked = !enabled || !access.deposits || methods.length === 0;
 
   return (
     <div>
-      <InnerPageHeader title="Add money" subtitle="Deposit by bank transfer" />
+      <InnerPageHeader title="Add money" subtitle="USDT (TRC20) by default" />
       <Section className="pt-1">
         <WalletSummary
           highlight="cash"
@@ -50,15 +61,23 @@ export default async function DepositPage() {
           <EmptyState icon={<Landmark className="size-8 text-primary" />} title="Deposits are temporarily unavailable." description="Please check back later." />
         ) : user.status !== "ACTIVE" ? (
           <EmptyState icon={<Lock className="size-8 text-primary" />} title="Deposits unavailable" description="Your account is suspended. Please contact support." />
+        ) : blocked ? (
+          <EmptyState
+            icon={<Lock className="size-8 text-primary" />}
+            title="Deposits unavailable"
+            description={access.depositBlockReason ?? "Deposits are not available in your country right now."}
+          />
         ) : (
           <DepositForm
-            accounts={accounts.map((a) => ({ id: a.id, bankName: a.bankName, accountName: a.accountName, accountNumber: a.accountNumber, instructions: a.instructions }))}
-            methods={cfg.methods}
+            methods={methods}
             min={cfg.min}
             max={cfg.max}
             proofRequired={cfg.proofRequired}
             defaultName={user.name}
             reference={reference}
+            usdtAddress={access.payments.usdtAddress}
+            bank={access.payments.bank}
+            qrUrl={qrUrl}
           />
         )}
       </Section>
@@ -70,7 +89,8 @@ export default async function DepositPage() {
                 <div className="min-w-0">
                   <p className="font-semibold tabular">{formatCash(d.amount, { currency: fiat })}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {formatDateTime(d.createdAt)} · Ref {d.reference}
+                    {formatDateTime(d.createdAt)} · {d.method}
+                    {d.cryptoExpectedAmount ? ` · send ${d.cryptoExpectedAmount} USDT` : ` · Ref ${d.reference}`}
                   </p>
                   {d.status === "REJECTED" && d.reviewNote && <p className="text-xs text-destructive">{d.reviewNote}</p>}
                 </div>

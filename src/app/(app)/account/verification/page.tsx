@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { RequestVerificationButton } from "@/components/app/account-forms";
+import { VerificationUploadForm } from "@/components/app/account-forms";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
 import { Panel, Section } from "@/components/app/mobile-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -9,10 +9,13 @@ import { requireUser } from "@/lib/auth/session";
 export const metadata: Metadata = { title: "Verification" };
 
 const COPY: Record<string, { title: string; body: string }> = {
-  UNVERIFIED: { title: "Not verified yet", body: "Verification protects your account and may be required before larger withdrawals." },
-  PENDING: { title: "Under review", body: "Our team is reviewing your details. We'll notify you when it's done, usually within 1-2 business days." },
-  VERIFIED: { title: "You're verified", body: "Your account is fully verified. Thanks for helping keep LootBox safe." },
-  REJECTED: { title: "Verification unsuccessful", body: "We couldn't verify your account with the details provided. Update your profile and try again, or contact support." },
+  UNVERIFIED: {
+    title: "Identity check required",
+    body: "Before your first withdrawal, upload a photo of your government ID and a proof of address. Our team reviews every submission.",
+  },
+  PENDING: { title: "Under review", body: "Our team is reviewing your documents. We will notify you when it is done, usually within 1-2 business days." },
+  VERIFIED: { title: "You're verified", body: "Your identity documents were approved. Thanks for helping keep LootBox safe." },
+  REJECTED: { title: "Verification unsuccessful", body: "We could not verify your documents. Upload clearer files and try again, or contact support." },
 };
 
 export default async function VerificationPage() {
@@ -30,9 +33,6 @@ export default async function VerificationPage() {
           </div>
           <p className="text-sm text-muted-foreground">{c.body}</p>
           {user.verificationNote && <p className="rounded-lg bg-muted p-2 text-sm">{user.verificationNote}</p>}
-          {user.verificationRequired && user.verificationStatus !== "VERIFIED" && (
-            <p className="rounded-lg bg-warning-soft p-2 text-sm">Verification is required on your account before you can withdraw.</p>
-          )}
         </Panel>
       </Section>
       {canRequest && (
@@ -41,19 +41,19 @@ export default async function VerificationPage() {
             <li className="flex gap-2">
               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-primary">1</span>
               <span>
-                Make sure your{" "}
+                Confirm your{" "}
                 <Link href="/account/profile" className="font-semibold text-primary underline">
-                  profile
+                  profile name
                 </Link>{" "}
-                has your full legal name and phone number{user.phone ? "" : " (phone number missing)"}.
+                matches your ID.
               </span>
             </li>
             <li className="flex gap-2">
               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-primary">2</span>
-              <span>Request verification. Our team may contact you to confirm your identity.</span>
+              <span>Upload a clear photo of your ID and a recent proof of address (utility bill or bank statement).</span>
             </li>
           </ol>
-          <RequestVerificationButton disabled={!user.phone} />
+          <VerificationUploadForm />
         </Section>
       )}
     </div>

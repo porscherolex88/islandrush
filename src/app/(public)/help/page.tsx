@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Container, PageHero } from "@/components/public/marketing";
 import { publishedHelpArticles } from "@/server/queries/public";
 
-export const metadata: Metadata = { title: "Help centre", description: "Guides for deposits, withdrawals, games and your account." };
+export const metadata: Metadata = { title: "Help centre", description: "Guides to the LootBox islands, puzzles, Market and your account." };
 export const revalidate = 300;
 
 export default async function HelpPage() {

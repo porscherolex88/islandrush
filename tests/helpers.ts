@@ -3,6 +3,7 @@ import { db } from "@/db";
 import {
   appConfig,
   collections,
+  countryControls,
   depositLevels,
   featureFlags,
   items,
@@ -23,14 +24,55 @@ import { ensureProfile } from "@/server/services/profiles";
 let counter = 0;
 export const uid = (prefix = "user") => `${prefix}_${++counter}_${Math.random().toString(36).slice(2, 8)}`;
 
-export async function makeUser(opts: { role?: (typeof profiles.$inferInsert)["role"]; referralCode?: string; ip?: string; deviceId?: string } = {}) {
+/** Allowed test country with real-money features enabled (not on the hard-coded restricted list). */
+export const TEST_COUNTRY = "PH";
+
+let countrySeeded = false;
+export async function ensureTestCountryPayments() {
+  if (countrySeeded) return;
+  await db
+    .insert(countryControls)
+    .values({
+      countryCode: TEST_COUNTRY,
+      siteAccess: true,
+      freePlay: true,
+      depositsEnabled: true,
+      withdrawalsEnabled: true,
+      usdtTrc20Address: process.env.USDT_TRC20_WALLET ?? "TTestUsdtWalletAddressForVitest0001",
+      bankName: "Test Bank",
+      bankAccountName: "LootBox Games Pte Ltd",
+      bankAccountNumber: "000011112222",
+      bankInstructions: "Test-only bank path",
+    })
+    .onConflictDoUpdate({
+      target: countryControls.countryCode,
+      set: {
+        depositsEnabled: true,
+        withdrawalsEnabled: true,
+        bankName: "Test Bank",
+        bankAccountName: "LootBox Games Pte Ltd",
+        bankAccountNumber: "000011112222",
+        updatedAt: new Date(),
+      },
+    });
+  countrySeeded = true;
+}
+
+export async function makeUser(
+  opts: { role?: (typeof profiles.$inferInsert)["role"]; referralCode?: string; ip?: string; deviceId?: string; country?: string } = {},
+) {
+  await ensureTestCountryPayments();
   const id = uid();
-  const profile = await ensureProfile({ id, email: `${id}@test.dev`, name: `Test ${id}` }, { referralCode: opts.referralCode, ip: opts.ip, deviceId: opts.deviceId });
+  const country = opts.country ?? TEST_COUNTRY;
+  const profile = await ensureProfile(
+    { id, email: `${id}@test.dev`, name: `Test ${id}` },
+    { referralCode: opts.referralCode, ip: opts.ip, deviceId: opts.deviceId, country },
+  );
   if (opts.role && opts.role !== "USER") {
     await db.update(profiles).set({ role: opts.role }).where(eq(profiles.id, id));
-    return { ...profile, role: opts.role };
+    return { ...profile, role: opts.role, signupCountry: country };
   }
-  return profile;
+  return { ...profile, signupCountry: country };
 }
 
 export const admin = { id: "admin_actor", role: "SUPER_ADMIN" };
@@ -54,15 +96,31 @@ export async function ensureDepositsEnabled() {
 export async function fundCash(userId: string, amount: string) {
   await ensureAdminActor();
   await ensureDepositsEnabled();
+  await ensureTestCountryPayments();
   const dep = await createDeposit(userId, {
     amount,
     reference: `REF-${uid("ref")}`,
     payerName: "Test Payer",
-    method: "BANK_TRANSFER",
+    method: "USDT_TRC20",
     idempotencyKey: uid("dep"),
+    countryCode: TEST_COUNTRY,
   });
   await approveDeposit(admin, dep.id);
   return dep;
+}
+
+/** Marks a user as identity-verified with placeholder document ids for withdrawal tests. */
+export async function verifyUser(userId: string) {
+  await db
+    .update(profiles)
+    .set({
+      verificationStatus: "VERIFIED",
+      verificationRequired: false,
+      idDocumentFileId: crypto.randomUUID(),
+      addressProofFileId: crypto.randomUUID(),
+      updatedAt: new Date(),
+    })
+    .where(eq(profiles.id, userId));
 }
 
 export async function setConfigRaw(key: string, value: unknown) {

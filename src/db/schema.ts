@@ -215,6 +215,10 @@ export const profiles = pgTable(
       .default({ dailyCreditLimit: null, selfExcludedUntil: null }),
     signupIp: text("signup_ip"),
     signupDeviceId: text("signup_device_id"),
+    /** ISO 3166-1 alpha-2 from x-vercel-ip-country at signup. */
+    signupCountry: text("signup_country"),
+    idDocumentFileId: uuid("id_document_file_id"),
+    addressProofFileId: uuid("address_proof_file_id"),
     lastSeenAt: ts("last_seen_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -226,6 +230,7 @@ export const profiles = pgTable(
     index("profiles_referred_by_idx").on(t.referredById),
     index("profiles_role_idx").on(t.role),
     index("profiles_created_idx").on(t.createdAt),
+    index("profiles_signup_country_idx").on(t.signupCountry),
   ],
 );
 
@@ -255,6 +260,50 @@ export const loginEvents = pgTable(
     index("login_events_user_idx").on(t.userId, t.createdAt),
     index("login_events_ip_idx").on(t.ip),
     index("login_events_device_idx").on(t.deviceId),
+  ],
+);
+
+/**
+ * Staff admin accounts. Fully separate from player (Neon Auth) profiles.
+ * Bootstrap via ADMIN_BOOTSTRAP_USERNAME / ADMIN_BOOTSTRAP_PASSWORD when empty,
+ * or `npm run admin:create`.
+ */
+export const adminAccounts = pgTable(
+  "admin_accounts",
+  {
+    id: id(),
+    username: text("username").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    displayName: text("display_name").notNull(),
+    role: roleEnum("role").notNull().default("SUPER_ADMIN"),
+    status: userStatusEnum("status").notNull().default("ACTIVE"),
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
+    failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+    lockedUntil: ts("locked_until"),
+    lastLoginAt: ts("last_login_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("admin_accounts_username_uq").on(t.username)],
+);
+
+export const adminSessions = pgTable(
+  "admin_sessions",
+  {
+    id: id(),
+    adminId: uuid("admin_id")
+      .notNull()
+      .references(() => adminAccounts.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: ts("expires_at").notNull(),
+    ip: text("ip"),
+    userAgent: text("user_agent"),
+    revokedAt: ts("revoked_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("admin_sessions_token_uq").on(t.tokenHash),
+    index("admin_sessions_admin_idx").on(t.adminId, t.expiresAt),
   ],
 );
 
@@ -363,9 +412,8 @@ export const ledgerEntries = pgTable(
 
 export const uploadedFiles = pgTable("uploaded_files", {
   id: id(),
-  ownerId: text("owner_id")
-    .notNull()
-    .references(() => profiles.id),
+  /** Player profile id or staff admin account id. */
+  ownerId: text("owner_id").notNull(),
   purpose: text("purpose").notNull(),
   mimeType: text("mime_type").notNull(),
   sizeBytes: integer("size_bytes").notNull(),
@@ -374,6 +422,10 @@ export const uploadedFiles = pgTable("uploaded_files", {
   createdAt: createdAt(),
 });
 
+/**
+ * Legacy global bank accounts (no longer seeded). Prefer per-country
+ * bank/QR details on country_controls. Kept for historical deposit FKs.
+ */
 export const paymentAccounts = pgTable("payment_accounts", {
   id: id(),
   bankName: text("bank_name").notNull(),
@@ -386,6 +438,32 @@ export const paymentAccounts = pgTable("payment_accounts", {
   updatedAt: updatedAt(),
 });
 
+/**
+ * Per-country access and payment-method configuration.
+ * Unconfigured countries: deposits OFF by default.
+ * Hard-coded restricted countries always force deposits/withdrawals OFF.
+ */
+export const countryControls = pgTable(
+  "country_controls",
+  {
+    countryCode: text("country_code").primaryKey(),
+    siteAccess: boolean("site_access").notNull().default(true),
+    freePlay: boolean("free_play").notNull().default(true),
+    depositsEnabled: boolean("deposits_enabled").notNull().default(false),
+    withdrawalsEnabled: boolean("withdrawals_enabled").notNull().default(false),
+    bankName: text("bank_name"),
+    bankAccountName: text("bank_account_name"),
+    bankAccountNumber: text("bank_account_number"),
+    bankInstructions: text("bank_instructions"),
+    qrImageFileId: uuid("qr_image_file_id").references(() => uploadedFiles.id),
+    usdtTrc20Address: text("usdt_trc20_address"),
+    updatedBy: text("updated_by"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("country_controls_updated_idx").on(t.updatedAt)],
+);
+
 export const deposits = pgTable(
   "deposits",
   {
@@ -394,14 +472,22 @@ export const deposits = pgTable(
       .notNull()
       .references(() => profiles.id),
     amount: money("amount").notNull(),
-    method: text("method").notNull().default("BANK_TRANSFER"),
+    method: text("method").notNull().default("USDT_TRC20"),
     paymentAccountId: uuid("payment_account_id").references(() => paymentAccounts.id),
     reference: text("reference").notNull(),
-    payerName: text("payer_name").notNull(),
+    payerName: text("payer_name").notNull().default(""),
     userNote: text("user_note"),
     proofFileId: uuid("proof_file_id").references(() => uploadedFiles.id),
+    /** ISO country used for the access check at submission time. */
+    countryCode: text("country_code"),
+    /** Unique USDT amount (6 dp) the player must send; used to match TronGrid transfers. */
+    cryptoExpectedAmount: numeric("crypto_expected_amount", { precision: 20, scale: 6 }),
+    cryptoTxId: text("crypto_tx_id"),
+    cryptoConfirmations: integer("crypto_confirmations"),
+    cryptoToAddress: text("crypto_to_address"),
     status: depositStatusEnum("status").notNull().default("PENDING"),
-    reviewerId: text("reviewer_id").references(() => profiles.id),
+    /** Staff admin account id (not a player profile). */
+    reviewerId: text("reviewer_id"),
     reviewedAt: ts("reviewed_at"),
     reviewNote: text("review_note"),
     internalNote: text("internal_note"),
@@ -412,10 +498,40 @@ export const deposits = pgTable(
   },
   (t) => [
     uniqueIndex("deposits_user_idem_uq").on(t.userId, t.idempotencyKey),
+    uniqueIndex("deposits_crypto_txid_uq").on(t.cryptoTxId),
+    uniqueIndex("deposits_crypto_expected_uq").on(t.cryptoExpectedAmount),
     index("deposits_status_idx").on(t.status, t.createdAt),
     index("deposits_user_idx").on(t.userId, t.createdAt),
     index("deposits_reference_idx").on(t.reference),
+    index("deposits_method_status_idx").on(t.method, t.status),
     check("deposits_amount_pos", sql`${t.amount} > 0`),
+  ],
+);
+
+/** Append-only log of every USDT credit for admin review (idempotent via tx id). */
+export const usdtCreditLogs = pgTable(
+  "usdt_credit_logs",
+  {
+    id: id(),
+    depositId: uuid("deposit_id")
+      .notNull()
+      .references(() => deposits.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id),
+    txId: text("tx_id").notNull(),
+    fromAddress: text("from_address"),
+    toAddress: text("to_address").notNull(),
+    amount: numeric("amount", { precision: 20, scale: 6 }).notNull(),
+    confirmations: integer("confirmations").notNull().default(0),
+    creditedCash: money("credited_cash").notNull(),
+    raw: jsonb("raw").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("usdt_credit_logs_txid_uq").on(t.txId),
+    index("usdt_credit_logs_deposit_idx").on(t.depositId),
+    index("usdt_credit_logs_created_idx").on(t.createdAt),
   ],
 );
 
@@ -452,7 +568,8 @@ export const withdrawals = pgTable(
       .$type<{ bankName: string; accountName: string; accountNumber: string }>()
       .notNull(),
     sourceBreakdown: jsonb("source_breakdown").$type<Record<string, string>>().notNull().default({}),
-    reviewerId: text("reviewer_id").references(() => profiles.id),
+    /** Staff admin account id (not a player profile). */
+    reviewerId: text("reviewer_id"),
     reviewNote: text("review_note"),
     internalNote: text("internal_note"),
     payoutReference: text("payout_reference"),

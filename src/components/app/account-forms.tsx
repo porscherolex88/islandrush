@@ -139,13 +139,29 @@ export function SessionList({ sessions }: { sessions: SessionView[] }) {
   );
 }
 
-export function RequestVerificationButton({ disabled }: { disabled: boolean }) {
-  const { run, pending } = useAction(requestVerificationAction, { success: "Verification requested. We'll be in touch." });
+export function VerificationUploadForm() {
+  const { run, pending } = useAction(requestVerificationAction, { success: "Documents submitted. We'll review them shortly." });
   return (
-    <Button variant="gold" size="pill" className="w-full" disabled={disabled || pending} onClick={() => run()}>
-      {pending && <Loader2 className="animate-spin" />}
-      Request verification
-    </Button>
+    <form
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        run(new FormData(e.currentTarget));
+      }}
+    >
+      <div className="grid gap-1.5">
+        <Label htmlFor="idDocument">Photo of your ID</Label>
+        <Input id="idDocument" name="idDocument" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required className="h-11" />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="addressProof">Proof of address</Label>
+        <Input id="addressProof" name="addressProof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required className="h-11" />
+      </div>
+      <Button variant="gold" size="pill" className="w-full" type="submit" disabled={pending}>
+        {pending && <Loader2 className="animate-spin" />}
+        Submit for review
+      </Button>
+    </form>
   );
 }
 

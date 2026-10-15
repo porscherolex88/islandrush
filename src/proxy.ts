@@ -4,24 +4,38 @@ import { detectFiatDisplay, FIAT_COOKIE } from "@/lib/fiat-display.shared";
 
 const DEVICE_COOKIE = "lb_did";
 const REFERRAL_COOKIE = "lb_ref";
-const SESSION_COOKIE_HINTS = ["session_token", "session_data"];
+const ADMIN_SESSION_COOKIE = "lb_admin_session";
+const PLAYER_SESSION_HINTS = ["session_token", "session_data"];
 
-function hasSessionCookie(req: NextRequest) {
-  return req.cookies.getAll().some((c) => SESSION_COOKIE_HINTS.some((hint) => c.name.includes(hint)));
+function hasPlayerSession(req: NextRequest) {
+  return req.cookies.getAll().some((c) => PLAYER_SESSION_HINTS.some((hint) => c.name.includes(hint)));
+}
+
+function hasAdminSession(req: NextRequest) {
+  return Boolean(req.cookies.get(ADMIN_SESSION_COOKIE)?.value);
 }
 
 /**
  * Lightweight edge of the request pipeline:
- * - assigns a first-party device id (used for fraud signals, never for tracking across sites)
+ * - assigns a first-party device id
  * - remembers referral codes from ?ref= links
- * - bounces signed-out visitors away from the app and /admin to sign in (real auth is enforced server-side)
+ * - player app requires Neon Auth session
+ * - /admin/* (except login) requires the separate staff admin session cookie
  */
 export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
-  const isAdmin = (pathname === "/admin" || pathname.startsWith("/admin/")) && pathname !== "/admin/login";
-  const isProtected = isAppPath(pathname) || isAdmin;
+  const isAdminLogin = pathname === "/admin/login" || pathname === "/admin/change-password";
+  const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isPlayerApp = isAppPath(pathname);
 
-  if (isProtected && !hasSessionCookie(req)) {
+  if (isAdmin && !isAdminLogin && !hasAdminSession(req)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/admin/login";
+    url.search = `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;
+    return NextResponse.redirect(url);
+  }
+
+  if (isPlayerApp && !hasPlayerSession(req)) {
     const url = req.nextUrl.clone();
     url.pathname = isAdmin ? "/admin/login" : "/login";
     url.search = `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;

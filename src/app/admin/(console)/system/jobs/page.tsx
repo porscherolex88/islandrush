@@ -18,6 +18,7 @@ const SCHEDULES: Record<JobName, string> = {
   "send-broadcasts": "Daily, or send immediately from the broadcast",
   reconcile: "Daily",
   "cleanup-rate-limits": "Daily",
+  "poll-usdt-deposits": "Every 5 minutes (Vercel Cron)",
 };
 
 export default async function JobsPage({ searchParams }: PageProps<"/admin/system/jobs">) {

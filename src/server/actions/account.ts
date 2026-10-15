@@ -68,9 +68,16 @@ export async function updatePlayLimitsAction(input: { dailyCreditLimit: number |
   );
 }
 
-export async function requestVerificationAction() {
+export async function requestVerificationAction(form: FormData) {
   return userAction(async (user) => {
-    await requestVerification(user.id);
+    const { saveUpload } = await import("@/server/services/files");
+    const idDoc = form.get("idDocument");
+    const address = form.get("addressProof");
+    if (!(idDoc instanceof File) || idDoc.size === 0) throw new AppError("Upload a photo of your ID");
+    if (!(address instanceof File) || address.size === 0) throw new AppError("Upload proof of address");
+    const idDocumentFileId = await saveUpload(user.id, idDoc, "identity_id");
+    const addressProofFileId = await saveUpload(user.id, address, "identity_address");
+    await requestVerification(user.id, { idDocumentFileId, addressProofFileId });
     revalidatePath("/account", "layout");
     return null;
   });

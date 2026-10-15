@@ -59,12 +59,12 @@ const pool = (name: string, label: string, required = false): FieldDef => ({ nam
 export const RESOURCES = {
   paymentAccounts: {
     key: "paymentAccounts",
-    label: "Payment accounts",
+    label: "Payment accounts (legacy)",
     singular: "Payment account",
     group: "Finance",
     permission: "deposits.manage",
     pk: "id",
-    description: "Company bank accounts shown to players on the deposit page.",
+    description: "Legacy global bank accounts. Prefer per-country bank/QR under Compliance > Countries. USDT TRC20 is the default deposit method.",
     fields: [
       { name: "bankName", label: "Bank", type: "text", required: true },
       { name: "accountName", label: "Account name", type: "text", required: true },

@@ -3,12 +3,10 @@ import type { Metadata } from "next";
 import { CtaBand, FeatureCard, PageHero, SectionBlock } from "@/components/public/marketing";
 import { formatCash } from "@/lib/money";
 import { getFiatDisplay } from "@/lib/fiat-display";
+import { FREE_GAME_SOCIAL, freeGameSocialMetadata } from "@/lib/seo";
 import { publicRewardFacts } from "@/server/queries/public";
 
-export const metadata: Metadata = {
-  title: "LootBox Rewards: Daily Spin, Check-ins, Missions and Prizes",
-  description: "Daily spin, check-ins, missions, Loot, Puzzle pieces, island prizes, and Cash rewards on LootBox.",
-};
+export const metadata: Metadata = freeGameSocialMetadata(FREE_GAME_SOCIAL.rewards);
 export const revalidate = 300;
 
 export default async function RewardsPage() {

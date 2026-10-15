@@ -5,10 +5,13 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { navForPermissions } from "@/lib/admin/nav";
 import { requireAdmin } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: { default: "Admin", template: "%s | LootBox Admin" }, robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  title: { default: "Admin", template: "%s | LootBox Admin" },
+  robots: { index: false, follow: false },
+};
 export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
+export default async function AdminConsoleLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireAdmin();
   const nav = navForPermissions(ctx.can);
   return (

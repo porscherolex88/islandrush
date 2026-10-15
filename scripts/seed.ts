@@ -245,9 +245,10 @@ async function main() {
       { key: "vault", enabled: true, description: "Vault" },
       { key: "daily_spin", enabled: true, description: "Daily Spin" },
       { key: "referrals", enabled: true, description: "Referral program" },
-      { key: "deposits", enabled: false, description: "Manual deposits" },
-      { key: "withdrawals", enabled: true, description: "Withdrawals" },
+      { key: "deposits", enabled: false, description: "Player deposits (still gated by licence + country; off site-wide until launch)" },
+      { key: "withdrawals", enabled: true, description: "Withdrawals (still gated by licence + country)" },
       { key: "registrations", enabled: true, description: "New account registration" },
+      { key: "homepage_activity_ticker", enabled: true, description: "Homepage live activity ticker" },
     ]).onConflictDoNothing();
 
     /* Progression ---------------------------------------------------------- */
@@ -280,10 +281,8 @@ async function main() {
       { level: 2, rewardKind: "PERCENT", value: "2.00" },
       { level: 3, rewardKind: "FIXED", value: "5.00" },
     ]);
-    await db.insert(s.paymentAccounts).values([
-      { bankName: "Maybank", accountName: "LootBox Rewards Sdn Bhd", accountNumber: "5140 1234 5678", instructions: "Use the transfer reference shown on this page so we can match your deposit.", sortOrder: 0 },
-      { bankName: "CIMB Bank", accountName: "LootBox Rewards Sdn Bhd", accountNumber: "8009 876 543", instructions: "DuitNow transfers are usually reviewed within 30 minutes.", sortOrder: 1 },
-    ]);
+    // No hard-coded Maybank/CIMB accounts. USDT TRC20 is the default deposit method;
+    // bank/QR details are configured per country in Admin > Compliance > Countries.
     for (const role of ["SUPPORT", "FINANCE", "GAME_ADMIN"] as const) {
       await db.insert(s.rolePermissions).values(DEFAULT_ROLE_PERMISSIONS[role].map((permission) => ({ role, permission }))).onConflictDoNothing();
     }
@@ -327,8 +326,8 @@ async function main() {
     const page = (slug: string, title: string, body: string) => ({ slug, title, body });
     const about = compliance.contentPages.find((p) => p.slug === "about");
     await db.insert(s.contentPages).values([
-      page("terms", "Terms of Service", "These terms govern your use of LootBox.\n\n1. Eligibility. You must be 18 or older and legally permitted to use rewards platforms in your jurisdiction.\n\n2. Accounts. One account per person. You are responsible for activity on your account.\n\n3. Credits. Credits are purchased with Cash at the published conversion rate, have no cash value outside the platform and cannot be transferred between users.\n\n4. Rewards. Game outcomes are determined by our servers. Cash rewards become withdrawable after the settlement period and subject to eligibility checks.\n\n5. Deposits and withdrawals. Deposits are credited only after verification. Withdrawals are paid to bank accounts in your name.\n\n6. Fair use. We may review, hold or reverse rewards obtained through fraud, abuse or error, and suspend accounts involved.\n\n7. Changes. We may update these terms and will notify you in the app."),
-      page("privacy", "Privacy Policy", "We collect the information needed to run your account: your name, email, phone number (optional), transaction history, and technical signals such as IP address and a first-party device identifier used for security and fraud prevention.\n\nWe use this information to operate the service, process deposits and withdrawals, prevent abuse, and provide support. We do not sell your personal data.\n\nYou can request access to or deletion of your data by contacting support."),
+      page("terms", "Terms of Service", "These terms govern your use of LootBox, operated by LootBox Games Pte Ltd.\n\n1. Eligibility. You must be 18 or older and legally permitted to use rewards platforms in your jurisdiction.\n\n2. Accounts. One account per person. You are responsible for activity on your account.\n\n3. Credits. Credits are purchased with Cash at the published conversion rate, have no cash value outside the platform and cannot be transferred between users.\n\n4. Rewards. Game outcomes are determined by our servers. Cash rewards become withdrawable after the settlement period and subject to eligibility checks.\n\n5. Deposits and withdrawals. Deposits are credited only after verification. Withdrawals are paid to bank accounts in your name.\n\n6. Fair use. We may review, hold or reverse rewards obtained through fraud, abuse or error, and suspend accounts involved.\n\n7. Changes. We may update these terms and will notify you in the app."),
+      page("privacy", "Privacy Policy", "LootBox Games Pte Ltd collects the information needed to run your account: your name, email, phone number (optional), transaction history, and technical signals such as IP address and a first-party device identifier used for security and fraud prevention.\n\nWe use this information to operate the service, process deposits and withdrawals, prevent abuse, and provide support. We do not sell your personal data.\n\nYou can request access to or deletion of your data by contacting support."),
       page("responsible-play", "Responsible Play", "LootBox should be fun. Only spend what you can comfortably afford.\n\nTools available to you:\n- Daily Credit spending limit\n- Take a break (self-exclusion) for 1 day, 7 days, 30 days, 3 months or 6 months\n- Full transaction history in your wallet\n\nIf play stops being fun, take a break and reach out to our support team. We are happy to help you set limits or close your account."),
       page("about", about?.title ?? "How LootBox works", about?.body ?? "LootBox is an adventure across 10 islands."),
     ]);

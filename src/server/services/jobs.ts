@@ -3,12 +3,17 @@ import { db } from "@/db";
 import { broadcasts, jobRuns, rateLimits } from "@/db/schema";
 import { runReconciliation } from "./admin-finance";
 import { settleDueRewards } from "./cash-rewards";
+import { pollUsdtDeposits } from "./usdt-deposits";
 
 export const JOBS = {
   "settle-rewards": { label: "Settle due rewards", description: "Moves eligible Pending Rewards into Withdrawable." },
   "send-broadcasts": { label: "Send scheduled broadcasts", description: "Delivers published broadcasts whose send time has passed." },
   reconcile: { label: "Reconciliation", description: "Runs ledger integrity checks." },
   "cleanup-rate-limits": { label: "Clean up rate limits", description: "Removes expired rate-limit windows." },
+  "poll-usdt-deposits": {
+    label: "Poll USDT TRC20 deposits",
+    description: "Matches TronGrid transfers to pending unique amounts and credits after confirmations.",
+  },
 } as const;
 export type JobName = keyof typeof JOBS;
 
@@ -50,6 +55,8 @@ async function execute(job: JobName): Promise<Record<string, unknown>> {
       const deleted = await db.delete(rateLimits).where(lte(rateLimits.resetAt, new Date())).returning({ key: rateLimits.key });
       return { deleted: deleted.length };
     }
+    case "poll-usdt-deposits":
+      return pollUsdtDeposits();
   }
 }
 

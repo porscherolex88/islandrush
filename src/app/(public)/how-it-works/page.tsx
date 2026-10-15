@@ -3,12 +3,10 @@ import type { Metadata } from "next";
 import { CtaBand, FeatureCard, PageHero, SectionBlock, Steps } from "@/components/public/marketing";
 import { formatCredits, formatCash } from "@/lib/money";
 import { getFiatDisplay } from "@/lib/fiat-display";
+import { FREE_GAME_SOCIAL, freeGameSocialMetadata } from "@/lib/seo";
 import { getConfig } from "@/server/services/config";
 
-export const metadata: Metadata = {
-  title: "How LootBox Works: 10 Islands, Loot and Puzzle Prizes",
-  description: "Daily check-in and spin, Mystery Boxes, Loot, checkpoints across 10 islands, Big Box puzzle pieces, Market and Collections.",
-};
+export const metadata: Metadata = freeGameSocialMetadata(FREE_GAME_SOCIAL.howItWorks);
 export const revalidate = 300;
 
 export default async function HowItWorksPage() {

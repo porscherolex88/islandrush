@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
+import { COMPANY_NAME } from "@/lib/company";
+import { getLicenceDisplay } from "@/lib/compliance/licence";
 
 const COLUMNS = [
   {
@@ -30,6 +32,7 @@ const COLUMNS = [
 ];
 
 export function SiteFooter() {
+  const licence = getLicenceDisplay();
   return (
     <footer className="border-t bg-surface">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-[1.5fr_repeat(3,1fr)] md:gap-10">
@@ -37,6 +40,12 @@ export function SiteFooter() {
           <Logo />
           <p className="max-w-xs text-sm text-muted-foreground">Open Mystery Boxes, explore ten adventure maps and complete puzzles to unlock prizes. New things to discover every day.</p>
           <p className="text-xs text-muted-foreground">18+ only. Play responsibly.</p>
+          <p className="text-xs text-muted-foreground">{COMPANY_NAME}</p>
+          {licence && (
+            <p className="text-xs text-muted-foreground">
+              Licensed entity: {licence.licensedEntity ?? COMPANY_NAME}. Licence no. {licence.licenceNumber}.
+            </p>
+          )}
         </div>
         {COLUMNS.map((c) => (
           <div key={c.title}>
@@ -54,7 +63,9 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="border-t">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-muted-foreground sm:px-6">© {new Date().getFullYear()} LootBox. All rights reserved.</p>
+        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-muted-foreground sm:px-6">
+          © {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
+        </p>
       </div>
     </footer>
   );

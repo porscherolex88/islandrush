@@ -15,7 +15,7 @@ import {
   requestWithdrawal,
   transitionWithdrawal,
 } from "@/server/services/withdrawals";
-import { admin, ensureAdminActor, fundCash, makeUser, seedProgression, setConfigRaw, uid } from "./helpers";
+import { admin, ensureAdminActor, fundCash, makeUser, seedProgression, setConfigRaw, TEST_COUNTRY, uid, verifyUser } from "./helpers";
 
 beforeAll(async () => {
   await seedProgression();
@@ -47,8 +47,14 @@ describe("manual deposits", () => {
 
   it("only credits Cash after admin approval, and approval is idempotent", async () => {
     const u = await makeUser();
-    const dep = await createDeposit(u.id, { amount: "1000.00", reference: "BANK123", payerName: "Ali", method: "BANK_TRANSFER", idempotencyKey: uid() });
+    const dep = await createDeposit(u.id, {
+      amount: "1000.00",
+      method: "USDT_TRC20",
+      idempotencyKey: uid(),
+      countryCode: TEST_COUNTRY,
+    });
     expect(dep.status).toBe("PENDING");
+    expect(dep.cryptoExpectedAmount).toBeTruthy();
     expect((await getBalances(u.id)).CASH).toBe(0n);
     const [a, b] = await Promise.all([approveDeposit(admin, dep.id), approveDeposit(admin, dep.id)]);
     expect([a.replayed, b.replayed].sort()).toEqual([false, true]);
@@ -62,15 +68,15 @@ describe("manual deposits", () => {
   it("deduplicates client submissions with the same idempotency key", async () => {
     const u = await makeUser();
     const key = uid();
-    const a = await createDeposit(u.id, { amount: "100.00", reference: "X", payerName: "A", method: "BANK_TRANSFER", idempotencyKey: key });
-    const b = await createDeposit(u.id, { amount: "100.00", reference: "X", payerName: "A", method: "BANK_TRANSFER", idempotencyKey: key });
+    const a = await createDeposit(u.id, { amount: "100.00", method: "USDT_TRC20", idempotencyKey: key, countryCode: TEST_COUNTRY });
+    const b = await createDeposit(u.id, { amount: "100.00", method: "USDT_TRC20", idempotencyKey: key, countryCode: TEST_COUNTRY });
     expect(b.id).toBe(a.id);
   });
 
   it("enforces limits and supports reject and reversal", async () => {
     const u = await makeUser();
-    await expect(createDeposit(u.id, { amount: "1.00", reference: "X", payerName: "A", method: "BANK_TRANSFER", idempotencyKey: uid() })).rejects.toThrow(/Minimum/);
-    const rej = await createDeposit(u.id, { amount: "100.00", reference: "R", payerName: "A", method: "BANK_TRANSFER", idempotencyKey: uid() });
+    await expect(createDeposit(u.id, { amount: "1.00", method: "USDT_TRC20", idempotencyKey: uid(), countryCode: TEST_COUNTRY })).rejects.toThrow(/Minimum/);
+    const rej = await createDeposit(u.id, { amount: "100.00", method: "USDT_TRC20", idempotencyKey: uid(), countryCode: TEST_COUNTRY });
     await rejectDeposit(admin, rej.id, "No matching transfer");
     await expect(approveDeposit(admin, rej.id)).rejects.toThrow();
     const dep = await fundCash(u.id, "200.00");
@@ -78,6 +84,13 @@ describe("manual deposits", () => {
     expect((await getBalances(u.id)).CASH).toBe(0n);
     const [d] = await db.select().from(deposits).where(eq(deposits.id, dep.id));
     expect(d.status).toBe("REVERSED");
+  });
+
+  it("blocks deposits for hard-coded restricted countries like Malaysia", async () => {
+    const u = await makeUser({ country: "MY" });
+    await expect(
+      createDeposit(u.id, { amount: "100.00", method: "USDT_TRC20", idempotencyKey: uid(), countryCode: "MY" }),
+    ).rejects.toThrow(/aren't available|not available/i);
   });
 });
 
@@ -148,7 +161,8 @@ describe("reward settlement", () => {
 describe("withdrawals", () => {
   it("validates eligibility and limits", async () => {
     const u = await makeUser();
-    const acct = await addWithdrawalAccount(u.id, { bankName: "Maybank", accountName: "Test", accountNumber: uid("acct") });
+    await verifyUser(u.id);
+    const acct = await addWithdrawalAccount(u.id, { bankName: "Test Bank", accountName: "Test", accountNumber: uid("acct") });
     let elig = await getWithdrawalEligibility(u.id);
     expect(elig.eligible).toBe(false);
     await giveWithdrawable(u.id, "500.00");
@@ -158,19 +172,18 @@ describe("withdrawals", () => {
     await expect(requestWithdrawal(u.id, { amount: "600.00", withdrawalAccountId: acct.id, idempotencyKey: uid() })).rejects.toThrow(/Maximum/);
   });
 
-  it("requires verification when configured", async () => {
-    await setConfigRaw("withdrawal", { requiresVerification: true });
+  it("requires identity verification before the first withdrawal", async () => {
     const u = await makeUser();
     await giveWithdrawable(u.id, "100.00");
     const elig = await getWithdrawalEligibility(u.id);
     expect(elig.eligible).toBe(false);
-    expect(elig.reasons.join(" ")).toMatch(/verification/);
-    await setConfigRaw("withdrawal", { requiresVerification: false });
+    expect(elig.reasons.join(" ")).toMatch(/ID|proof of address|verification/i);
   });
 
   it("processes the full lifecycle through the ledger", async () => {
     const u = await makeUser();
-    const acct = await addWithdrawalAccount(u.id, { bankName: "CIMB", accountName: "Test", accountNumber: uid("acct") });
+    await verifyUser(u.id);
+    const acct = await addWithdrawalAccount(u.id, { bankName: "Test Bank", accountName: "Test", accountNumber: uid("acct") });
     await giveWithdrawable(u.id, "300.00");
     const key = uid();
     const w = await requestWithdrawal(u.id, { amount: "150.00", withdrawalAccountId: acct.id, idempotencyKey: key });

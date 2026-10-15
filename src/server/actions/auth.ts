@@ -103,51 +103,6 @@ export async function signInAction(_prev: AuthFormState, form: FormData): Promis
   redirect(safeNext(form.get("next")));
 }
 
-const ADMIN_EMAIL_DOMAIN = "lootbox.my";
-
-/**
- * Admin console sign-in. Usernames map to staff accounts at `<username>@lootbox.my`;
- * staff accounts on other domains sign in with their full email.
- */
-export async function adminSignInAction(_prev: AuthFormState, form: FormData): Promise<AuthFormState> {
-  const username = String(form.get("username") ?? "").trim().toLowerCase();
-  const password = String(form.get("password") ?? "");
-  const fields = { username };
-  const failed = { error: "That username and password combination doesn't match our records.", fields };
-  const isEmail = username.includes("@");
-  if (isEmail ? !z.string().email().safeParse(username).success : !/^[a-z0-9._-]{2,32}$/.test(username)) return { error: "Enter your username", fields };
-  if (!password) return { error: "Enter your password", fields };
-
-  const email = isEmail ? username : `${username}@${ADMIN_EMAIL_DOMAIN}`;
-  const meta = await getRequestMeta();
-  if ((await limited(`login:ip:${meta.ip ?? "unknown"}`, 20, 900)) || (await limited(`login:email:${email}`, 8, 900))) {
-    return { error: "Too many sign-in attempts. Please wait a few minutes and try again.", fields };
-  }
-
-  const { data, error } = await getAuth().signIn.email({ email, password });
-  if (error || !data?.user) {
-    await recordLogin({ userId: null, email, success: false, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
-    return failed;
-  }
-  const profile = await ensureProfile(
-    { id: data.user.id, email: data.user.email, name: data.user.name },
-    { ip: meta.ip, deviceId: meta.deviceId, referralCode: meta.referralCode },
-  );
-  if (!isAdminRole(profile.role) || profile.status !== "ACTIVE") {
-    await getAuth().signOut();
-    await recordLogin({ userId: profile.id, email, success: false, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
-    return failed;
-  }
-  await recordLogin({ userId: profile.id, email, success: true, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
-  const next = safeNext(form.get("next"));
-  redirect(next.startsWith("/admin") ? next : "/admin");
-}
-
-export async function adminSignOutAction() {
-  await getAuth().signOut();
-  redirect("/admin/login");
-}
-
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(80),
   phone: z.string().trim().min(8, "Enter your phone number"),
@@ -198,9 +153,18 @@ export async function signUpAction(_prev: AuthFormState, form: FormData): Promis
     const exists = error?.message?.toLowerCase().includes("exist");
     return { error: exists ? "An account with this phone number already exists. Try signing in instead." : "We couldn't create your account. Please try again.", fields };
   }
+  const { assertSiteAccess } = await import("@/server/services/country-access");
+  await assertSiteAccess(meta.country);
   const profile = await ensureProfile(
     { id: data.user.id, email: data.user.email, name: data.user.name },
-    { ip: meta.ip, deviceId: meta.deviceId, referralCode: referralCode || meta.referralCode, phone, dateOfBirth: dobIso },
+    {
+      ip: meta.ip,
+      deviceId: meta.deviceId,
+      referralCode: referralCode || meta.referralCode,
+      phone,
+      dateOfBirth: dobIso,
+      country: meta.country,
+    },
   );
   await recordLogin({ userId: profile.id, email, success: true, ip: meta.ip, userAgent: meta.userAgent, deviceId: meta.deviceId });
   redirect("/home?welcome=1");

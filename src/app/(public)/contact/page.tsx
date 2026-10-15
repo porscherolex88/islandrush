@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container, PageHero } from "@/components/public/marketing";
 import { Button } from "@/components/ui/button";
+import { COMPANY_NAME } from "@/lib/company";
 
 export const metadata: Metadata = { title: "Contact", description: "Get in touch with the LootBox support team." };
 
@@ -16,7 +17,7 @@ export default function ContactPage() {
         <div className="rounded-3xl border bg-card p-6">
           <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-primary"><MessageCircle className="size-6" aria-hidden /></span>
           <h2 className="mt-4 text-lg font-bold">Support ticket</h2>
-          <p className="mt-1 text-sm text-muted-foreground">The fastest way to reach us about deposits, withdrawals or your account.</p>
+          <p className="mt-1 text-sm text-muted-foreground">The fastest way to reach us about your account or the adventure.</p>
           <Button asChild variant="gold" size="pill" className="mt-4 w-full">
             <Link href="/account/support">Open a ticket</Link>
           </Button>
@@ -42,7 +43,9 @@ export default function ContactPage() {
         </div>
       </Container>
       <Container className="pb-14">
-        <p className="rounded-3xl bg-surface p-4 text-center text-sm text-muted-foreground">LootBox staff will never ask for your password or ask you to transfer money to a personal account.</p>
+        <p className="rounded-3xl bg-surface p-4 text-center text-sm text-muted-foreground">
+          {COMPANY_NAME} staff will never ask for your password or ask you to transfer money to a personal account.
+        </p>
       </Container>
     </>
   );

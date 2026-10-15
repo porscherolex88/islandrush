@@ -8,10 +8,10 @@ import "./globals.css";
 const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://lootbox-porscherolex88s-projects.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://lootbox-smoky.vercel.app"),
   title: { default: "LootBox: Play, discover, collect", template: "%s | LootBox" },
   description:
-    "LootBox is a rewards adventure. Open Mystery Boxes, collect Loot, explore the Mystery Map, complete puzzles for prizes and build your daily streak.",
+    "Open Mystery Boxes, explore island maps, collect Loot and complete puzzles on a free daily adventure.",
   applicationName: "LootBox",
 };
 

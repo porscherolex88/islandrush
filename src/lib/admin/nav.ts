@@ -14,11 +14,19 @@ export const ADMIN_NAV: NavGroup[] = [
     children: [
       { label: "Deposits", href: "/admin/finance/deposits", permission: "finance.view" },
       { label: "Withdrawals", href: "/admin/finance/withdrawals", permission: "finance.view" },
+      { label: "USDT credits", href: "/admin/finance/usdt-credits", permission: "finance.view" },
       { label: "Ledger", href: "/admin/finance/ledger", permission: "finance.view" },
       { label: "Transactions", href: "/admin/finance/transactions", permission: "finance.view" },
       { label: "Reconciliation", href: "/admin/finance/reconciliation", permission: "reconciliation.view" },
       { label: "Adjustments", href: "/admin/finance/adjustments", permission: "ledger.adjust" },
-      { label: "Payment Accounts", href: m("paymentAccounts"), permission: "deposits.manage" },
+    ],
+  },
+  {
+    label: "Compliance",
+    icon: "ShieldAlert",
+    children: [
+      { label: "Countries", href: "/admin/compliance/countries", permission: "system.manage" },
+      { label: "Identity reviews", href: "/admin/users?verification=PENDING", permission: "users.manage" },
     ],
   },
   {

@@ -1,4 +1,5 @@
 import { Banknote, Gift, Lock, ShieldCheck, Sparkles, UserPlus, Users, Wallet } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Container, CtaBand, LandingButton, SectionHeading } from "@/components/public/marketing";
@@ -12,8 +13,12 @@ import { PromoPopup } from "@/components/public/landing/promo-popup";
 import { PromoTicker } from "@/components/public/landing/promo-ticker";
 import { StatCounter } from "@/components/public/landing/stat-counter";
 import { getAuthSession } from "@/lib/auth/session";
+import { FREE_GAME_SOCIAL, freeGameSocialMetadata } from "@/lib/seo";
 import { activeBanners } from "@/server/queries/banners";
 import { activityReady, landingMaps, landingStats, recentActivity } from "@/server/queries/landing";
+import { isFeatureEnabled } from "@/server/services/config";
+
+export const metadata: Metadata = freeGameSocialMetadata(FREE_GAME_SOCIAL.home);
 
 const MONEY_STEPS = [
   { icon: UserPlus, title: "Sign up free", body: "Claim your daily check-in and spin straight away." },
@@ -29,13 +34,14 @@ const TRUST = [
 ];
 
 export default async function LandingPage() {
-  const [session, banners, announcements, activity, stats, maps] = await Promise.all([
+  const [session, banners, announcements, activity, stats, maps, tickerOn] = await Promise.all([
     getAuthSession(),
     activeBanners("BANNER"),
     activeBanners("ANNOUNCEMENT"),
     recentActivity(24),
     landingStats(),
     landingMaps(),
+    isFeatureEnabled("homepage_activity_ticker"),
   ]);
   const signedIn = Boolean(session);
   const showStats = stats.boxesOpened >= 50;
@@ -96,7 +102,7 @@ export default async function LandingPage() {
         </Container>
       </section>
 
-      {activityReady(activity) && <LiveTicker events={activity} />}
+      {tickerOn && activityReady(activity) && <LiveTicker events={activity} />}
 
       {showStats && (
         <section className="border-b bg-surface">

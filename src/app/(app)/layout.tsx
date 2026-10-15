@@ -3,11 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AppDrawer } from "@/components/app/app-drawer";
 import { AppShell } from "@/components/app/app-shell";
+import { CountryRestrictedBanner } from "@/components/app/country-banner";
 import { requireUser } from "@/lib/auth/session";
 import { isAdminRole } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/time";
 import { getConfig } from "@/server/services/config";
+import { getRequestCountry, resolveCountryAccess } from "@/server/services/country-access";
 import { unreadCount } from "@/server/services/notifications";
+// isAdminRole still used for maintenance bypass
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +34,8 @@ export default async function UserAppLayout({ children }: LayoutProps<"/">) {
   }
 
   const breakUntil = user.playLimits.selfExcludedUntil ? new Date(user.playLimits.selfExcludedUntil) : null;
+  const country = (await getRequestCountry()) ?? user.signupCountry;
+  const access = await resolveCountryAccess(country);
   let banner: React.ReactNode = null;
   if (user.status === "SUSPENDED") {
     banner = (
@@ -48,10 +53,12 @@ export default async function UserAppLayout({ children }: LayoutProps<"/">) {
         You&apos;re on a play break until {formatDateTime(breakUntil)}. Games are paused; your wallet remains available.
       </div>
     );
+  } else if (access.banner) {
+    banner = <CountryRestrictedBanner message={access.banner} />;
   }
 
   return (
-    <AppShell banner={banner} drawer={<AppDrawer name={user.name} email={user.email} joined={user.createdAt} verificationStatus={user.verificationStatus} isAdmin={isAdminRole(user.role)} unread={await unreadCount(user.id)} />}>
+    <AppShell banner={banner} drawer={<AppDrawer name={user.name} email={user.email} joined={user.createdAt} verificationStatus={user.verificationStatus} isAdmin={false} unread={await unreadCount(user.id)} />}>
       {children}
     </AppShell>
   );
