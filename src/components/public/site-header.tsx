@@ -16,6 +16,7 @@ export const PUBLIC_NAV = [
   { href: "/games", label: "Games" },
   { href: "/rewards", label: "Rewards" },
   { href: "/referrals", label: "Referrals" },
+  { href: "/blog", label: "Blog" },
   { href: "/faq", label: "FAQ" },
 ];
 

@@ -36,6 +36,7 @@ export const RESOURCE_TABLES: Record<ResourceKey, PgTable> = {
   faqs: s.faqs,
   helpArticles: s.helpArticles,
   banners: s.banners,
+  blogPosts: s.blogPosts,
 };
 
 export function loadResource(key: string) {
@@ -74,7 +75,8 @@ function parseField(f: FieldDef, raw: unknown): unknown {
     case "textarea":
     case "color": {
       const v = String(str);
-      if (v.length > 20000) throw new AppError(`${f.label} is too long`);
+      const max = f.type === "textarea" ? 100_000 : 20_000;
+      if (v.length > max) throw new AppError(`${f.label} is too long`);
       if (f.name === "slug" && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(v)) throw new AppError("Slug may only contain lowercase letters, numbers and hyphens");
       return v;
     }
@@ -203,6 +205,18 @@ const VALIDATORS: Partial<Record<ResourceKey, (v: Values) => void>> = {
   },
   banners: (v) => {
     if (v.startsAt && v.endsAt && (v.endsAt as Date) <= (v.startsAt as Date)) throw new AppError("End must be after start");
+  },
+  blogPosts: (v) => {
+    if (v.status === "PUBLISHED" && !v.publishedAt) throw new AppError("Publish date is required when status is Published");
+    if (v.coverImageUrl) {
+      try {
+        const u = new URL(String(v.coverImageUrl));
+        if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("bad protocol");
+      } catch {
+        throw new AppError("Cover image URL must be a valid http(s) URL");
+      }
+    }
+    if (String(v.body ?? "").length > 100_000) throw new AppError("Body is too long");
   },
 };
 

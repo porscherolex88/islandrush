@@ -23,7 +23,7 @@ export const PERMISSIONS = {
   "support.view": "View support tickets",
   "support.manage": "Respond to and manage tickets",
   "notifications.manage": "Manage templates and broadcasts",
-  "content.manage": "Manage public content, FAQ and banners",
+  "content.manage": "Manage public content, blog, FAQ and banners",
   "reports.view": "View reports and export data",
   "admins.manage": "Manage admin users, roles and permissions",
   "audit.view": "View audit logs",

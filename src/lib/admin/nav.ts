@@ -153,6 +153,7 @@ export const ADMIN_NAV: NavGroup[] = [
     label: "Content",
     icon: "FileText",
     children: [
+      { label: "Blog", href: m("blogPosts"), permission: "content.manage" },
       { label: "Public Pages", href: m("contentPages"), permission: "content.manage" },
       { label: "FAQ", href: m("faqs"), permission: "content.manage" },
       { label: "Help Articles", href: m("helpArticles"), permission: "content.manage" },

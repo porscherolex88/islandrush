@@ -120,6 +120,13 @@
       "when": 1792010000016,
       "tag": "0016_compliance_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792011000017,
+      "tag": "0017_blog_posts",
+      "breakpoints": true
     }
   ]
 }

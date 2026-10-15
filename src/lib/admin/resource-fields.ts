@@ -628,6 +628,37 @@ export const RESOURCES = {
     columns: ["title", "kind", "status", "startsAt", "endsAt"],
     deletable: true,
   },
+  blogPosts: {
+    key: "blogPosts",
+    label: "Blog posts",
+    singular: "Blog post",
+    group: "Content",
+    permission: "content.manage",
+    pk: "id",
+    description: "Public marketing blog at /blog. Drafts stay private; published posts are indexable.",
+    fields: [
+      slug,
+      { name: "title", label: "Title", type: "text", required: true },
+      { name: "excerpt", label: "Excerpt", type: "textarea", default: "", help: "Short summary shown on the blog list and used as the default meta description." },
+      {
+        name: "body",
+        label: "Body (markdown)",
+        type: "textarea",
+        required: true,
+        wide: true,
+        help: "Markdown: headings (# ## ###), lists, **bold**, *italic*, [links](url), and blank lines between paragraphs.",
+      },
+      { name: "coverImageUrl", label: "Cover image URL", type: "text", help: "Absolute URL to the cover image. Leave empty for no cover." },
+      { name: "coverImageAlt", label: "Cover image alt text", type: "text", default: "", help: "Accessible description of the cover image." },
+      { name: "seoTitle", label: "SEO title", type: "text", default: "", help: "Overrides the page title and Open Graph title when set." },
+      { name: "seoDescription", label: "SEO description", type: "textarea", default: "", help: "Overrides the meta and Open Graph description when set." },
+      status("DRAFT"),
+      { name: "publishedAt", label: "Publish date", type: "datetime", help: "Required when status is Published. Controls list order, sitemap and Article datePublished." },
+    ],
+    columns: ["title", "slug", "status", "publishedAt", "updatedAt"],
+    searchFields: ["title", "slug", "excerpt"],
+    deletable: true,
+  },
 } satisfies Record<string, ResourceDef>;
 
 export type ResourceKey = keyof typeof RESOURCES;

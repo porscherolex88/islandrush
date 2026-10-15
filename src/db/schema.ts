@@ -1851,6 +1851,30 @@ export const banners = pgTable("banners", {
   updatedAt: updatedAt(),
 });
 
+export const blogPosts = pgTable(
+  "blog_posts",
+  {
+    id: id(),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    excerpt: text("excerpt").notNull().default(""),
+    body: text("body").notNull(),
+    coverImageUrl: text("cover_image_url"),
+    coverImageAlt: text("cover_image_alt").notNull().default(""),
+    seoTitle: text("seo_title").notNull().default(""),
+    seoDescription: text("seo_description").notNull().default(""),
+    status: contentStatusEnum("status").notNull().default("DRAFT"),
+    publishedAt: ts("published_at"),
+    updatedBy: text("updated_by"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("blog_posts_slug_uq").on(t.slug),
+    index("blog_posts_status_published_idx").on(t.status, t.publishedAt),
+  ],
+);
+
 /* ----------------------------------------------------------------------------
  * Audit & jobs
  * ------------------------------------------------------------------------- */

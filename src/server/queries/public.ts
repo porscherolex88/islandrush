@@ -1,8 +1,14 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, lte, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
-import { contentPages, depositLevels, faqs, helpArticles, mysteryBoxes, referralLevels } from "@/db/schema";
+import { blogPosts, contentPages, depositLevels, faqs, helpArticles, mysteryBoxes, referralLevels } from "@/db/schema";
 import { getConfig } from "@/server/services/config";
+
+const publishedBlogFilter = and(
+  eq(blogPosts.status, "PUBLISHED"),
+  isNotNull(blogPosts.publishedAt),
+  lte(blogPosts.publishedAt, sql`now()`),
+);
 
 export const getContentPage = cache(async (slug: string) => {
   const [row] = await db
@@ -33,6 +39,36 @@ export const getHelpArticle = cache(async (slug: string) => {
     .limit(1);
   return row ?? null;
 });
+
+export async function publishedBlogPosts() {
+  return db
+    .select({
+      slug: blogPosts.slug,
+      title: blogPosts.title,
+      excerpt: blogPosts.excerpt,
+      coverImageUrl: blogPosts.coverImageUrl,
+      coverImageAlt: blogPosts.coverImageAlt,
+      publishedAt: blogPosts.publishedAt,
+      updatedAt: blogPosts.updatedAt,
+    })
+    .from(blogPosts)
+    .where(publishedBlogFilter)
+    .orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt));
+}
+
+export const getPublishedBlogPost = cache(async (slug: string) => {
+  const [row] = await db.select().from(blogPosts).where(and(eq(blogPosts.slug, slug), publishedBlogFilter)).limit(1);
+  return row ?? null;
+});
+
+/** Slugs and dates for sitemap generation (published posts only). */
+export async function publishedBlogSitemapEntries() {
+  return db
+    .select({ slug: blogPosts.slug, publishedAt: blogPosts.publishedAt, updatedAt: blogPosts.updatedAt })
+    .from(blogPosts)
+    .where(publishedBlogFilter)
+    .orderBy(desc(blogPosts.publishedAt));
+}
 
 export async function publicGameFacts() {
   const [boxes, conversion] = await Promise.all([

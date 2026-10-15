@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
+import { absoluteUrl } from "@/lib/site";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://lootbox-smoky.vercel.app";
-
+/** Public marketing pages are indexable. Signed-in app and admin stay out of search. */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
@@ -26,6 +26,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${SITE}/sitemap.xml`,
+    sitemap: absoluteUrl("/sitemap.xml"),
   };
 }
