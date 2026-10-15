@@ -120,11 +120,73 @@ export function BoxContents({
   );
 }
 
-function PrizeRows({ prizes }: { prizes: PrizeList }) {
+/** Collapse weighted pool variants into one player-facing row per distinct prize outcome. */
+function uniquePrizes(prizes: PrizeList): PrizeList {
+  const seen = new Set<string>();
+  const out: PrizeList = [];
+  for (const o of prizes) {
+    const key =
+      o.type === "ITEM"
+        ? `ITEM:${o.label}:${o.amount}`
+        : o.type === "FREE_UNLOCK"
+          ? "FREE_UNLOCK"
+          : `${o.type}:${o.amount}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(o);
+  }
+  return out;
+}
+
+/**
+ * For Loot, merge quantity variants of the same item into a single row with a range
+ * so the sheet does not repeat "Shore Shell" three times.
+ */
+function displayLootRows(loot: PrizeList): { id: string; type: string; icon: string; rarity: string | null; title: string; subtitle: string }[] {
+  const groups = new Map<string, PrizeList>();
+  for (const o of uniquePrizes(loot)) {
+    const key = o.type === "ITEM" ? `ITEM:${o.icon}:${o.label.replace(/^\d+×\s*/, "")}` : `${o.type}:${o.amount}`;
+    const list = groups.get(key) ?? [];
+    list.push(o);
+    groups.set(key, list);
+  }
+  return [...groups.values()].map((rows) => {
+    const first = rows[0];
+    const qty = rows.map((r) => Math.max(1, Math.floor(Number(r.amount) || 1)));
+    const lo = Math.min(...qty);
+    const hi = Math.max(...qty);
+    const baseName = first.label.replace(/^\d+×\s*/, "");
+    const title = first.type === "ITEM" ? (lo === hi ? `${lo}× ${baseName}` : `${lo}-${hi}× ${baseName}`) : first.label;
+    const r = rarityOf(first.rarity);
+    return { id: first.id, type: first.type, icon: first.icon, rarity: first.rarity, title, subtitle: r.label };
+  });
+}
+
+function PrizeRows({ prizes, loot }: { prizes?: PrizeList; loot?: boolean }) {
   const label = useOddLabel();
+  if (loot && prizes) {
+    const rows = displayLootRows(prizes);
+    return (
+      <ul className="space-y-2">
+        {rows.map((o) => {
+          const r = rarityOf(o.rarity);
+          return (
+            <li key={o.id} className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-2.5">
+              <RewardGlyph type={o.type} icon={o.icon} rarity={o.rarity} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{o.title}</span>
+                <span className={cn("text-xs font-semibold", r.text)}>{o.subtitle}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+  const rows = uniquePrizes(prizes ?? []);
   return (
     <ul className="space-y-2">
-      {prizes.map((o) => {
+      {rows.map((o) => {
         const r = rarityOf(o.rarity);
         return (
           <li key={o.id} className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-2.5">
@@ -161,7 +223,7 @@ export function BoxPrizesSheet({ name, rewards, loot, trigger }: { name: string;
           {loot.length > 0 && (
             <section>
               <h3 className="mb-2 text-sm font-bold">Loot drop (guaranteed)</h3>
-              <PrizeRows prizes={loot} />
+              <PrizeRows prizes={loot} loot />
             </section>
           )}
           <section>

@@ -1,7 +1,8 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { loginEvents, profiles, userNotes, userStreaks } from "@/db/schema";
 import { AppError, isUniqueViolation, NotFoundError } from "@/lib/errors";
+import { looksLikeEmail, normalizeMyPhone, phoneAuthEmail } from "@/lib/phone";
 import { randomCode } from "@/lib/rng";
 import { audit } from "./audit";
 import { recomputeDepositLevel } from "./deposit-levels";
@@ -12,13 +13,45 @@ import { onLoginSignals, onSignupSignals } from "./risk";
 export type Profile = typeof profiles.$inferSelect;
 type Actor = { id: string; role: string };
 
+/** Look up a profile by phone (E.164 or local form) or by email (legacy accounts). */
+export async function findProfileByLogin(identifier: string): Promise<Profile | null> {
+  const trimmed = identifier.trim();
+  if (!trimmed) return null;
+  if (looksLikeEmail(trimmed)) {
+    const [row] = await db.select().from(profiles).where(eq(profiles.email, trimmed.toLowerCase())).limit(1);
+    return row ?? null;
+  }
+  const phone = normalizeMyPhone(trimmed);
+  if (!phone) return null;
+  const [byPhone] = await db.select().from(profiles).where(eq(profiles.phone, phone)).limit(1);
+  if (byPhone) return byPhone;
+  const [bySynth] = await db.select().from(profiles).where(eq(profiles.email, phoneAuthEmail(phone))).limit(1);
+  return bySynth ?? null;
+}
+
 /** Creates the application profile for a Neon Auth user on first sight. Idempotent. */
 export async function ensureProfile(
   authUser: { id: string; email: string; name?: string | null },
-  ctx: { ip?: string | null; deviceId?: string | null; referralCode?: string | null } = {},
+  ctx: {
+    ip?: string | null;
+    deviceId?: string | null;
+    referralCode?: string | null;
+    phone?: string | null;
+    dateOfBirth?: string | null;
+  } = {},
 ): Promise<Profile> {
   const [existing] = await db.select().from(profiles).where(eq(profiles.id, authUser.id)).limit(1);
-  if (existing) return existing;
+  if (existing) {
+    // Backfill phone / DOB when a returning session provides them (e.g. phone login of a new account).
+    const patch: Partial<Profile> = {};
+    if (ctx.phone && !existing.phone) patch.phone = ctx.phone;
+    if (ctx.dateOfBirth && !existing.dateOfBirth) patch.dateOfBirth = ctx.dateOfBirth;
+    if (Object.keys(patch).length) {
+      const [updated] = await db.update(profiles).set({ ...patch, updatedAt: new Date() }).where(eq(profiles.id, existing.id)).returning();
+      return updated;
+    }
+    return existing;
+  }
 
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
@@ -38,6 +71,8 @@ export async function ensureProfile(
             id: authUser.id,
             email: authUser.email.toLowerCase(),
             name: authUser.name?.trim() || authUser.email.split("@")[0],
+            phone: ctx.phone ?? null,
+            dateOfBirth: ctx.dateOfBirth ?? null,
             referralCode: randomCode(8),
             referredById,
             signupIp: ctx.ip ?? null,
@@ -80,6 +115,14 @@ export async function touchLastSeen(userId: string) {
 }
 
 export async function updateOwnProfile(userId: string, patch: { name?: string; phone?: string | null }) {
+  if (patch.phone) {
+    const [taken] = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(and(eq(profiles.phone, patch.phone), ne(profiles.id, userId)))
+      .limit(1);
+    if (taken) throw new AppError("That phone number is already on another account");
+  }
   await db.update(profiles).set({ ...patch, updatedAt: new Date() }).where(eq(profiles.id, userId));
 }
 

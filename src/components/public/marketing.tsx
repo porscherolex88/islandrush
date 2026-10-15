@@ -106,7 +106,7 @@ export function FeatureCard({ icon: Icon, art, title, children, className }: { i
 
 export function Steps({ steps }: { steps: { title: string; body: string }[] }) {
   return (
-    <ol className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+    <ol className={cn("grid gap-3 sm:grid-cols-2 sm:gap-4", steps.length >= 5 ? "lg:grid-cols-5" : "lg:grid-cols-4")}>
       {steps.map((s, i) => (
         <li key={s.title} className="flex gap-4 rounded-3xl border bg-card p-5 sm:flex-col sm:gap-0 sm:p-6">
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gold font-heading font-bold text-[var(--gold-ink)]">{i + 1}</span>

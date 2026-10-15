@@ -1,0 +1,110 @@
+{
+  "version": "compliance_content_v1",
+  "description": "Compliance-approved FAQ and Help copy (Oct 2026). Apply with: npm run db:seed:compliance-content",
+  "faqs": [
+    {
+      "category": "Getting started",
+      "sortOrder": 0,
+      "question": "What is LootBox?",
+      "answer": "It's an adventure across 10 islands. You open Mystery Boxes to collect Loot, use that Loot to unlock checkpoints along each island's trail, and finish puzzles to earn prizes."
+    },
+    {
+      "category": "Wallet",
+      "sortOrder": 1,
+      "question": "What are Credits and Cash?",
+      "answer": "You have two wallets: Credits are what you play with and use on the Market; Cash is your money balance, which you can convert into Credits. Deposits and withdrawals are covered in our Terms."
+    },
+    {
+      "category": "Games",
+      "sortOrder": 2,
+      "question": "What is Loot?",
+      "answer": "Collectible items you find in Mystery Boxes, like shells, pearls, relics and crowns. Loot stays in your collection and adds up over time. Each island needs a set amount of Loot before it unlocks."
+    },
+    {
+      "category": "Games",
+      "sortOrder": 3,
+      "question": "How do checkpoints work?",
+      "answer": "Every island has a trail of checkpoints leading to a chest. Collect enough Loot to fill the chest and the next checkpoint opens. Checkpoints are completed in order."
+    },
+    {
+      "category": "Games",
+      "sortOrder": 4,
+      "question": "What is the Big Box?",
+      "answer": "Each island has a Big Mystery Box. Opening it gives you Puzzle pieces for that island."
+    },
+    {
+      "category": "Games",
+      "sortOrder": 5,
+      "question": "How do Puzzle pieces work?",
+      "answer": "Each island has its own puzzle, and its pieces only come from that island's Big Box. Pieces can't be moved between islands. Complete a puzzle to get a spin on the prize wheel. Prizes are subject to availability and our Terms."
+    },
+    {
+      "category": "Prizes",
+      "sortOrder": 6,
+      "question": "How do I claim a physical prize?",
+      "answer": "You'll be asked for your name, phone number and delivery address so we can send it. We use these details only to deliver your prize. See our Privacy Policy."
+    },
+    {
+      "category": "Games",
+      "sortOrder": 7,
+      "question": "Can I replay an island?",
+      "answer": "Yes, you can replay an island you've already finished."
+    },
+    {
+      "category": "Daily",
+      "sortOrder": 8,
+      "question": "What do I get for free every day?",
+      "answer": "A daily spin, a daily check-in reward, and missions that pay a bonus when completed."
+    },
+    {
+      "category": "Market",
+      "sortOrder": 9,
+      "question": "What is the Market?",
+      "answer": "Where you sell items to other players and buy theirs with Credits. You set your own price within the allowed range; LootBox takes a small fee per sale, and active listings are limited. All trades are final, and LootBox doesn't guarantee what any item is worth."
+    },
+    {
+      "category": "Collections",
+      "sortOrder": 10,
+      "question": "What is Collections?",
+      "answer": "Where you see everything you've collected and track your progress."
+    }
+  ],
+  "helpArticles": [
+    {
+      "slug": "islands-checkpoints-and-puzzles",
+      "title": "Islands, checkpoints and puzzles",
+      "category": "Games",
+      "summary": "How Loot, island trails, Big Boxes and Puzzle pieces work.",
+      "body": "LootBox is an adventure across 10 islands.\n\n1. Open Mystery Boxes to collect Loot for the island you are on.\n2. Loot fills the chest on each trail stop. Collect enough to unlock the next checkpoint in order.\n3. At the end of the trail, open the island's Big Box for Puzzle pieces for that island only.\n4. Finish the puzzle, then spin the prize wheel. Prizes are subject to availability and our Terms.\n5. You can replay an island you have already finished.\n\nTrack everything in Collections. Trade items with other players on the Market using Credits."
+    },
+    {
+      "slug": "making-a-deposit",
+      "title": "Making a deposit",
+      "category": "Wallet",
+      "summary": "Step-by-step guide to manual bank transfers.",
+      "body": "1. Open Wallet and tap Deposit.\n2. Enter the amount and choose a bank account.\n3. Transfer the exact amount from your bank.\n4. Submit your transfer reference and, if asked, a screenshot.\n5. Your deposit shows as Pending until our team approves it. Approved deposits appear in your Cash wallet."
+    },
+    {
+      "slug": "withdrawing-rewards",
+      "title": "Withdrawing rewards",
+      "category": "Wallet",
+      "summary": "How rewards become withdrawable and how to cash out.",
+      "body": "Cash rewards start as Pending Rewards and settle into your Withdrawable balance after the settlement period. Add a bank account under Account > Withdrawal accounts, then request a withdrawal from Wallet > Withdraw. Withdrawals move through Pending, Approved, Processing and Completed. Deposits and withdrawals are covered in our Terms."
+    },
+    {
+      "slug": "account-security",
+      "title": "Keeping your account secure",
+      "category": "Account",
+      "summary": "Passwords, sessions and sign-in.",
+      "body": "Use a unique password, review your active sessions from Account > Security, and never share your login. LootBox staff will never ask for your password. If you cannot sign in, use Forgot password to send a request to support."
+    }
+  ],
+  "retireHelpSlugs": ["mystery-map-guide"],
+  "contentPages": [
+    {
+      "slug": "about",
+      "title": "How LootBox works",
+      "body": "LootBox is an adventure across 10 islands. Claim your daily check-in and spin, open Mystery Boxes to collect Loot, unlock checkpoints along each island's trail, open the Big Box for Puzzle pieces, finish the puzzle and spin the prize wheel. Trade on the Market and track everything in Collections. Cash and Credits live in separate wallets; deposits and withdrawals are covered in our Terms."
+    }
+  ]
+}

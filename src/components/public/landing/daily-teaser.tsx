@@ -16,13 +16,13 @@ const TONES = [
 const SEGMENTS = (
   [
     [Coins, "200 Credits"],
-    [Star, "Map Fragment"],
-    [Gift, "Temple Key"],
+    [Star, "Shore Shell"],
+    [Gift, "Puzzle piece"],
     [Coins, "500 Credits"],
-    [Star, "Seal Fragment"],
-    [Gift, "Vault Key"],
+    [Star, "Tide Pearl"],
+    [Gift, "Free unlock"],
     [Coins, "1,000 Credits"],
-    [Star, "Map Fragment"],
+    [Star, "Jungle Relic"],
   ] as const
 ).map(([Icon, prize], i) => ({ Icon, prize, ...TONES[i % TONES.length] }));
 const SLICE = 360 / SEGMENTS.length;

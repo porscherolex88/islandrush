@@ -192,6 +192,8 @@ export const profiles = pgTable(
     email: text("email").notNull(),
     name: text("name").notNull(),
     phone: text("phone"),
+    /** YYYY-MM-DD calendar date; required for new signups, 18+ enforced server-side. */
+    dateOfBirth: date("date_of_birth"),
     role: roleEnum("role").notNull().default("USER"),
     status: userStatusEnum("status").notNull().default("ACTIVE"),
     suspendedReason: text("suspended_reason"),
@@ -219,6 +221,7 @@ export const profiles = pgTable(
   },
   (t) => [
     uniqueIndex("profiles_email_uq").on(t.email),
+    uniqueIndex("profiles_phone_uq").on(t.phone),
     uniqueIndex("profiles_referral_code_uq").on(t.referralCode),
     index("profiles_referred_by_idx").on(t.referredById),
     index("profiles_role_idx").on(t.role),
@@ -1640,9 +1643,12 @@ export const supportTickets = pgTable(
   {
     id: id(),
     number: bigserial("number", { mode: "number" }).notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id),
+    /** Null for guest requests (e.g. forgot-password) that are not tied to a signed-in session. */
+    userId: text("user_id").references(() => profiles.id),
+    /** Guest contact phone when userId is null, or a hint when matching failed. */
+    contactPhone: text("contact_phone"),
+    /** Guest display name / username provided on the public form. */
+    contactName: text("contact_name"),
     subject: text("subject").notNull(),
     category: text("category").notNull().default("GENERAL"),
     status: ticketStatusEnum("status").notNull().default("OPEN"),
@@ -1667,9 +1673,8 @@ export const supportMessages = pgTable(
     ticketId: uuid("ticket_id")
       .notNull()
       .references(() => supportTickets.id),
-    authorId: text("author_id")
-      .notNull()
-      .references(() => profiles.id),
+    /** Null for the opening message on a guest (unsigned) ticket. */
+    authorId: text("author_id").references(() => profiles.id),
     body: text("body").notNull(),
     isInternal: boolean("is_internal").notNull().default(false),
     fromStaff: boolean("from_staff").notNull().default(false),

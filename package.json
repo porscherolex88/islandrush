@@ -13,6 +13,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:adventure": "tsx scripts/seed-adventure.ts",
+    "db:seed:compliance-content": "tsx scripts/seed-compliance-content.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed:mock": "tsx scripts/seed-mock.ts",
     "db:wipe-test": "tsx scripts/wipe-test-data.ts"

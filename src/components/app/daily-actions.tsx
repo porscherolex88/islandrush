@@ -77,6 +77,8 @@ export function SpinWheel({ entries, spun, available, boosted }: { entries: Priz
       setResult(d.reward);
       setSpinning(true);
       setRotation(target);
+      // Refresh mission progress as soon as the spin is recorded, not only after the reveal closes.
+      router.refresh();
       if (reduce) {
         setSpinning(false);
         setRevealOpen(true);

@@ -24,10 +24,13 @@ export default function ContactPage() {
         <div className="rounded-3xl border bg-card p-6">
           <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-primary"><Mail className="size-6" aria-hidden /></span>
           <h2 className="mt-4 text-lg font-bold">Email</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Can&apos;t sign in? Email us from the address on your account.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Can&apos;t sign in? Request a password reset, or email us.</p>
           <Button asChild variant="outline" size="pill" className="mt-4 w-full">
-            <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+            <Link href="/forgot-password">Forgot password</Link>
           </Button>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-2 block text-center text-xs font-semibold text-primary underline">
+            {SUPPORT_EMAIL}
+          </a>
         </div>
         <div className="rounded-3xl border bg-card p-6">
           <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-primary"><BookOpen className="size-6" aria-hidden /></span>

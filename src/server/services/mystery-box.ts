@@ -334,7 +334,15 @@ export type PoolOdds = Awaited<ReturnType<typeof boxOdds>>;
 
 /** What a pool can give, for players. Chances stay on the server and in admin only. */
 export async function boxPrizes(poolId: string) {
-  return (await boxOdds(poolId)).map(({ id, label, rarity, type, amount, icon }) => ({ id, label, rarity, type, amount, icon }));
+  const rows = (await boxOdds(poolId)).map(({ id, label, rarity, type, amount, icon }) => ({ id, label, rarity, type, amount, icon }));
+  // Drop exact duplicate outcomes (same type/amount/label) so the prize sheet never repeats a row.
+  const seen = new Set<string>();
+  return rows.filter((o) => {
+    const key = o.type === "FREE_UNLOCK" ? "FREE_UNLOCK" : `${o.type}:${o.amount}:${o.label}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 export type PrizeList = Awaited<ReturnType<typeof boxPrizes>>;
 

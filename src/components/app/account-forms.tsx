@@ -21,7 +21,7 @@ import {
 } from "@/server/actions/account";
 import { addWithdrawalAccountAction, archiveWithdrawalAccountAction, setDefaultWithdrawalAccountAction } from "@/server/actions/wallet";
 
-export function ProfileForm({ name, phone, email }: { name: string; phone: string; email: string }) {
+export function ProfileForm({ name, phone, email, phoneLogin }: { name: string; phone: string; email: string; phoneLogin?: boolean }) {
   const [values, setValues] = useState({ name, phone });
   const { run, pending } = useAction(updateProfileAction, { success: "Profile updated" });
   return (
@@ -33,18 +33,20 @@ export function ProfileForm({ name, phone, email }: { name: string; phone: strin
       }}
     >
       <div className="grid gap-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" value={email} disabled className="h-11" />
-        <p className="text-xs text-muted-foreground">Contact support to change your email address.</p>
+        <Label htmlFor="phone">Phone number</Label>
+        <Input id="phone" type="tel" value={values.phone} onChange={(e) => setValues((v) => ({ ...v, phone: e.target.value }))} placeholder="012 345 6789" className="h-11" autoComplete="tel" required={phoneLogin} />
+        <p className="text-xs text-muted-foreground">{phoneLogin ? "This is how you sign in." : "Add a phone number to sign in with phone and password. Legacy email sign-in still works."}</p>
       </div>
+      {!phoneLogin && (
+        <div className="grid gap-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" value={email} disabled className="h-11" />
+          <p className="text-xs text-muted-foreground">You can still sign in with this email, or with your phone once it is saved.</p>
+        </div>
+      )}
       <div className="grid gap-1.5">
         <Label htmlFor="name">Full name</Label>
         <Input id="name" value={values.name} onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))} required maxLength={80} className="h-11" autoComplete="name" />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="phone">Phone number</Label>
-        <Input id="phone" type="tel" value={values.phone} onChange={(e) => setValues((v) => ({ ...v, phone: e.target.value }))} placeholder="012 345 6789" className="h-11" autoComplete="tel" />
-        <p className="text-xs text-muted-foreground">Needed for account verification.</p>
       </div>
       <Button variant="gold" type="submit" size="pill" className="w-full" disabled={pending}>
         {pending && <Loader2 className="animate-spin" />}
@@ -203,19 +205,27 @@ export function PlayLimitsForm({ dailyCreditLimit, onBreak }: { dailyCreditLimit
       <div className="space-y-2">
         <p className="text-base font-bold">Take a break</p>
         <p className="text-sm text-muted-foreground">Pause all games for a while. Once started, a break can&apos;t be shortened. Your wallet and withdrawals stay available.</p>
-        <div className="grid grid-cols-3 gap-2">
-          {[1, 7, 30].map((d) => (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {(
+            [
+              { days: 1, label: "1 day" },
+              { days: 7, label: "7 days" },
+              { days: 30, label: "30 days" },
+              { days: 90, label: "3 months" },
+              { days: 180, label: "6 months" },
+            ] as const
+          ).map(({ days, label }) => (
             <ConfirmDialog
-              key={d}
+              key={days}
               trigger={
                 <Button variant="outline" size="pill" disabled={takeBreak.pending || onBreak}>
-                  {d} day{d > 1 ? "s" : ""}
+                  {label}
                 </Button>
               }
-              title={`Take a ${d}-day break?`}
+              title={`Take a ${label} break?`}
               description="Games will be paused until the break ends. This can't be undone early."
               confirmLabel="Start break"
-              onConfirm={() => takeBreak.run({ dailyCreditLimit: dailyCreditLimit, breakDays: d })}
+              onConfirm={() => takeBreak.run({ dailyCreditLimit: dailyCreditLimit, breakDays: days })}
             />
           ))}
         </div>

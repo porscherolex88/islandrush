@@ -17,19 +17,21 @@ import { createTicket, userReply } from "@/server/services/support";
 
 export async function updateProfileAction(input: { name: string; phone: string }) {
   return userAction(async (user) => {
-    const d = z
-      .object({
-        name: z.string().trim().min(2, "Enter your name").max(80),
-        phone: z
-          .string()
-          .trim()
-          .regex(/^(\+?6?0\d{8,10})?$/, "Enter a Malaysian phone number, e.g. 012 345 6789")
-          .or(z.literal("")),
-      })
-      .safeParse({ ...input, phone: input.phone.replace(/[\s-]/g, "") });
-    if (!d.success) throw new AppError(d.error.issues[0]?.message ?? "Please check the form");
-    await updateOwnProfile(user.id, { name: d.data.name, phone: d.data.phone || null });
-    await getAuth().updateUser({ name: d.data.name }).catch(() => null);
+    const { normalizeMyPhone } = await import("@/lib/phone");
+    const name = z.string().trim().min(2, "Enter your name").max(80).safeParse(input.name);
+    if (!name.success) throw new AppError(name.error.issues[0]?.message ?? "Enter your name");
+    const rawPhone = input.phone.trim();
+    let phone: string | null = null;
+    if (rawPhone) {
+      phone = normalizeMyPhone(rawPhone);
+      if (!phone) throw new AppError("Enter a Malaysian phone number, e.g. 012 345 6789");
+    } else if (!user.phone) {
+      // Phone-first accounts must keep a login phone; legacy email accounts may leave it empty until they add one.
+      const { isPhoneAuthEmail } = await import("@/lib/phone");
+      if (isPhoneAuthEmail(user.email)) throw new AppError("Add a phone number so you can sign in");
+    }
+    await updateOwnProfile(user.id, { name: name.data, phone });
+    await getAuth().updateUser({ name: name.data }).catch(() => null);
     revalidatePath("/", "layout");
     return null;
   });

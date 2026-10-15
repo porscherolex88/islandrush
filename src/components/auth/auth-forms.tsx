@@ -6,7 +6,13 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { adminSignInAction, signInAction, signUpAction, type AuthFormState } from "@/server/actions/auth";
+import {
+  adminSignInAction,
+  forgotPasswordAction,
+  signInAction,
+  signUpAction,
+  type AuthFormState,
+} from "@/server/actions/auth";
 
 function PasswordInput({ id, autoComplete, minLength }: { id: string; autoComplete: string; minLength?: number }) {
   const [show, setShow] = useState(false);
@@ -34,6 +40,15 @@ function FormError({ state }: { state: AuthFormState }) {
   );
 }
 
+function FormSuccess({ state }: { state: AuthFormState }) {
+  if (!state.success) return null;
+  return (
+    <p role="status" className="rounded-xl bg-success-soft px-3 py-2 text-sm text-success">
+      {state.success}
+    </p>
+  );
+}
+
 export function LoginForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(signInAction, {});
   return (
@@ -41,8 +56,19 @@ export function LoginForm({ next }: { next?: string }) {
       <input type="hidden" name="next" value={next ?? ""} />
       <FormError state={state} />
       <div className="grid gap-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required defaultValue={state.fields?.email} className="h-12" />
+        <Label htmlFor="phone">Phone number</Label>
+        <Input
+          id="phone"
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          required
+          defaultValue={state.fields?.phone}
+          placeholder="012 345 6789"
+          className="h-12"
+        />
+        <p className="text-xs text-muted-foreground">Existing email accounts can still sign in with their email address here.</p>
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor="password">Password</Label>
@@ -60,10 +86,9 @@ export function LoginForm({ next }: { next?: string }) {
       </p>
       <p className="text-center text-xs text-muted-foreground">
         Forgot your password?{" "}
-        <Link href="/contact" className="underline">
-          Contact support
-        </Link>{" "}
-        and we&apos;ll help you back in.
+        <Link href="/forgot-password" className="font-semibold text-primary underline">
+          Request a reset
+        </Link>
       </p>
     </form>
   );
@@ -111,8 +136,24 @@ export function RegisterForm({ referralCode }: { referralCode?: string }) {
         <Input id="name" name="name" autoComplete="name" required maxLength={80} defaultValue={state.fields?.name} className="h-12" />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required defaultValue={state.fields?.email} className="h-12" />
+        <Label htmlFor="phone">Phone number</Label>
+        <Input
+          id="phone"
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          required
+          defaultValue={state.fields?.phone}
+          placeholder="012 345 6789"
+          className="h-12"
+        />
+        <p className="text-xs text-muted-foreground">This is how you sign in. No SMS code is sent.</p>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="dateOfBirth">Date of birth</Label>
+        <Input id="dateOfBirth" name="dateOfBirth" type="date" required defaultValue={state.fields?.dateOfBirth} className="h-12" max={new Date().toISOString().slice(0, 10)} />
+        <p className="text-xs text-muted-foreground">You must be 18 or older. We check this when you create your account.</p>
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor="password">Password</Label>
@@ -133,7 +174,7 @@ export function RegisterForm({ referralCode }: { referralCode?: string }) {
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="terms" required className="mt-0.5 size-4 accent-[var(--primary)]" />
         <span className="text-muted-foreground">
-          I&apos;m 18 or older and agree to the{" "}
+          I agree to the{" "}
           <Link href="/terms" className="font-semibold text-primary underline" target="_blank">
             Terms
           </Link>{" "}
@@ -154,6 +195,56 @@ export function RegisterForm({ referralCode }: { referralCode?: string }) {
           Sign in
         </Link>
       </p>
+    </form>
+  );
+}
+
+export function ForgotPasswordForm() {
+  const [state, action, pending] = useActionState(forgotPasswordAction, {});
+  if (state.success) {
+    return (
+      <div className="space-y-4">
+        <FormSuccess state={state} />
+        <Button asChild variant="outline" size="xl" className="w-full">
+          <Link href="/login">Back to sign in</Link>
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <form action={action} className="space-y-4">
+      <FormError state={state} />
+      <div className="grid gap-1.5">
+        <Label htmlFor="phoneOrName">Phone number or username</Label>
+        <Input
+          id="phoneOrName"
+          name="phoneOrName"
+          required
+          defaultValue={state.fields?.phoneOrName}
+          placeholder="012 345 6789 or your name"
+          className="h-12"
+          autoComplete="username"
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="message">How can we help?</Label>
+        <textarea
+          id="message"
+          name="message"
+          required
+          minLength={10}
+          maxLength={2000}
+          rows={4}
+          defaultValue={state.fields?.message}
+          placeholder="I can't sign in and need a password reset."
+          className="min-h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+        <p className="text-xs text-muted-foreground">Support will verify your account in the admin queue before resetting anything. Never share your password.</p>
+      </div>
+      <Button type="submit" size="xl" className="w-full" disabled={pending}>
+        {pending && <Loader2 className="animate-spin" />}
+        Send request
+      </Button>
     </form>
   );
 }

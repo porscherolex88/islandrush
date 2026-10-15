@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Container, PageHero } from "@/components/public/marketing";
 import { publishedFaqs } from "@/server/queries/public";
 
-export const metadata: Metadata = { title: "FAQ", description: "Answers to common questions about LootBox." };
+export const metadata: Metadata = {
+  title: "LootBox FAQ: Loot, Puzzles, Islands and the Market",
+  description: "Answers about Loot, checkpoints, Big Boxes, Puzzle pieces, the Market, Collections and daily rewards.",
+};
 export const revalidate = 300;
 
 export default async function FaqPage() {
@@ -13,7 +16,12 @@ export default async function FaqPage() {
   for (const r of rows) groups.set(r.category, [...(groups.get(r.category) ?? []), r]);
   return (
     <>
-      <PageHero eyebrow="FAQ" title="Frequently asked questions" description="Quick answers about Credits, rewards, withdrawals and the adventure." art="/illustrations/3d/puzzle.webp" />
+      <PageHero
+        eyebrow="FAQ"
+        title="LootBox FAQ: Loot, Puzzles, Islands and the Market"
+        description="Quick answers about Loot, checkpoints, Big Boxes, Puzzle pieces, Cash and Credits, the Market and Collections."
+        art="/illustrations/3d/puzzle.webp"
+      />
       <Container className="max-w-3xl py-10 sm:py-14">
         {groups.size === 0 && <p className="text-center text-muted-foreground">No questions published yet.</p>}
         <div className="space-y-10">

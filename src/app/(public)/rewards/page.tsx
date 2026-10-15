@@ -1,11 +1,14 @@
-import { Banknote, Coins, Gem, Puzzle, Trophy } from "lucide-react";
+import { Banknote, CalendarCheck, Coins, Gem, Puzzle, Target, Trophy } from "lucide-react";
 import type { Metadata } from "next";
 import { CtaBand, FeatureCard, PageHero, SectionBlock } from "@/components/public/marketing";
 import { formatCash } from "@/lib/money";
 import { getFiatDisplay } from "@/lib/fiat-display";
 import { publicRewardFacts } from "@/server/queries/public";
 
-export const metadata: Metadata = { title: "Rewards", description: "Credits, Loot, puzzle pieces, prizes and Cash rewards." };
+export const metadata: Metadata = {
+  title: "LootBox Rewards: Daily Spin, Check-ins, Missions and Prizes",
+  description: "Daily spin, check-ins, missions, Loot, Puzzle pieces, island prizes, and Cash rewards on LootBox.",
+};
 export const revalidate = 300;
 
 export default async function RewardsPage() {
@@ -13,27 +16,46 @@ export default async function RewardsPage() {
   const { levels, rewards, withdrawal } = await publicRewardFacts();
   return (
     <>
-      <PageHero eyebrow="Rewards" title="What you can win" description="Every box, checkpoint and puzzle can reveal something useful. Some rewards help you play, others you can withdraw." art="/illustrations/3d/chest-burst.webp" />
-      <SectionBlock eyebrow="Reward types" title="Five ways to be rewarded">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <FeatureCard icon={Coins} title="Credits">
-            Bonus Credits go straight to your balance so you can keep playing.
+      <PageHero
+        eyebrow="Rewards"
+        title="LootBox Rewards: Daily Spin, Check-ins, Missions and Prizes"
+        description="Claim free daily rewards, collect Loot from Mystery Boxes, finish island puzzles, and track Cash rewards in your wallet."
+        art="/illustrations/3d/chest-burst.webp"
+      />
+      <SectionBlock eyebrow="Every day" title="Free rewards you can claim">
+        <div className="grid gap-5 sm:grid-cols-3">
+          <FeatureCard icon={CalendarCheck} title="Daily check-in">
+            Check in each day to keep your streak going and collect the check-in reward.
           </FeatureCard>
-          <FeatureCard icon={Gem} title="Loot">
-            Map-specific finds from every Mystery Box. Loot is never used up: it keeps counting toward that map&apos;s checkpoints.
+          <FeatureCard icon={Coins} title="Daily spin">
+            One free spin every day. A longer streak can unlock a boosted spin pool.
           </FeatureCard>
-          <FeatureCard icon={Puzzle} title="Puzzle pieces">
-            Found in the Big Mystery Box at the end of each map. Complete a puzzle to reach its prize unlock.
-          </FeatureCard>
-          <FeatureCard icon={Trophy} title="Prizes">
-            Each Adventure Level has its own prize tier. Higher levels lead to bigger prizes.
-          </FeatureCard>
-          <FeatureCard icon={Banknote} title="Cash rewards">
-            Real Cash rewards that settle into your withdrawable balance after {rewards.pendingHours} hours.
+          <FeatureCard icon={Target} title="Daily missions">
+            Three missions refresh every day. Finish all three for a bonus reward.
           </FeatureCard>
         </div>
       </SectionBlock>
-      <SectionBlock eyebrow="Cash out" title="Withdrawing rewards" className="bg-surface">
+      <SectionBlock eyebrow="On the islands" title="Loot, Puzzle pieces and prizes" className="bg-surface">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard icon={Gem} title="Loot">
+            Collectible items from Mystery Boxes, such as shells, pearls, relics and crowns. Loot stays in your collection and unlocks checkpoints when you have enough for that island.
+          </FeatureCard>
+          <FeatureCard icon={Puzzle} title="Puzzle pieces">
+            Each island&apos;s Big Box drops pieces for that island&apos;s puzzle only. Pieces cannot move between islands. Finish the puzzle to spin the prize wheel.
+          </FeatureCard>
+          <FeatureCard icon={Trophy} title="Island prizes">
+            Completing a puzzle unlocks that island&apos;s prize. Higher islands have higher prize tiers. Prizes are subject to availability and our Terms.
+          </FeatureCard>
+          <FeatureCard icon={Coins} title="Credits">
+            Bonus Credits go straight to your Credits wallet so you can open more boxes or buy on the Market.
+          </FeatureCard>
+          <FeatureCard icon={Banknote} title="Cash rewards">
+            Cash rewards settle into your withdrawable balance after {rewards.pendingHours} hours, subject to eligibility checks in our Terms.
+          </FeatureCard>
+        </div>
+        <p className="mt-6 text-center text-sm font-semibold text-muted-foreground">Prizes are subject to availability and our Terms.</p>
+      </SectionBlock>
+      <SectionBlock eyebrow="Cash out" title="Withdrawing rewards">
         <ol className="grid gap-3 text-sm sm:grid-cols-2">
           {[
             `Cash rewards start as Pending and settle after ${rewards.pendingHours} hours.`,
@@ -49,7 +71,7 @@ export default async function RewardsPage() {
         </ol>
       </SectionBlock>
       {levels.length > 0 && (
-        <SectionBlock eyebrow="Levels" title="Deposit levels" description="Based on your total approved deposits.">
+        <SectionBlock eyebrow="Levels" title="Deposit levels" description="Based on your total approved deposits." className="bg-surface">
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {levels.map((l) => (
               <div key={l.name} className="rounded-3xl border bg-card p-4 sm:p-5" style={{ borderTopColor: l.color, borderTopWidth: 4 }}>

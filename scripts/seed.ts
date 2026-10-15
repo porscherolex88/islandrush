@@ -3,6 +3,8 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 loadEnv();
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { and, eq } from "drizzle-orm";
 
 async function main() {
@@ -295,32 +297,42 @@ async function main() {
       { key: "referral_reward", type: "REFERRAL", title: "Referral reward earned", body: "{{amount}} is pending from a level {{level}} referral." },
     ]);
     await db.insert(s.banners).values([
-      { kind: "BANNER", title: "A prize waits at the end of every map", body: "Collect Loot, reach checkpoints and open the Big Mystery Box to find puzzle pieces.", link: "/play/map", status: "PUBLISHED" },
+      { kind: "BANNER", title: "A prize waits at the end of every island", body: "Collect Loot, reach checkpoints and open the Big Mystery Box to find Puzzle pieces.", link: "/play/map", status: "PUBLISHED" },
       { kind: "ANNOUNCEMENT", title: "Welcome to LootBox", body: "Every day brings a new spin and three missions.", status: "PUBLISHED" },
     ]);
-    await db.insert(s.faqs).values([
-      { category: "Getting started", sortOrder: 0, question: "What is LootBox?", answer: "LootBox is a rewards platform with three games: Mystery Box, Mystery Map and the Vault. You play with Credits, discover items, complete collections and earn rewards you can withdraw once eligible." },
-      { category: "Getting started", sortOrder: 1, question: "How do Credits work?", answer: "Credits are bought with Cash from your wallet at the current conversion rate (RM1,000 = 60,000 Credits at launch). The RM value of every Credit price is always shown next to it." },
-      { category: "Wallet", sortOrder: 2, question: "How long do deposits take?", answer: "Deposits are manual bank transfers. After you submit your transfer reference, our team verifies it, usually within 30 minutes during business hours." },
-      { category: "Wallet", sortOrder: 3, question: "When can I withdraw my rewards?", answer: "Cash rewards first appear as Pending Rewards. After the settlement period (24 hours for game rewards) they move to your Withdrawable balance, which you can withdraw to your saved bank account." },
-      { category: "Games", sortOrder: 4, question: "Are results random?", answer: "Yes. Every result is decided by our server using a cryptographically secure random number generator at the moment you play. Each Mystery Box shows the prizes you can win before you open it." },
-      { category: "Games", sortOrder: 5, question: "What are Fragments and Keys?", answer: "Fragments are pieces of a bigger object. Five Ancient Map Fragments assemble into the Ancient Map, and eight Vault Seal Fragments are needed to open the Vault. Keys unlock Special Areas and the Vault." },
-      { category: "Referrals", sortOrder: 6, question: "How do referrals work?", answer: "Share your code. When someone you referred makes their first qualifying deposit, you earn a referral reward. Rewards up to three levels deep become withdrawable after a short review period." },
-      { category: "Responsible play", sortOrder: 7, question: "Can I set limits?", answer: "Yes. In Account > Responsible Play you can set a daily Credit spending limit or take a break from play for a period you choose." },
-    ]);
-    await db.insert(s.helpArticles).values([
-      { slug: "making-a-deposit", title: "Making a deposit", category: "Wallet", summary: "Step-by-step guide to manual bank transfers.", body: "1. Open Wallet and tap Deposit.\n2. Enter the amount and choose a bank account.\n3. Transfer the exact amount from your bank.\n4. Submit your transfer reference and, if asked, a screenshot.\n5. Your deposit shows as Pending until our team approves it. Approved deposits appear in your Cash wallet." },
-      { slug: "withdrawing-rewards", title: "Withdrawing rewards", category: "Wallet", summary: "How rewards become withdrawable and how to cash out.", body: "Cash rewards start as Pending Rewards and settle into your Withdrawable balance after the settlement period. Add a bank account under Account > Withdrawal accounts, then request a withdrawal from Wallet > Withdraw. Withdrawals move through Pending, Approved, Processing and Completed." },
-      { slug: "mystery-map-guide", title: "Exploring the Mystery Map", category: "Games", summary: "Areas, tiles, Special Areas and the Vault.", body: "Start on the Beach. Each tile you discover reveals a reward. Discover six tiles in an area to unlock the next one. Special Areas like the Temple need specific keys, items and collection progress. Your daily free discoveries reset every day." },
-      { slug: "account-security", title: "Keeping your account secure", category: "Account", summary: "Passwords, sessions and verification.", body: "Use a unique password, review your active sessions from Account > Security, and never share your login. LootBox staff will never ask for your password." },
-    ]);
+    const compliance = JSON.parse(readFileSync(path.resolve(__dirname, "content/compliance-faq-help.json"), "utf8")) as {
+      faqs: { category: string; sortOrder: number; question: string; answer: string }[];
+      helpArticles: { slug: string; title: string; category: string; summary: string; body: string }[];
+      contentPages: { slug: string; title: string; body: string }[];
+    };
+    await db.insert(s.faqs).values(
+      compliance.faqs.map((f) => ({
+        category: f.category,
+        sortOrder: f.sortOrder,
+        question: f.question,
+        answer: f.answer,
+        status: "PUBLISHED" as const,
+      })),
+    );
+    await db.insert(s.helpArticles).values(
+      compliance.helpArticles.map((a) => ({
+        slug: a.slug,
+        title: a.title,
+        category: a.category,
+        summary: a.summary,
+        body: a.body,
+        status: "PUBLISHED" as const,
+      })),
+    );
     const page = (slug: string, title: string, body: string) => ({ slug, title, body });
+    const about = compliance.contentPages.find((p) => p.slug === "about");
     await db.insert(s.contentPages).values([
       page("terms", "Terms of Service", "These terms govern your use of LootBox.\n\n1. Eligibility. You must be 18 or older and legally permitted to use rewards platforms in your jurisdiction.\n\n2. Accounts. One account per person. You are responsible for activity on your account.\n\n3. Credits. Credits are purchased with Cash at the published conversion rate, have no cash value outside the platform and cannot be transferred between users.\n\n4. Rewards. Game outcomes are determined by our servers. Cash rewards become withdrawable after the settlement period and subject to eligibility checks.\n\n5. Deposits and withdrawals. Deposits are credited only after verification. Withdrawals are paid to bank accounts in your name.\n\n6. Fair use. We may review, hold or reverse rewards obtained through fraud, abuse or error, and suspend accounts involved.\n\n7. Changes. We may update these terms and will notify you in the app."),
       page("privacy", "Privacy Policy", "We collect the information needed to run your account: your name, email, phone number (optional), transaction history, and technical signals such as IP address and a first-party device identifier used for security and fraud prevention.\n\nWe use this information to operate the service, process deposits and withdrawals, prevent abuse, and provide support. We do not sell your personal data.\n\nYou can request access to or deletion of your data by contacting support."),
-      page("responsible-play", "Responsible Play", "LootBox should be fun. Only spend what you can comfortably afford.\n\nTools available to you:\n- Daily Credit spending limit\n- Take a break (self-exclusion) for 1 day to 6 months\n- Full transaction history in your wallet\n\nIf play stops being fun, take a break and reach out to our support team. We are happy to help you set limits or close your account."),
-      page("about", "How LootBox works", "Deposit Cash, convert it to Credits, and play three games: Mystery Box, Mystery Map and the Vault. Collect items and fragments, complete collections, and earn rewards you can withdraw."),
+      page("responsible-play", "Responsible Play", "LootBox should be fun. Only spend what you can comfortably afford.\n\nTools available to you:\n- Daily Credit spending limit\n- Take a break (self-exclusion) for 1 day, 7 days, 30 days, 3 months or 6 months\n- Full transaction history in your wallet\n\nIf play stops being fun, take a break and reach out to our support team. We are happy to help you set limits or close your account."),
+      page("about", about?.title ?? "How LootBox works", about?.body ?? "LootBox is an adventure across 10 islands."),
     ]);
+    await db.insert(s.appConfig).values({ key: "compliance_content_v1", value: { appliedAt: new Date().toISOString(), via: "db:seed" } });
 
     await db.insert(s.appConfig).values({ key: "seed_version", value: { version: 1, at: new Date().toISOString() } });
     console.log("Content seeded.");

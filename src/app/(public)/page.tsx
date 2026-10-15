@@ -13,7 +13,7 @@ import { PromoTicker } from "@/components/public/landing/promo-ticker";
 import { StatCounter } from "@/components/public/landing/stat-counter";
 import { getAuthSession } from "@/lib/auth/session";
 import { activeBanners } from "@/server/queries/banners";
-import { landingMaps, landingStats, MIN_ACTIVITY, recentActivity } from "@/server/queries/landing";
+import { activityReady, landingMaps, landingStats, recentActivity } from "@/server/queries/landing";
 
 const MONEY_STEPS = [
   { icon: UserPlus, title: "Sign up free", body: "Claim your daily check-in and spin straight away." },
@@ -96,7 +96,7 @@ export default async function LandingPage() {
         </Container>
       </section>
 
-      {activity.length >= MIN_ACTIVITY && <LiveTicker events={activity} />}
+      {activityReady(activity) && <LiveTicker events={activity} />}
 
       {showStats && (
         <section className="border-b bg-surface">
@@ -110,7 +110,7 @@ export default async function LandingPage() {
 
       <section className="py-14 sm:py-24">
         <Container>
-          <SectionHeading eyebrow="How a level works" title="Three steps to every prize" description="Each of the ten levels runs the same loop. Win smaller prizes as you go, and chase the big one at the end of every island." />
+          <SectionHeading eyebrow="How an island works" title="Three steps to every prize" description="Each of the ten islands runs the same loop. Collect Loot and smaller rewards as you go, then finish the puzzle at the end of the island." />
           <LoopJourney />
         </Container>
       </section>
@@ -178,7 +178,7 @@ export default async function LandingPage() {
             <SectionHeading
               eyebrow="Trust"
               title="Fair by design, open by default"
-              description="Every Mystery Box shows the prizes you can win before you open it, and every result is decided securely on our servers."
+              description="Every Mystery Box shows the prizes available before you open it, and every result is decided securely on our servers."
               className="mb-0 sm:mb-0"
             />
             <ul className="mt-8 grid gap-5 sm:grid-cols-3">

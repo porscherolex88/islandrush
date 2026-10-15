@@ -26,18 +26,18 @@ export default async function SupportPage({ searchParams }: PageProps<"/admin/su
   const like = q ? `%${q.replace(/[%_]/g, "\\$&")}%` : null;
   const num = q && /^#?\d+$/.test(q) ? Number(q.replace("#", "")) : null;
   const [list, stats] = await Promise.all([
-    rows<{ id: string; number: number; subject: string; category: string; status: string; priority: string; tags: string[]; last_message_at: string; created_at: string; user_id: string; name: string; email: string; assignee: string | null; awaiting: boolean; messages: number }>(sql`
+    rows<{ id: string; number: number; subject: string; category: string; status: string; priority: string; tags: string[]; last_message_at: string; created_at: string; user_id: string | null; name: string | null; email: string | null; contact_phone: string | null; contact_name: string | null; assignee: string | null; awaiting: boolean; messages: number }>(sql`
       select t.id, t.number, t.subject, t.category, t.status::text, t.priority::text, t.tags, t.last_message_at::text, t.created_at::text,
-        p.id as user_id, p.name, p.email, a.name as assignee,
+        p.id as user_id, p.name, p.email, t.contact_phone, t.contact_name, a.name as assignee,
         coalesce((select not m.from_staff from support_messages m where m.ticket_id = t.id and not m.is_internal order by m.created_at desc limit 1), true) as awaiting,
         (select count(*)::int from support_messages m where m.ticket_id = t.id and not m.is_internal) as messages
-      from support_tickets t join profiles p on p.id = t.user_id left join profiles a on a.id = t.assigned_to_id
+      from support_tickets t left join profiles p on p.id = t.user_id left join profiles a on a.id = t.assigned_to_id
       where true
         ${status && STATUSES.includes(status as never) ? sql`and t.status = ${status}::ticket_status` : !status ? sql`and t.status in ('OPEN', 'PENDING')` : sql``}
         ${priority && PRIORITIES.includes(priority as never) ? sql`and t.priority = ${priority}::ticket_priority` : sql``}
         ${assigned === "me" ? sql`and t.assigned_to_id = ${admin.user.id}` : assigned === "none" ? sql`and t.assigned_to_id is null` : sql``}
         ${tag ? sql`and t.tags ? ${tag}` : sql``}
-        ${num !== null ? sql`and t.number = ${num}` : like ? sql`and (t.subject ilike ${like} or p.email ilike ${like} or p.name ilike ${like})` : sql``}
+        ${num !== null ? sql`and t.number = ${num}` : like ? sql`and (t.subject ilike ${like} or coalesce(p.email, '') ilike ${like} or coalesce(p.name, '') ilike ${like} or coalesce(t.contact_phone, '') ilike ${like} or coalesce(t.contact_name, '') ilike ${like})` : sql``}
       order by case t.priority when 'URGENT' then 0 when 'HIGH' then 1 when 'NORMAL' then 2 else 3 end, t.last_message_at
       limit ${PAGE + 1} offset ${(page - 1) * PAGE}`),
     one<{ open: number; pending: number; unassigned: number; mine: number; urgent: number }>(sql`
@@ -87,7 +87,19 @@ export default async function SupportPage({ searchParams }: PageProps<"/admin/su
               </div>
             ),
           },
-          { key: "u", header: "User", cell: (t) => <UserLink id={t.user_id} name={t.name} email={t.email} /> },
+          {
+            key: "u",
+            header: "User",
+            cell: (t) =>
+              t.user_id && t.name ? (
+                <UserLink id={t.user_id} name={t.name} email={t.email ?? t.contact_phone ?? ""} />
+              ) : (
+                <span className="text-xs">
+                  <span className="font-medium">Guest</span>
+                  <span className="mt-0.5 block text-muted-foreground">{t.contact_phone ?? t.contact_name ?? "Password reset"}</span>
+                </span>
+              ),
+          },
           { key: "p", header: "Priority", cell: (t) => <StatusBadge status={t.priority} /> },
           { key: "st", header: "Status", cell: (t) => <div className="flex flex-col items-start gap-1"><StatusBadge status={t.status} />{t.awaiting && (t.status === "OPEN" || t.status === "PENDING") && <span className="text-[10px] font-medium text-amber-600">Awaiting staff</span>}</div> },
           { key: "a", header: "Assignee", cell: (t) => <span className="text-xs text-muted-foreground">{t.assignee ?? "-"}</span> },

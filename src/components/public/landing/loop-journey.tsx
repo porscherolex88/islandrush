@@ -9,23 +9,23 @@ const STEPS = [
   {
     title: "Box",
     art: "/illustrations/3d/crate.webp",
-    body: "Open a Mystery Box for your level. Every box drops Loot for your map, and you can win smaller prizes along the way. Prizes are shown before you open.",
-    perksLabel: "Win along the way",
-    perks: ["Credits", "Cash", "Loot", "Collectible items"],
+    body: "Open a Mystery Box for your island. Every box drops Loot, and may also drop Credits, a Cash reward or a Free unlock. Prizes are shown before you open.",
+    perksLabel: "Along the way",
+    perks: ["Credits", "Cash rewards", "Loot", "Free unlock"],
   },
   {
-    title: "Map",
+    title: "Trail",
     art: "/illustrations/3d/map-scroll.webp",
-    body: "Your Loot moves you across the level's map, checkpoint by checkpoint. Reach the final checkpoint to open the Big Box and collect puzzle pieces.",
+    body: "Your Loot fills each trail chest, checkpoint by checkpoint across the 10 islands. Reach the final checkpoint to open the Big Box and collect Puzzle pieces.",
     perksLabel: null,
     perks: [],
   },
   {
     title: "Puzzle",
     art: "/illustrations/3d/puzzle.webp",
-    body: "Fit the pieces together to complete the level's puzzle and unlock its big prize. Then the next island opens up.",
-    perksLabel: "Big prizes like",
-    perks: ["Rolex", "Tesla", "Big cash prizes"],
+    body: "Fit the pieces together to complete the island's puzzle, then spin the prize wheel. Prizes are subject to availability and our Terms.",
+    perksLabel: "Prize types",
+    perks: ["Physical prizes", "Credits", "Cash rewards"],
   },
 ] as const;
 

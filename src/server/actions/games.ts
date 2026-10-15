@@ -31,6 +31,7 @@ export async function spinAction() {
     await assertPlayable(user, "daily_spin");
     await gameRateLimit(user.id);
     const result = await spinDaily(user.id);
+    revalidatePath("/", "layout");
     return result;
   });
 }
@@ -50,7 +51,9 @@ export async function openBoxAction(input: { boxId: string; idempotencyKey: stri
     const data = parse(z.object({ boxId: uuid, idempotencyKey: z.string().min(8).max(100) }), input);
     await assertPlayable(user, "mystery_box");
     await gameRateLimit(user.id);
-    return playMysteryBox(user.id, { ...data, selectedIndex: 0 });
+    const result = await playMysteryBox(user.id, { ...data, selectedIndex: 0 });
+    revalidatePath("/", "layout");
+    return result;
   });
 }
 
@@ -59,7 +62,9 @@ export async function unlockMapAction(mapId: string) {
     const id = parse(uuid, mapId);
     await assertPlayable(user, "mystery_map");
     await gameRateLimit(user.id);
-    return unlockMap(user.id, id);
+    const result = await unlockMap(user.id, id);
+    revalidatePath("/", "layout");
+    return result;
   });
 }
 
@@ -68,7 +73,9 @@ export async function replayMapAction(mapId: string) {
     const id = parse(uuid, mapId);
     await assertPlayable(user, "mystery_map");
     await gameRateLimit(user.id);
-    return replayMap(user.id, id);
+    const result = await replayMap(user.id, id);
+    revalidatePath("/", "layout");
+    return result;
   });
 }
 
@@ -77,7 +84,9 @@ export async function unlockCheckpointAction(checkpointId: string) {
     const id = parse(uuid, checkpointId);
     await assertPlayable(user, "mystery_map");
     await gameRateLimit(user.id);
-    return unlockCheckpoint(user.id, id);
+    const result = await unlockCheckpoint(user.id, id);
+    revalidatePath("/", "layout");
+    return result;
   });
 }
 
@@ -86,7 +95,9 @@ export async function openBigBoxAction(input: { mapId: string; idempotencyKey: s
     const data = parse(z.object({ mapId: uuid, idempotencyKey: z.string().min(8).max(100) }), input);
     await assertPlayable(user, "mystery_map");
     await gameRateLimit(user.id);
-    return openBigBox(user.id, data);
+    const result = await openBigBox(user.id, data);
+    revalidatePath("/", "layout");
+    return result;
   });
 }
 

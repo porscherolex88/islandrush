@@ -21,11 +21,16 @@ export type LandingStats = { boxesOpened: number; prizesUnlocked: number; player
 
 /** Below this many events the live ticker hides instead of looking empty. */
 export const MIN_ACTIVITY = 5;
+/** Below this many distinct masked names the ticker hides so one player cannot dominate. */
+export const MIN_UNIQUE_PLAYERS = 3;
+/** Cap how many events any single player contributes to the public ticker. */
+const MAX_PER_PLAYER = 2;
 
 const PUBLIC_PLAYER = and(eq(profiles.role, "USER"), eq(profiles.status, "ACTIVE"));
 
 /** Latest box openings, Big Box openings and prize unlocks from real players, anonymised. */
 export async function loadRecentActivity(limit = 20): Promise<LandingActivity[]> {
+  const fetchLimit = Math.max(limit * 4, 40);
   const [boxes, bigBoxes, claims] = await Promise.all([
     db
       .select({ id: mysteryBoxPlays.id, name: profiles.name, level: mysteryBoxPlays.level, detail: mysteryBoxes.name, at: mysteryBoxPlays.createdAt })
@@ -34,21 +39,21 @@ export async function loadRecentActivity(limit = 20): Promise<LandingActivity[]>
       .innerJoin(mysteryBoxes, eq(mysteryBoxes.id, mysteryBoxPlays.boxId))
       .where(PUBLIC_PLAYER)
       .orderBy(desc(mysteryBoxPlays.createdAt))
-      .limit(limit),
+      .limit(fetchLimit),
     db
       .select({ id: bigBoxOpenings.id, name: profiles.name, level: bigBoxOpenings.level, pieces: bigBoxOpenings.pieces, at: bigBoxOpenings.createdAt })
       .from(bigBoxOpenings)
       .innerJoin(profiles, eq(profiles.id, bigBoxOpenings.userId))
       .where(PUBLIC_PLAYER)
       .orderBy(desc(bigBoxOpenings.createdAt))
-      .limit(limit),
+      .limit(fetchLimit),
     db
       .select({ id: prizeClaims.id, name: profiles.name, level: prizeClaims.level, snapshot: prizeClaims.prizeSnapshot, at: prizeClaims.createdAt })
       .from(prizeClaims)
       .innerJoin(profiles, eq(profiles.id, prizeClaims.userId))
       .where(and(PUBLIC_PLAYER, ne(prizeClaims.status, "REJECTED")))
       .orderBy(desc(prizeClaims.createdAt))
-      .limit(limit),
+      .limit(fetchLimit),
   ]);
 
   const events: LandingActivity[] = [
@@ -69,8 +74,25 @@ export async function loadRecentActivity(limit = 20): Promise<LandingActivity[]>
       detail: typeof r.snapshot?.name === "string" ? r.snapshot.name : null,
       at: r.at.toISOString(),
     })),
-  ];
-  return events.sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit);
+  ].sort((a, b) => b.at.localeCompare(a.at));
+
+  const perPlayer = new Map<string, number>();
+  const diversified: LandingActivity[] = [];
+  for (const e of events) {
+    const n = perPlayer.get(e.player) ?? 0;
+    if (n >= MAX_PER_PLAYER) continue;
+    perPlayer.set(e.player, n + 1);
+    diversified.push(e);
+    if (diversified.length >= limit) break;
+  }
+  return diversified;
+}
+
+/** True when the ticker has enough real, varied activity to show without looking fake. */
+export function activityReady(events: LandingActivity[]) {
+  if (events.length < MIN_ACTIVITY) return false;
+  const unique = new Set(events.map((e) => e.player));
+  return unique.size >= MIN_UNIQUE_PLAYERS;
 }
 
 export async function loadLandingStats(): Promise<LandingStats> {

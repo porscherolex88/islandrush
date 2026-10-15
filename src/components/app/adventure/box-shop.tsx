@@ -74,6 +74,8 @@ export function BoxShop({
       setFreePlays(d.freePlaysLeft);
       setMeter(d.jackpot && d.meter ? { ...d.meter, plays: d.meter.target } : d.meter);
       setResult(d);
+      // Keep Daily mission progress current while the open animation plays.
+      router.refresh();
       const wait = reduce ? 0 : Math.max(0, UNLOCK_MS - (Date.now() - startedAt.current));
       setTimeout(() => {
         setPhase("opened");

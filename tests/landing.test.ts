@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { db } from "@/db";
 import { mysteryBoxPlays, profiles } from "@/db/schema";
 import { maskName } from "@/lib/mask-name";
-import { loadLandingStats, loadRecentActivity } from "@/server/queries/landing";
+import { activityReady, loadLandingStats, loadRecentActivity } from "@/server/queries/landing";
 import { makeBox, makePool, makeUser, uid } from "./helpers";
 
 vi.mock("next/cache", () => ({ unstable_cache: <T>(fn: T) => fn }));
@@ -48,5 +48,30 @@ describe("landing activity", () => {
     const stats = await loadLandingStats();
     expect(stats.boxesOpened).toBeGreaterThanOrEqual(2);
     expect(stats.players).toBeGreaterThanOrEqual(1);
+  });
+
+  it("caps one player and hides the ticker when names are not varied enough", async () => {
+    const pool = await makePool("WEIGHTED", [{ rewardType: "CREDITS", amount: "10" }]);
+    const box = await makeBox(pool.id, 100, { name: "Solo Chest", level: 1 });
+    const player = await makeUser();
+    await db.update(profiles).set({ name: "Daniel Wong" }).where(eq(profiles.id, player.id));
+
+    for (let i = 0; i < 8; i++) {
+      await db.insert(mysteryBoxPlays).values({
+        userId: player.id,
+        boxId: box.id,
+        selectedIndex: 0,
+        creditsSpent: 100,
+        reward: {},
+        idempotencyKey: uid("idem"),
+        appDay: "2026-10-11",
+        level: 1,
+      });
+    }
+
+    const events = await loadRecentActivity(20);
+    const daniel = events.filter((e) => e.player === "D***l" && e.detail === "Solo Chest");
+    expect(daniel.length).toBeLessThanOrEqual(2);
+    expect(activityReady(daniel)).toBe(false);
   });
 });

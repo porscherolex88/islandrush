@@ -29,19 +29,23 @@ export default async function TicketPage({ params }: PageProps<"/admin/support/[
     db
       .select({ m: supportMessages, author: profiles.name, role: profiles.role })
       .from(supportMessages)
-      .innerJoin(profiles, eq(profiles.id, supportMessages.authorId))
+      .leftJoin(profiles, eq(profiles.id, supportMessages.authorId))
       .where(eq(supportMessages.ticketId, id))
       .orderBy(asc(supportMessages.createdAt)),
-    db.select().from(profiles).where(eq(profiles.id, ticket.userId)).then((r) => r[0]),
-    one<{ cash: string; withdrawable: string; pending_deposits: number; open_withdrawals: number; open_flags: number; level: string | null }>(sql`
+    ticket.userId ? db.select().from(profiles).where(eq(profiles.id, ticket.userId)).then((r) => r[0]) : Promise.resolve(undefined),
+    ticket.userId
+      ? one<{ cash: string; withdrawable: string; pending_deposits: number; open_withdrawals: number; open_flags: number; level: string | null }>(sql`
       select
         coalesce((select balance from financial_accounts where user_id = ${ticket.userId} and type = 'CASH'), 0)::text as cash,
         coalesce((select balance from financial_accounts where user_id = ${ticket.userId} and type = 'WITHDRAWABLE'), 0)::text as withdrawable,
         (select count(*)::int from deposits where user_id = ${ticket.userId} and status = 'PENDING') as pending_deposits,
         (select count(*)::int from withdrawals where user_id = ${ticket.userId} and status in ('PENDING', 'REVIEW', 'APPROVED', 'PROCESSING')) as open_withdrawals,
         (select count(*)::int from risk_flags where user_id = ${ticket.userId} and status in ('OPEN', 'IN_REVIEW')) as open_flags,
-        (select l.name from deposit_levels l join profiles p on p.deposit_level_id = l.id where p.id = ${ticket.userId}) as level`),
-    db.select({ id: supportTickets.id, number: supportTickets.number, subject: supportTickets.subject, status: supportTickets.status }).from(supportTickets).where(eq(supportTickets.userId, ticket.userId)).orderBy(desc(supportTickets.createdAt)).limit(8),
+        (select l.name from deposit_levels l join profiles p on p.deposit_level_id = l.id where p.id = ${ticket.userId}) as level`)
+      : Promise.resolve({ cash: "0", withdrawable: "0", pending_deposits: 0, open_withdrawals: 0, open_flags: 0, level: null }),
+    ticket.userId
+      ? db.select({ id: supportTickets.id, number: supportTickets.number, subject: supportTickets.subject, status: supportTickets.status }).from(supportTickets).where(eq(supportTickets.userId, ticket.userId)).orderBy(desc(supportTickets.createdAt)).limit(8)
+      : Promise.resolve([]),
     ticket.assignedToId ? db.select({ name: profiles.name }).from(profiles).where(eq(profiles.id, ticket.assignedToId)).then((r) => r[0]?.name ?? null) : Promise.resolve(null),
   ]);
   const closed = ticket.status === "RESOLVED" || ticket.status === "CLOSED";
@@ -71,8 +75,8 @@ export default async function TicketPage({ params }: PageProps<"/admin/support/[
                 >
                   <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">
-                      {author}
-                      {m.isInternal ? " · internal note" : m.fromStaff ? " · staff" : ""}
+                      {author ?? ticket.contactName ?? ticket.contactPhone ?? "Guest"}
+                      {m.isInternal ? " · internal note" : m.fromStaff ? " · staff" : !m.authorId ? " · guest" : ""}
                     </span>
                     <span>{formatDateTime(m.createdAt)}</span>
                   </div>
@@ -93,7 +97,7 @@ export default async function TicketPage({ params }: PageProps<"/admin/support/[
               <TicketSettings ticketId={id} status={ticket.status} priority={ticket.priority} tags={ticket.tags} resolution={ticket.resolution} assignedToMe={ticket.assignedToId === admin.user.id} assigned={Boolean(ticket.assignedToId)} />
             </AdminCard>
           )}
-          {user && (
+          {user ? (
             <AdminCard title="User context" actions={<Button asChild size="sm" variant="outline"><Link href={`/admin/users/${user.id}`}>Profile</Link></Button>}>
               <UserLink id={user.id} name={user.name} email={user.email} />
               <div className="mt-3">
@@ -113,20 +117,34 @@ export default async function TicketPage({ params }: PageProps<"/admin/support/[
                 />
               </div>
             </AdminCard>
+          ) : (
+            <AdminCard title="Guest request">
+              <KeyValue
+                items={[
+                  ["Contact phone", ticket.contactPhone ?? "-"],
+                  ["Contact name", ticket.contactName ?? "-"],
+                  ["Tags", ticket.tags.join(", ") || "-"],
+                ]}
+                cols={1}
+              />
+              <p className="mt-3 text-xs text-muted-foreground">Verify identity before resetting a password. Link the ticket to a user after matching their account.</p>
+            </AdminCard>
           )}
-          <AdminCard title="Other tickets from this user">
-            <ul className="space-y-1.5 text-sm">
-              {others.filter((o) => o.id !== id).map((o) => (
-                <li key={o.id} className="flex items-center justify-between gap-2">
-                  <Link href={`/admin/support/${o.id}`} className="truncate text-primary hover:underline">
-                    #{o.number} {o.subject}
-                  </Link>
-                  <StatusBadge status={o.status} />
-                </li>
-              ))}
-              {others.length <= 1 && <li className="text-muted-foreground">None</li>}
-            </ul>
-          </AdminCard>
+          {user && (
+            <AdminCard title="Other tickets from this user">
+              <ul className="space-y-1.5 text-sm">
+                {others.filter((o) => o.id !== id).map((o) => (
+                  <li key={o.id} className="flex items-center justify-between gap-2">
+                    <Link href={`/admin/support/${o.id}`} className="truncate text-primary hover:underline">
+                      #{o.number} {o.subject}
+                    </Link>
+                    <StatusBadge status={o.status} />
+                  </li>
+                ))}
+                {others.length <= 1 && <li className="text-muted-foreground">None</li>}
+              </ul>
+            </AdminCard>
+          )}
         </div>
       </div>
     </AdminPage>
