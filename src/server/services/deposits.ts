@@ -5,7 +5,7 @@ import { AppError, ForbiddenError, isUniqueViolation, NotFoundError } from "@/li
 import { toDecimal, toMinor } from "@/lib/money";
 import { fmtCash } from "@/lib/format-money";
 import { audit } from "./audit";
-import { getConfig } from "./config";
+import { getConfig, isFeatureEnabled } from "./config";
 import { recomputeDepositLevel } from "./deposit-levels";
 import { postTransaction } from "./ledger";
 import { notify } from "./notifications";
@@ -13,6 +13,8 @@ import { processReferralRewards } from "./referrals";
 import { onDepositSignals } from "./risk";
 
 type Actor = { id: string; role: string };
+
+export const DEPOSITS_UNAVAILABLE_MESSAGE = "Deposits are temporarily unavailable.";
 
 export async function listPaymentAccounts() {
   return db.select().from(paymentAccounts).where(eq(paymentAccounts.active, true)).orderBy(paymentAccounts.sortOrder);
@@ -32,6 +34,10 @@ export async function createDeposit(
     idempotencyKey: string;
   },
 ) {
+  // Missing flag counts as off so deposits stay disabled until an admin turns them on.
+  if (!(await isFeatureEnabled("deposits", db, false))) {
+    throw new AppError(DEPOSITS_UNAVAILABLE_MESSAGE, "FEATURE_DISABLED", 503);
+  }
   const cfg = await getConfig("deposit");
   const amount = toMinor(input.amount);
   if (amount < toMinor(cfg.min)) throw new AppError(`Minimum deposit is ${await fmtCash(cfg.min)}`);

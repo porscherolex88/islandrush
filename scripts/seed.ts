@@ -243,7 +243,7 @@ async function main() {
       { key: "vault", enabled: true, description: "Vault" },
       { key: "daily_spin", enabled: true, description: "Daily Spin" },
       { key: "referrals", enabled: true, description: "Referral program" },
-      { key: "deposits", enabled: true, description: "Manual deposits" },
+      { key: "deposits", enabled: false, description: "Manual deposits" },
       { key: "withdrawals", enabled: true, description: "Withdrawals" },
       { key: "registrations", enabled: true, description: "New account registration" },
     ]).onConflictDoNothing();
@@ -371,34 +371,40 @@ async function main() {
   const [alreadyDemo] = await db.select().from(s.deposits).where(eq(s.deposits.userId, demo.id)).limit(1);
   if (!alreadyDemo) {
     console.log("Creating demo activity...");
-    const friendAuth = await authUser("friend@lootbox.my", "Mei Ling Chen");
-    const friend = await ensureProfile({ id: friendAuth.id, email: "friend@lootbox.my", name: "Mei Ling Chen" }, { referralCode: demo.referralCode, ip: "198.51.100.23", deviceId: "seed-friend" });
+    // Deposits are off by default; briefly enable for seed demo rows, then restore.
+    await db.update(s.featureFlags).set({ enabled: true, updatedAt: new Date() }).where(eq(s.featureFlags.key, "deposits"));
+    try {
+      const friendAuth = await authUser("friend@lootbox.my", "Mei Ling Chen");
+      const friend = await ensureProfile({ id: friendAuth.id, email: "friend@lootbox.my", name: "Mei Ling Chen" }, { referralCode: demo.referralCode, ip: "198.51.100.23", deviceId: "seed-friend" });
 
-    const dep = await createDeposit(demo.id, { amount: "1000.00", reference: "MBB-20260927-0001", payerName: "Daniel Wong", method: "BANK_TRANSFER", idempotencyKey: "seed-demo-dep-1" });
-    await approveDeposit(finance, dep.id, "Matched bank statement");
-    await convertCashToCredits(demo.id, { cashAmount: "500.00", idempotencyKey: "seed-demo-convert-1" });
+      const dep = await createDeposit(demo.id, { amount: "1000.00", reference: "MBB-20260927-0001", payerName: "Daniel Wong", method: "BANK_TRANSFER", idempotencyKey: "seed-demo-dep-1" });
+      await approveDeposit(finance, dep.id, "Matched bank statement");
+      await convertCashToCredits(demo.id, { cashAmount: "500.00", idempotencyKey: "seed-demo-convert-1" });
 
-    const [box] = await db.select().from(s.mysteryBoxes).where(eq(s.mysteryBoxes.slug, "island-box"));
-    await playMysteryBox(demo.id, { boxId: box.id, selectedIndex: 4, idempotencyKey: "seed-demo-box-1" });
-    const [beach] = await db.select().from(s.mapAreas).where(eq(s.mapAreas.slug, "beach"));
-    const beachTiles = await db.select().from(s.mapTiles).where(eq(s.mapTiles.areaId, beach.id)).limit(5);
-    for (const t of beachTiles) await discoverTile(demo.id, t.id);
+      const [box] = await db.select().from(s.mysteryBoxes).where(eq(s.mysteryBoxes.slug, "island-box"));
+      await playMysteryBox(demo.id, { boxId: box.id, selectedIndex: 4, idempotencyKey: "seed-demo-box-1" });
+      const [beach] = await db.select().from(s.mapAreas).where(eq(s.mapAreas.slug, "beach"));
+      const beachTiles = await db.select().from(s.mapTiles).where(eq(s.mapTiles.areaId, beach.id)).limit(5);
+      for (const t of beachTiles) await discoverTile(demo.id, t.id);
 
-    await db.transaction(async (tx) => {
-      await createCashReward(tx, { userId: demo.id, amount: "150.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-1", description: "Welcome treasure", pendingHours: 0 });
-      await createCashReward(tx, { userId: demo.id, amount: "1100.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-2", description: "Vault reward", pendingHours: 0 });
-      await createCashReward(tx, { userId: demo.id, amount: "45.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-3", description: "Treasure reward", pendingHours: 24 });
-    });
-    await settleDueRewards({ userId: demo.id });
+      await db.transaction(async (tx) => {
+        await createCashReward(tx, { userId: demo.id, amount: "150.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-1", description: "Welcome treasure", pendingHours: 0 });
+        await createCashReward(tx, { userId: demo.id, amount: "1100.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-2", description: "Vault reward", pendingHours: 0 });
+        await createCashReward(tx, { userId: demo.id, amount: "45.00", source: "GAME_REWARD", sourceType: "seed", sourceId: "demo", key: "seed-demo-reward-3", description: "Treasure reward", pendingHours: 24 });
+      });
+      await settleDueRewards({ userId: demo.id });
 
-    const today = appDay(new Date(), CONFIG_DEFAULTS.timezone);
-    await db.update(s.userStreaks).set({ current: 11, longest: 14, lastClaimDay: addDays(today, -1), runStartDay: addDays(today, -11) }).where(eq(s.userStreaks.userId, demo.id));
-    await addWithdrawalAccount(demo.id, { bankName: "Maybank", accountName: "Daniel Wong", accountNumber: "1122 3344 5566" });
+      const today = appDay(new Date(), CONFIG_DEFAULTS.timezone);
+      await db.update(s.userStreaks).set({ current: 11, longest: 14, lastClaimDay: addDays(today, -1), runStartDay: addDays(today, -11) }).where(eq(s.userStreaks.userId, demo.id));
+      await addWithdrawalAccount(demo.id, { bankName: "Maybank", accountName: "Daniel Wong", accountNumber: "1122 3344 5566" });
 
-    await createDeposit(friend.id, { amount: "300.00", reference: "CIMB-20260927-7781", payerName: "Mei Ling Chen", method: "DUITNOW", idempotencyKey: "seed-friend-dep-1" });
-    await createTicket(demo.id, { subject: "How do I unlock the Temple?", category: "GAMES", body: "I have the Ancient Map but the Temple still shows locked. What else do I need?" });
-    const existingItems = await db.select().from(s.inventory).where(and(eq(s.inventory.userId, demo.id)));
-    console.log(`  demo inventory items: ${existingItems.length}`);
+      await createDeposit(friend.id, { amount: "300.00", reference: "CIMB-20260927-7781", payerName: "Mei Ling Chen", method: "DUITNOW", idempotencyKey: "seed-friend-dep-1" });
+      await createTicket(demo.id, { subject: "How do I unlock the Temple?", category: "GAMES", body: "I have the Ancient Map but the Temple still shows locked. What else do I need?" });
+      const existingItems = await db.select().from(s.inventory).where(and(eq(s.inventory.userId, demo.id)));
+      console.log(`  demo inventory items: ${existingItems.length}`);
+    } finally {
+      await db.update(s.featureFlags).set({ enabled: false, updatedAt: new Date() }).where(eq(s.featureFlags.key, "deposits"));
+    }
   }
   console.log(`\nDemo password for all seeded accounts: ${password}`);
 }

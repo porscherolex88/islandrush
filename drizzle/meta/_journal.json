@@ -99,6 +99,13 @@
       "when": 1791888987001,
       "tag": "0013_box_jackpots",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792000000000,
+      "tag": "0014_disable_deposits",
+      "breakpoints": true
     }
   ]
 }

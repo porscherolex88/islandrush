@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/db";
-import { auditLogs, cashRewards, deposits, profiles } from "@/db/schema";
+import { auditLogs, cashRewards, deposits, featureFlags, profiles } from "@/db/schema";
 import { createAdjustment, runReconciliation } from "@/server/services/admin-finance";
 import { reverseCashReward, settleDueRewards } from "@/server/services/cash-rewards";
 import { convertCashToCredits } from "@/server/services/conversion";
-import { approveDeposit, createDeposit, rejectDeposit, reverseDeposit } from "@/server/services/deposits";
+import { approveDeposit, createDeposit, DEPOSITS_UNAVAILABLE_MESSAGE, rejectDeposit, reverseDeposit } from "@/server/services/deposits";
 import { getBalances } from "@/server/services/ledger";
 import { createCashReward } from "@/server/services/rewards";
 import {
@@ -30,6 +30,21 @@ async function giveWithdrawable(userId: string, amount: string) {
 }
 
 describe("manual deposits", () => {
+  it("rejects new deposits when the deposits feature flag is off", async () => {
+    const u = await makeUser();
+    await db
+      .insert(featureFlags)
+      .values({ key: "deposits", enabled: false, description: "Manual deposits" })
+      .onConflictDoUpdate({ target: featureFlags.key, set: { enabled: false, updatedAt: new Date() } });
+    try {
+      await expect(
+        createDeposit(u.id, { amount: "100.00", reference: "OFF", payerName: "Ali", method: "BANK_TRANSFER", idempotencyKey: uid() }),
+      ).rejects.toThrow(DEPOSITS_UNAVAILABLE_MESSAGE);
+    } finally {
+      await db.update(featureFlags).set({ enabled: true, updatedAt: new Date() }).where(eq(featureFlags.key, "deposits"));
+    }
+  });
+
   it("only credits Cash after admin approval, and approval is idempotent", async () => {
     const u = await makeUser();
     const dep = await createDeposit(u.id, { amount: "1000.00", reference: "BANK123", payerName: "Ali", method: "BANK_TRANSFER", idempotencyKey: uid() });

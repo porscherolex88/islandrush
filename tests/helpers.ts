@@ -4,6 +4,7 @@ import {
   appConfig,
   collections,
   depositLevels,
+  featureFlags,
   items,
   mapAreas,
   mapTiles,
@@ -43,8 +44,16 @@ export async function ensureAdminActor() {
   return admin;
 }
 
+export async function ensureDepositsEnabled() {
+  await db
+    .insert(featureFlags)
+    .values({ key: "deposits", enabled: true, description: "Manual deposits" })
+    .onConflictDoUpdate({ target: featureFlags.key, set: { enabled: true, updatedAt: new Date() } });
+}
+
 export async function fundCash(userId: string, amount: string) {
   await ensureAdminActor();
+  await ensureDepositsEnabled();
   const dep = await createDeposit(userId, {
     amount,
     reference: `REF-${uid("ref")}`,
@@ -126,6 +135,7 @@ export async function makeVault(rewardPoolId?: string) {
 }
 
 export async function seedProgression() {
+  await ensureDepositsEnabled();
   await db
     .insert(depositLevels)
     .values([

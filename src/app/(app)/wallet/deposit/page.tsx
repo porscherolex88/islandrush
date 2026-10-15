@@ -27,7 +27,7 @@ export default async function DepositPage() {
     listPaymentAccounts(),
     getConfig("deposit"),
     userDeposits(user.id, 10),
-    isFeatureEnabled("deposits"),
+    isFeatureEnabled("deposits", db, false),
     db.select({ n: count() }).from(depositsTable).where(eq(depositsTable.userId, user.id)),
     getBalances(user.id),
   ]);
@@ -47,7 +47,7 @@ export default async function DepositPage() {
       </Section>
       <Section>
         {!enabled ? (
-          <EmptyState icon={<Landmark className="size-8 text-primary" />} title="Deposits are paused" description="We are doing some maintenance. Please try again later." />
+          <EmptyState icon={<Landmark className="size-8 text-primary" />} title="Deposits are temporarily unavailable." description="Please check back later." />
         ) : user.status !== "ACTIVE" ? (
           <EmptyState icon={<Lock className="size-8 text-primary" />} title="Deposits unavailable" description="Your account is suspended. Please contact support." />
         ) : (
