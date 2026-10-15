@@ -1,26 +1,24 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+/** Flat 2D loot-crate mark. Uses currentColor-safe solid fills in brand teal/gold. */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn("size-8", className)}>
-      <defs>
-        <linearGradient id="lb-lid" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#1b8a99" />
-          <stop offset="1" stopColor="#0b4f5c" />
-        </linearGradient>
-      </defs>
-      <rect x="3" y="12" width="26" height="17" rx="4" fill="url(#lb-lid)" />
-      <path d="M5 8.5a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3V13H5z" fill="#2fb3c1" />
-      <rect x="14" y="5.5" width="4" height="23.5" fill="#fbbf24" />
-      <circle cx="16" cy="17" r="3.2" fill="#fde68a" stroke="#f59e0b" strokeWidth="1.2" />
+    <svg viewBox="0 0 64 64" aria-hidden className={cn("size-8", className)}>
+      <rect width="64" height="64" rx="14" fill="#0B4F5C" />
+      <rect x="10" y="28" width="44" height="26" rx="4" fill="#1B8A99" />
+      <path d="M8 22c0-2.2 1.8-4 4-4h40c2.2 0 4 1.8 4 4v8H8v-8z" fill="#2FB3C1" />
+      <rect x="8" y="28" width="48" height="4" fill="#0E6B78" />
+      <rect x="28" y="14" width="8" height="40" rx="1" fill="#F5B942" />
+      <rect x="24" y="34" width="16" height="12" rx="2" fill="#FBBF24" />
+      <rect x="28" y="38" width="8" height="4" rx="1" fill="#0B4F5C" />
     </svg>
   );
 }
 
 export function Logo({ href = "/", className }: { href?: string; className?: string }) {
   return (
-    <Link href={href} className={cn("inline-flex items-center gap-2 font-heading text-lg font-bold tracking-tight", className)}>
+    <Link href={href} className={cn("inline-flex items-center gap-2 font-heading text-lg font-extrabold tracking-tight", className)}>
       <LogoMark />
       <span>
         Loot<span className="text-primary">Box</span>

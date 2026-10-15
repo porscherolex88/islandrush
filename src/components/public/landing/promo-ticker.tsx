@@ -16,7 +16,7 @@ export function PromoTicker({ banners }: { banners: PromoItem[] }) {
   const items = banners.length ? [...banners, ...EVERGREEN.slice(0, Math.max(0, 4 - banners.length))] : EVERGREEN;
   return (
     <div className="border-b border-gold/30 bg-[linear-gradient(90deg,var(--gold-hi),var(--gold-lo))] text-[var(--gold-ink)]">
-      <Marquee label="Promotions" duration={Math.max(24, items.length * 9)}>
+      <Marquee label="Promotions" duration={Math.max(24, items.length * 9)} controlClassName="border-black/15 bg-[var(--gold-ink)]/10 text-[var(--gold-ink)] hover:bg-[var(--gold-ink)]/15">
         {items.map((b) => {
           const body = (
             <>

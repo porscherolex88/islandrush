@@ -363,6 +363,7 @@
 }
 
 @utility animate-marquee {
+  /* Hover must never pause this animation; use the Marquee pause control instead. */
   animation: marquee 40s linear infinite;
 }
 

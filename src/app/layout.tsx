@@ -13,6 +13,21 @@ export const metadata: Metadata = {
   description:
     "Open Mystery Boxes, explore island maps, collect Loot and complete puzzles on a free daily adventure.",
   applicationName: "LootBox",
+  icons: {
+    icon: [{ url: "/brand/icon.svg", type: "image/svg+xml" }, { url: "/brand/icon.png", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  openGraph: {
+    title: "LootBox: Play, discover, collect",
+    description: "Open Mystery Boxes, collect Loot, explore the Mystery Map, and claim island prizes.",
+    images: [{ url: "/brand/share-1200x628.png", width: 1200, height: 628, alt: "LootBox" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LootBox: Play, discover, collect",
+    description: "Open Mystery Boxes, collect Loot, explore the Mystery Map, and claim island prizes.",
+    images: ["/brand/share-1200x628.png"],
+  },
 };
 
 export const viewport: Viewport = {

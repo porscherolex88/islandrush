@@ -1,6 +1,6 @@
 "use client";
 
-import { Megaphone } from "lucide-react";
+import { Megaphone, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -50,14 +50,15 @@ function Slide({ banner, index, count }: { banner: CarouselBanner; index: number
 }
 
 /**
- * Home announcements as a swipeable strip. Auto-advances and loops, pausing while the
- * user hovers, focuses or touches it, and never auto-moves under reduced motion.
+ * Home announcements as a swipeable strip. Auto-advances and loops.
+ * Hover does not pause autoplay. Focus, touch, or the pause control can stop it.
+ * Never auto-moves under reduced motion.
  */
 export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
-  const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [interactedAt, setInteractedAt] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [tick, setTick] = useState(0);
@@ -96,7 +97,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
     setActive(nearest);
   }, []);
 
-  const autoplay = count > 1 && !hovered && !focused && !reducedMotion;
+  const autoplay = count > 1 && !paused && !focused && !reducedMotion;
 
   useEffect(() => {
     if (!autoplay) return;
@@ -121,9 +122,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
     <section
       aria-roledescription="carousel"
       aria-label="Announcements"
-      className="mb-0"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="relative mb-0"
       onFocus={() => setFocused(true)}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
@@ -144,7 +143,7 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
         ))}
       </div>
 
-      <div className="flex h-8 items-center justify-center px-4">
+      <div className="flex h-8 items-center justify-center gap-1 px-4">
         {banners.map((b, i) => (
           <button
             key={b.id}
@@ -160,6 +159,17 @@ export function BannerCarousel({ banners }: { banners: CarouselBanner[] }) {
             <span className={cn("block size-2 rounded-full transition-colors", i === active ? "bg-gold" : "bg-border")} aria-hidden />
           </button>
         ))}
+        {!reducedMotion && (
+          <button
+            type="button"
+            onClick={() => setPaused((p) => !p)}
+            aria-pressed={paused}
+            aria-label={paused ? "Play announcements" : "Pause announcements"}
+            className={cn("ml-2 grid size-7 place-items-center rounded-full border bg-background text-foreground", focusRing)}
+          >
+            {paused ? <Play className="size-3.5 translate-x-px" aria-hidden /> : <Pause className="size-3.5" aria-hidden />}
+          </button>
+        )}
       </div>
     </section>
   );
