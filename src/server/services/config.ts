@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, type DbOrTx } from "@/db";
+import { isDatabaseConfigured } from "@/db/env";
 import { appConfig, featureFlags } from "@/db/schema";
 import { audit } from "./audit";
 
@@ -135,6 +136,7 @@ export async function getTimezone(tx: DbOrTx = db) {
 }
 
 export async function isFeatureEnabled(key: string, tx: DbOrTx = db, fallback = true): Promise<boolean> {
+  if (!isDatabaseConfigured()) return fallback;
   const [row] = await tx.select().from(featureFlags).where(eq(featureFlags.key, key)).limit(1);
   return row ? row.enabled : fallback;
 }
