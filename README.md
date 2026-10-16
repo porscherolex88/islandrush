@@ -2,16 +2,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+Create `.env.local` (see `.env.example`). If this repo is linked to the Vercel **lootbox** project:
 
 ```bash
+npx vercel env pull .env.local --environment=development
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
