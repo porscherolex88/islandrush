@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq, isNotNull, ne } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
+import { isDatabaseConfigured } from "@/db/env";
 import { bigBoxOpenings, mapCheckpoints, maps, mysteryBoxes, mysteryBoxPlays, prizeClaims, profiles } from "@/db/schema";
 import { maskName } from "@/lib/mask-name";
 
@@ -30,6 +31,7 @@ const PUBLIC_PLAYER = and(eq(profiles.role, "USER"), eq(profiles.status, "ACTIVE
 
 /** Latest box openings, Big Box openings and prize unlocks from real players, anonymised. */
 export async function loadRecentActivity(limit = 20): Promise<LandingActivity[]> {
+  if (!isDatabaseConfigured()) return [];
   const fetchLimit = Math.max(limit * 4, 40);
   const [boxes, bigBoxes, claims] = await Promise.all([
     db
@@ -96,6 +98,7 @@ export function activityReady(events: LandingActivity[]) {
 }
 
 export async function loadLandingStats(): Promise<LandingStats> {
+  if (!isDatabaseConfigured()) return { boxesOpened: 0, prizesUnlocked: 0, players: 0 };
   const [[boxes], [prizes], [players]] = await Promise.all([
     db.select({ n: count() }).from(mysteryBoxPlays),
     db.select({ n: count() }).from(prizeClaims).where(ne(prizeClaims.status, "REJECTED")),
@@ -108,6 +111,7 @@ export type LandingMap = { level: number; name: string; artwork: string | null; 
 
 /** Published adventure maps, one per level, for the public level showcase. */
 export async function loadLandingMaps(): Promise<LandingMap[]> {
+  if (!isDatabaseConfigured()) return [];
   const rows = await db
     .select({ level: maps.level, name: maps.name, artwork: maps.artwork, lootRequired: maps.lootRequired, checkpoints: count(mapCheckpoints.id) })
     .from(maps)

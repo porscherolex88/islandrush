@@ -1,9 +1,11 @@
 import { and, desc, eq, gt, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/db";
+import { isDatabaseConfigured } from "@/db/env";
 import { banners } from "@/db/schema";
 
 /** Published banners/announcements inside their scheduling window. */
 export async function activeBanners(kind?: "BANNER" | "ANNOUNCEMENT") {
+  if (!isDatabaseConfigured()) return [];
   const now = new Date();
   return db
     .select()
