@@ -124,7 +124,7 @@ async function main() {
   const counts: Record<string, number> = {};
   for (const table of WIPE_TABLES) {
     const rows = await db.execute(sql.raw(`select count(*)::int as n from "${table}"`));
-    counts[table] = Number((rows.rows[0] as { n: number }).n);
+    counts[table] = Number((Array.from(rows)[0] as { n: number }).n);
   }
 
   let neonAuthPresent = false;
@@ -135,7 +135,7 @@ async function main() {
       where schema_name = 'neon_auth'
       limit 1
     `);
-    neonAuthPresent = check.rows.length > 0;
+    neonAuthPresent = Array.from(check).length > 0;
   } catch {
     neonAuthPresent = false;
   }
@@ -144,7 +144,7 @@ async function main() {
     for (const table of NEON_AUTH_TABLES) {
       try {
         const rows = await db.execute(sql.raw(`select count(*)::int as n from neon_auth."${table}"`));
-        counts[`neon_auth.${table}`] = Number((rows.rows[0] as { n: number }).n);
+        counts[`neon_auth.${table}`] = Number((Array.from(rows)[0] as { n: number }).n);
       } catch {
         // Table name differs across Neon Auth versions; skip missing ones.
       }
