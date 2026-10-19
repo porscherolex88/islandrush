@@ -22,6 +22,8 @@ describe("adventure seed content", () => {
       ["Hidden Lagoon", 27],
     ]);
     expect(state.maps.map((m) => m.checkpoints.length)).toEqual([3, 4, 4, 5, 5, 6, 6, 7, 7, 8]);
+    expect(state.maps[1].checkpoints.map((c) => c.lootRequired)).toEqual([9, 18, 27, 36]);
+    expect(state.maps.map((m) => m.checkpoints.at(-1)?.lootRequired)).toEqual([27, 36, 45, 54, 63, 72, 81, 90, 102, 113]);
     for (const m of state.maps) {
       const ys = m.checkpoints.map((c) => c.posY);
       expect(ys).toEqual([...ys].sort((a, b) => b - a));

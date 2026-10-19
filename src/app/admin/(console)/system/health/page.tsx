@@ -61,7 +61,7 @@ export default async function HealthPage() {
   const reconOk = recon.every((c) => c.ok);
   const env = {
     cron: Boolean(process.env.CRON_SECRET),
-    auth: Boolean(process.env.NEON_AUTH_BASE_URL && process.env.NEON_AUTH_COOKIE_SECRET),
+    auth: Boolean(process.env.NEON_AUTH_COOKIE_SECRET ?? process.env.BETTER_AUTH_SECRET),
   };
 
   return (

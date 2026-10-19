@@ -9,8 +9,6 @@ import { defaultTrail, densify, stopsAlong } from "@/lib/adventure-trails";
  * are expected to tune (prices, Loot thresholds, odds, prizes). Safe to run more than once.
  */
 const MAP1_STOPS = ["Driftwood Camp", "Lighthouse Point", "Hidden Lagoon"];
-/** Map 1 is the free starting map, so its Loot thresholds start from zero: three even chests of 9. */
-const MAP1_THRESHOLDS = [9, 18, 27];
 
 /** Higher maps have more routes, so the climb gets longer as the treasure gets richer. */
 const MAPS = [
@@ -35,6 +33,23 @@ function stopPositions(level: number, count: number): [number, number][] {
   return stopsAlong(densify(defaultTrail(level, null)!), count).map((p) => [Math.round(p.x), Math.round(p.y)]);
 }
 
+/** Loot needed for a map's final chest. Every round of a map starts from zero Loot. */
+const finalLoot = (level: number) => {
+  const { loot } = MAPS[level - 1];
+  return loot + Math.ceil(loot * 1.25);
+};
+
+/** Chests are spaced evenly from zero up to the final chest, so the first one is never a wall (Map 1: 9, 18, 27). */
+function lootThreshold(level: number, k: number) {
+  return Math.round((finalLoot(level) * (k + 1)) / MAPS[level - 1].stops.length);
+}
+
+/** Thresholds an earlier seed used on Maps 2-10, which front-loaded the old map unlock cost onto the first chest. */
+function oldLootThreshold(level: number, k: number) {
+  const m = MAPS[level - 1];
+  return m.loot + Math.ceil((m.loot * 1.25 * (k + 1)) / m.stops.length);
+}
+
 function stopContent(level: number, k: number) {
   const m = MAPS[level - 1];
   const n = m.stops.length;
@@ -44,7 +59,7 @@ function stopContent(level: number, k: number) {
     name: m.stops[k],
     isFinal,
     landmark: isFinal ? FINAL_LANDMARK : LANDMARKS[k % LANDMARKS.length],
-    lootRequired: level === 1 ? MAP1_THRESHOLDS[k] : m.loot + Math.ceil((m.loot * 1.25 * (k + 1)) / n),
+    lootRequired: lootThreshold(level, k),
     description: isFinal ? "The final checkpoint. Something is hidden here." : `Checkpoint ${k + 1} on the ${m.name} map.`,
     posX,
     posY,
@@ -387,6 +402,28 @@ const UPDATES: { id: string; run: (tx: Tx, log: (msg: string) => void) => Promis
           .set({ name: `${name} Rewards`, description: `Lucky drop table for the ${name}: Credits, Cash or a Free unlock.`, updatedAt: now })
           .where(eq(s.rewardPools.name, `Mystery Box ${r} Rewards`));
         if (boxes.length) log(`Mystery Box ${r} is now the ${name}.`);
+      }
+    },
+  },
+  {
+    id: "even-chest-thresholds",
+    run: async (tx, log) => {
+      for (let level = 2; level <= MAPS.length; level++) {
+        const [map] = await tx.select().from(s.maps).where(and(eq(s.maps.level, level), eq(s.maps.status, "PUBLISHED")));
+        if (!map) continue;
+        const live = (await tx.select().from(s.mapCheckpoints).where(and(eq(s.mapCheckpoints.mapId, map.id), eq(s.mapCheckpoints.status, "PUBLISHED")))).sort(
+          (a, b) => a.position - b.position,
+        );
+        const stops = MAPS[level - 1].stops;
+        const untouched = live.length === stops.length && live.every((c, k) => c.name === stops[k] && c.lootRequired === oldLootThreshold(level, k));
+        if (!untouched) {
+          log(`Skipping Map ${level}: its chests were edited.`);
+          continue;
+        }
+        for (const [k, c] of live.entries()) {
+          await tx.update(s.mapCheckpoints).set({ lootRequired: lootThreshold(level, k), updatedAt: new Date() }).where(eq(s.mapCheckpoints.id, c.id));
+        }
+        log(`Map ${level} chests now need ${live.map((_, k) => lootThreshold(level, k)).join(", ")} Loot.`);
       }
     },
   },

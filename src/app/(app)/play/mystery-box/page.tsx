@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BoxPath } from "@/components/app/adventure/box-path";
 import { BoxShop } from "@/components/app/adventure/box-shop";
-import { affordableBox, boxTrack, levelParam } from "@/components/app/adventure/tracks";
+import { defaultBox, boxTrack, levelParam } from "@/components/app/adventure/tracks";
 import { boxArt } from "@/components/app/art";
 import { headerIconButton } from "@/components/app/header-buttons";
 import { InnerPageHeader } from "@/components/app/inner-page-header";
@@ -31,7 +31,7 @@ export default async function MysteryBoxPage({
     searchParams,
     getRate(),
   ]);
-  const level = levelParam(sp.level, affordableBox(s, Number(balances.CREDITS))?.level ?? 1, s.boxes.length);
+  const level = levelParam(sp.level, defaultBox(s, Number(balances.CREDITS))?.level ?? 1, s.boxes.length);
   const box = s.boxes.find((b) => b.level === level) ?? null;
   const map = s.maps.find((m) => m.level === level) ?? null;
   const prizes = box ? await adventureBoxPrizes(box.id) : { rewards: [], loot: [] };

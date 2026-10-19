@@ -1,7 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { db } from "@/db";
-import { mapCheckpoints, maps } from "@/db/schema";
+import { appConfig, mapCheckpoints, maps } from "@/db/schema";
 import { updateAdventureContent } from "@/server/content/adventure-seed";
 import { getAdventureState } from "@/server/services/adventure";
 import { makeUser } from "./helpers";
@@ -44,5 +44,22 @@ describe("adventure content updates", () => {
 
     const state = await getAdventureState((await makeUser()).id);
     expect(state.maps.map((m) => m.checkpoints.length)).toEqual([3, 4, 7, 3]);
+  });
+
+  it("spreads untouched Map 2-10 chests evenly from zero and leaves edited chests alone", async () => {
+    const stops = ["Temple Steps", "Hall of Echoes", "Serpent Corridor", "Fire Altar", "Temple Vault"];
+    const [temple] = await db.insert(maps).values({ slug: "map-4-even", name: "Forgotten Temple", level: 4 }).returning();
+    await db.insert(mapCheckpoints).values(stops.map((n, k) => ({ mapId: temple.id, position: k + 1, name: n, lootRequired: [30, 36, 42, 48, 54][k], isFinal: k === 4 })));
+    const caveStops = ["Cavern Mouth", "Glowing Tunnel", "Echo Lake", "Crystal Garden", "Crystal Throne"];
+    const [caves] = await db.insert(maps).values({ slug: "map-5-edited", name: "Crystal Caverns", level: 5 }).returning();
+    await db.insert(mapCheckpoints).values(caveStops.map((n, k) => ({ mapId: caves.id, position: k + 1, name: n, lootRequired: 5 * (k + 1), isFinal: k === 4 })));
+    const [row] = await db.select().from(appConfig).where(eq(appConfig.key, "adventure_content_updates"));
+    const applied = (row.value as { applied: string[] }).applied.filter((id) => id !== "even-chest-thresholds");
+    await db.update(appConfig).set({ value: { applied } }).where(eq(appConfig.key, "adventure_content_updates"));
+
+    await updateAdventureContent();
+
+    expect((await rows(temple.id)).map((r) => r.lootRequired)).toEqual([11, 22, 32, 43, 54]);
+    expect((await rows(caves.id)).map((r) => r.lootRequired)).toEqual([5, 10, 15, 20, 25]);
   });
 });

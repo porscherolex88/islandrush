@@ -34,7 +34,7 @@ async function lootBoard(userId: string) {
     )
     select id, name, score, rank from ranked where rank <= ${TOP} or id = ${userId} order by rank
   `);
-  return shape(res.rows, userId);
+  return shape(Array.from(res), userId);
 }
 
 /** Players ranked by their current daily check-in streak. Streaks that lapsed before yesterday don't count. */
@@ -48,7 +48,7 @@ async function streakBoard(userId: string) {
     )
     select id, name, score, rank from ranked where rank <= ${TOP} or id = ${userId} order by rank
   `);
-  return shape(res.rows, userId);
+  return shape(Array.from(res), userId);
 }
 
 export async function getLeaderboards(userId: string) {

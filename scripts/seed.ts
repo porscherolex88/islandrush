@@ -342,17 +342,13 @@ async function main() {
   /* ------------------------------------------------------------------ */
   /* Demo accounts via Neon Auth                                         */
   /* ------------------------------------------------------------------ */
-  const baseUrl = process.env.NEON_AUTH_BASE_URL;
-  const origin = process.env.SEED_ORIGIN ?? "http://localhost:3000";
+  const origin = (process.env.SEED_ORIGIN ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const authBase = `${origin}/api/auth`;
   const password = process.env.SEED_PASSWORD ?? "LootBox-Demo-2026";
-  if (!baseUrl) {
-    console.log("NEON_AUTH_BASE_URL missing; skipping demo accounts.");
-    return;
-  }
   const authUser = async (email: string, name: string): Promise<{ id: string; email: string; name: string }> => {
     const headers = { "content-type": "application/json", origin };
-    let res = await fetch(`${baseUrl}/sign-up/email`, { method: "POST", headers, body: JSON.stringify({ email, password, name }) });
-    if (!res.ok) res = await fetch(`${baseUrl}/sign-in/email`, { method: "POST", headers, body: JSON.stringify({ email, password }) });
+    let res = await fetch(`${authBase}/sign-up/email`, { method: "POST", headers, body: JSON.stringify({ email, password, name }) });
+    if (!res.ok) res = await fetch(`${authBase}/sign-in/email`, { method: "POST", headers, body: JSON.stringify({ email, password }) });
     if (!res.ok) throw new Error(`Auth failed for ${email}: ${res.status} ${await res.text()}`);
     const body = (await res.json()) as { user: { id: string; email: string; name: string } };
     return body.user;

@@ -175,7 +175,7 @@ export async function revokeSessionAction(sessionId: string, reason: string | nu
     const why = reasonSchema.parse(reason ?? "");
     await db.transaction(async (tx) => {
       const found = await tx.execute(sql`delete from neon_auth.session where id = ${sessionId} returning "userId" as user_id, "ipAddress" as ip, "createdAt" as created_at`);
-      const row = found.rows[0] as { user_id: string; ip: string | null; created_at: string } | undefined;
+      const row = Array.from(found)[0] as { user_id: string; ip: string | null; created_at: string } | undefined;
       if (!row) throw new AppError("Session not found or already ended");
       await audit(tx, { actorId: actor.id, actorRole: actor.role, action: "session.revoke", entityType: "session", entityId: sessionId, before: row, after: null, reason: why });
     });

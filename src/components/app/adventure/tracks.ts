@@ -25,10 +25,14 @@ export function mapTrack(s: AdventureState): TrackLevel[] {
   }));
 }
 
-/** The highest-level open box the player can pay for right now, else the lowest open box. */
-export function affordableBox(s: AdventureState, credits: number) {
+/**
+ * The box to show by default: the current map's box, since only its Loot moves that map forward.
+ * Falls back to the highest open box the player can pay for, else the lowest open box.
+ */
+export function defaultBox(s: AdventureState, credits: number) {
   const open = s.boxes.filter((b) => !b.locked);
-  return open.findLast((b) => b.priceCredits <= credits) ?? open[0] ?? s.currentBox;
+  const current = open.find((b) => b.level === s.currentMap?.level);
+  return current ?? open.findLast((b) => b.priceCredits <= credits) ?? open[0] ?? s.currentBox;
 }
 
 export function levelParam(raw: string | string[] | undefined, fallback: number, max: number) {

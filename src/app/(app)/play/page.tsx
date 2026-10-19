@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { LevelTrack } from "@/components/app/adventure/level-track";
 import { LootMeter } from "@/components/app/adventure/loot";
 import { BoxContents, BoxPrizesSheet } from "@/components/app/adventure/prizes-list";
-import { affordableBox, boxTrack, mapLootGoal, mapTrack } from "@/components/app/adventure/tracks";
+import { defaultBox, boxTrack, mapLootGoal, mapTrack } from "@/components/app/adventure/tracks";
 import { boxArt, mapArt } from "@/components/app/art";
 import { Section } from "@/components/app/mobile-header";
 import { PlayHeader } from "@/components/app/root-page-header";
@@ -96,7 +96,7 @@ export default async function PlayPage() {
   const user = await requireUser();
   const [s, flags, balances] = await Promise.all([getAdventureState(user.id), getAllFlags(), getBalances(user.id)]);
   const map = s.currentMap;
-  const box = affordableBox(s, Number(balances.CREDITS));
+  const box = defaultBox(s, Number(balances.CREDITS));
   const ready = s.maps.length > 0 && s.boxes.length > 0;
   const prizes = box ? await adventureBoxPrizes(box.id) : { rewards: [], loot: [] };
   const active = activeStep(s);
